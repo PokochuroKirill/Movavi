@@ -8,7 +8,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, username?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -40,14 +40,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, username?: string) => {
     try {
+      // Если указан username, проверяем его уникальность
+      if (username) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('username', username)
+          .single();
+        
+        if (data) {
+          toast({
+            title: "Ошибка при регистрации",
+            description: "Это имя пользователя уже занято. Пожалуйста, выберите другое.",
+            variant: "destructive",
+          });
+          throw new Error("Имя пользователя уже занято");
+        }
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
+            username: username
           },
         },
       });

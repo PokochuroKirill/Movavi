@@ -22,6 +22,7 @@ const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
@@ -34,6 +35,11 @@ const AuthPage = () => {
     return null;
   }
 
+  const validateUsername = (username: string): boolean => {
+    const usernameRegex = /^[a-z0-9_]{3,20}$/;
+    return usernameRegex.test(username);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -43,7 +49,17 @@ const AuthPage = () => {
         await signIn(email, password);
         navigate('/');
       } else {
-        await signUp(email, password, fullName);
+        if (!validateUsername(username)) {
+          toast({
+            title: "Ошибка валидации",
+            description: "Имя пользователя должно содержать от 3 до 20 символов, только строчные буквы, цифры и знак подчеркивания.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        
+        await signUp(email, password, fullName, username);
         // После регистрации остаёмся на этой странице для возможного входа
         setMode('login');
         toast({
@@ -77,16 +93,32 @@ const AuthPage = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Полное имя</Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Иван Иванов"
-                    required
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Полное имя</Label>
+                    <Input
+                      id="fullName"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Иван Иванов"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Имя пользователя</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                      placeholder="ivan_ivanov"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">
+                      Только строчные буквы, цифры и знак подчеркивания (3-20 символов)
+                    </p>
+                  </div>
+                </>
               )}
               
               <div className="space-y-2">

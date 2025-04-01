@@ -1,89 +1,92 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SnippetCard from '@/components/SnippetCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
-// Моковые данные для сниппетов
-const mockSnippets = [
-  {
-    id: '1',
-    title: 'React useEffect Cleanup',
-    code: `useEffect(() => {\n  const subscription = externalStore.subscribe();\n  return () => {\n    subscription.unsubscribe();\n  };\n}, [externalStore]);`,
-    language: 'JavaScript',
-    author: 'Алексей Петров',
-    authorAvatar: 'https://i.pravatar.cc/300?img=1',
-    likes: 142,
-    tags: ['React', 'Hooks', 'useEffect']
-  },
-  {
-    id: '2',
-    title: 'Python List Comprehension',
-    code: `# One-line creation of processed list\nsquares = [x**2 for x in range(10) if x % 2 == 0]`,
-    language: 'Python',
-    author: 'Мария Иванова',
-    authorAvatar: 'https://i.pravatar.cc/300?img=2',
-    likes: 87,
-    tags: ['Python', 'List', 'Comprehension']
-  },
-  {
-    id: '3',
-    title: 'CSS Flexbox Centering',
-    code: `.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 100vh;\n}`,
-    language: 'CSS',
-    author: 'Екатерина Новикова',
-    authorAvatar: 'https://i.pravatar.cc/300?img=5',
-    likes: 231,
-    tags: ['CSS', 'Flexbox', 'Layout']
-  },
-  {
-    id: '4',
-    title: 'SQL Join Example',
-    code: `SELECT orders.id, customers.name, orders.amount\nFROM orders\nINNER JOIN customers ON orders.customer_id = customers.id\nWHERE orders.amount > 100\nORDER BY orders.amount DESC;`,
-    language: 'SQL',
-    author: 'Дмитрий Козлов',
-    authorAvatar: 'https://i.pravatar.cc/300?img=4',
-    likes: 68,
-    tags: ['SQL', 'Database', 'Join']
-  },
-  {
-    id: '5',
-    title: 'Git Branch Management',
-    code: `# Create and switch to new branch\ngit checkout -b feature/new-feature\n\n# Push to remote\ngit push -u origin feature/new-feature`,
-    language: 'Shell',
-    author: 'Сергей Смирнов',
-    authorAvatar: 'https://i.pravatar.cc/300?img=3',
-    likes: 94,
-    tags: ['Git', 'Version Control', 'Terminal']
-  },
-  {
-    id: '6',
-    title: 'TypeScript Interface',
-    code: `interface User {\n  id: number;\n  name: string;\n  email: string;\n  active?: boolean;\n  roles: string[];\n}`,
-    language: 'TypeScript',
-    author: 'Андрей Соколов',
-    authorAvatar: 'https://i.pravatar.cc/300?img=6',
-    likes: 124,
-    tags: ['TypeScript', 'Interface', 'Type']
-  }
-];
+type Snippet = {
+  id: string;
+  title: string;
+  code: string;
+  language: string;
+  author: string;
+  authorAvatar?: string;
+  likes: number;
+  tags: string[];
+};
 
 const SnippetsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredSnippets, setFilteredSnippets] = useState(mockSnippets);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchSnippets = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('snippets')
+          .select(`
+            id, 
+            title, 
+            code, 
+            language,
+            tags,
+            profiles(username, full_name, avatar_url)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const formattedSnippets = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            code: item.code,
+            language: item.language,
+            author: item.profiles?.full_name || item.profiles?.username || 'Неизвестный автор',
+            authorAvatar: item.profiles?.avatar_url,
+            likes: Math.floor(Math.random() * 100), // Временно, пока нет реальных данных
+            tags: item.tags || []
+          }));
+          setSnippets(formattedSnippets);
+          setFilteredSnippets(formattedSnippets);
+        }
+      } catch (error: any) {
+        console.error('Ошибка при загрузке сниппетов:', error);
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось загрузить сниппеты',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSnippets();
+  }, [toast]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (searchQuery.trim() === '') {
-      setFilteredSnippets(mockSnippets);
+      setFilteredSnippets(snippets);
       return;
     }
     
-    const filtered = mockSnippets.filter(
+    const filtered = snippets.filter(
       snippet => 
         snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
         snippet.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,6 +95,24 @@ const SnippetsPage = () => {
     );
     
     setFilteredSnippets(filtered);
+  };
+
+  const handleAddSnippet = () => {
+    if (!user) {
+      toast({
+        title: "Требуется авторизация",
+        description: "Для создания сниппета необходимо войти в систему",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    // В будущем здесь будет переход на страницу создания сниппета
+    toast({
+      title: "Функция в разработке",
+      description: "Создание сниппетов будет доступно в ближайшее время",
+    });
   };
 
   return (
@@ -108,7 +129,10 @@ const SnippetsPage = () => {
               </p>
             </div>
             
-            <Button className="gradient-bg text-white mt-4 md:mt-0">
+            <Button 
+              className="gradient-bg text-white mt-4 md:mt-0"
+              onClick={handleAddSnippet}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Добавить сниппет
             </Button>
@@ -133,27 +157,43 @@ const SnippetsPage = () => {
             </form>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSnippets.map((snippet) => (
-              <SnippetCard
-                key={snippet.id}
-                id={snippet.id}
-                title={snippet.title}
-                code={snippet.code}
-                language={snippet.language}
-                author={snippet.author}
-                authorAvatar={snippet.authorAvatar}
-                likes={snippet.likes}
-                tags={snippet.tags}
-              />
-            ))}
-          </div>
-          
-          {filteredSnippets.length === 0 && (
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
+              <span className="ml-2 text-lg">Загрузка сниппетов...</span>
+            </div>
+          ) : filteredSnippets.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSnippets.map((snippet) => (
+                <SnippetCard
+                  key={snippet.id}
+                  id={snippet.id}
+                  title={snippet.title}
+                  code={snippet.code}
+                  language={snippet.language}
+                  author={snippet.author}
+                  authorAvatar={snippet.authorAvatar}
+                  likes={snippet.likes}
+                  tags={snippet.tags}
+                />
+              ))}
+            </div>
+          ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
-                Сниппеты не найдены. Попробуйте изменить параметры поиска.
+              <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
+                {searchQuery ? 
+                  'Сниппеты не найдены. Попробуйте изменить параметры поиска.' : 
+                  'Сниппетов пока нет. Добавьте первый сниппет!'}
               </p>
+              {!searchQuery && (
+                <Button 
+                  className="gradient-bg text-white"
+                  onClick={handleAddSnippet}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Создать сниппет
+                </Button>
+              )}
             </div>
           )}
         </div>

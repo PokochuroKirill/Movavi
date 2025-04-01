@@ -1,95 +1,93 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProjectCard from '@/components/ProjectCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
-// Моковые данные для проектов
-const mockProjects = [
-  {
-    id: '1',
-    title: 'Easy React Components',
-    description: 'Библиотека React компонентов с поддержкой Typescript, доступности и темной темы.',
-    author: 'Алексей Петров',
-    authorAvatar: 'https://i.pravatar.cc/300?img=1',
-    stars: 243,
-    forks: 57,
-    views: 1892,
-    tags: ['React', 'TypeScript', 'UI Library']
-  },
-  {
-    id: '2',
-    title: 'Python Data Analyzer',
-    description: 'Инструмент для анализа данных на Python с визуализацией и машинным обучением.',
-    author: 'Мария Иванова',
-    authorAvatar: 'https://i.pravatar.cc/300?img=2',
-    stars: 178,
-    forks: 32,
-    views: 1254,
-    tags: ['Python', 'Data Science', 'ML']
-  },
-  {
-    id: '3',
-    title: 'Mobile Task Manager',
-    description: 'Приложение для управления задачами с синхронизацией и напоминаниями.',
-    author: 'Сергей Смирнов',
-    authorAvatar: 'https://i.pravatar.cc/300?img=3',
-    stars: 95,
-    forks: 12,
-    views: 723,
-    tags: ['Flutter', 'Dart', 'Mobile App']
-  },
-  {
-    id: '4',
-    title: 'NodeJS API Starter',
-    description: 'Стартовый шаблон для NodeJS API с аутентификацией, логированием и документацией.',
-    author: 'Дмитрий Козлов',
-    authorAvatar: 'https://i.pravatar.cc/300?img=4',
-    stars: 321,
-    forks: 89,
-    views: 2411,
-    tags: ['Node.js', 'Express', 'API']
-  },
-  {
-    id: '5',
-    title: 'Web Animation Library',
-    description: 'Библиотека для создания сложных веб-анимаций с минимальным JavaScript.',
-    author: 'Екатерина Новикова',
-    authorAvatar: 'https://i.pravatar.cc/300?img=5',
-    stars: 156,
-    forks: 27,
-    views: 1182,
-    tags: ['JavaScript', 'Animation', 'CSS']
-  },
-  {
-    id: '6',
-    title: 'Smart Home Dashboard',
-    description: 'Веб-интерфейс для управления умным домом с графиками и статистикой.',
-    author: 'Андрей Соколов',
-    authorAvatar: 'https://i.pravatar.cc/300?img=6',
-    stars: 112,
-    forks: 19,
-    views: 847,
-    tags: ['React', 'IoT', 'Dashboard']
-  }
-];
+type Project = {
+  id: string;
+  title: string;
+  description: string;
+  author: string;
+  authorAvatar?: string;
+  stars: number;
+  forks: number;
+  views: number;
+  tags: string[];
+};
 
 const ProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredProjects, setFilteredProjects] = useState(mockProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('projects')
+          .select(`
+            id, 
+            title, 
+            description, 
+            technologies,
+            profiles(username, full_name, avatar_url)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const formattedProjects = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            author: item.profiles?.full_name || item.profiles?.username || 'Неизвестный автор',
+            authorAvatar: item.profiles?.avatar_url,
+            stars: Math.floor(Math.random() * 100), // Временно, пока нет реальных данных
+            forks: Math.floor(Math.random() * 30),  // Временно, пока нет реальных данных
+            views: Math.floor(Math.random() * 1000), // Временно, пока нет реальных данных
+            tags: item.technologies || []
+          }));
+          setProjects(formattedProjects);
+          setFilteredProjects(formattedProjects);
+        }
+      } catch (error: any) {
+        console.error('Ошибка при загрузке проектов:', error);
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось загрузить проекты',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [toast]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (searchQuery.trim() === '') {
-      setFilteredProjects(mockProjects);
+      setFilteredProjects(projects);
       return;
     }
     
-    const filtered = mockProjects.filter(
+    const filtered = projects.filter(
       project => 
         project.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
         project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -97,6 +95,24 @@ const ProjectsPage = () => {
     );
     
     setFilteredProjects(filtered);
+  };
+
+  const handleAddProject = () => {
+    if (!user) {
+      toast({
+        title: "Требуется авторизация",
+        description: "Для создания проекта необходимо войти в систему",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    // В будущем здесь будет переход на страницу создания проекта
+    toast({
+      title: "Функция в разработке",
+      description: "Создание проектов будет доступно в ближайшее время",
+    });
   };
 
   return (
@@ -113,7 +129,10 @@ const ProjectsPage = () => {
               </p>
             </div>
             
-            <Button className="gradient-bg text-white mt-4 md:mt-0">
+            <Button 
+              className="gradient-bg text-white mt-4 md:mt-0"
+              onClick={handleAddProject}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Добавить проект
             </Button>
@@ -138,28 +157,44 @@ const ProjectsPage = () => {
             </form>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                id={project.id}
-                title={project.title}
-                description={project.description}
-                author={project.author}
-                authorAvatar={project.authorAvatar}
-                stars={project.stars}
-                forks={project.forks}
-                views={project.views}
-                tags={project.tags}
-              />
-            ))}
-          </div>
-          
-          {filteredProjects.length === 0 && (
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
+              <span className="ml-2 text-lg">Загрузка проектов...</span>
+            </div>
+          ) : filteredProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  id={project.id}
+                  title={project.title}
+                  description={project.description}
+                  author={project.author}
+                  authorAvatar={project.authorAvatar}
+                  stars={project.stars}
+                  forks={project.forks}
+                  views={project.views}
+                  tags={project.tags}
+                />
+              ))}
+            </div>
+          ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
-                Проекты не найдены. Попробуйте изменить параметры поиска.
+              <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
+                {searchQuery ? 
+                  'Проекты не найдены. Попробуйте изменить параметры поиска.' : 
+                  'Проектов пока нет. Создайте первый проект!'}
               </p>
+              {!searchQuery && (
+                <Button 
+                  className="gradient-bg text-white"
+                  onClick={handleAddProject}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Создать проект
+                </Button>
+              )}
             </div>
           )}
         </div>
