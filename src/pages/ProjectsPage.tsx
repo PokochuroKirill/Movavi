@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Filter, Plus, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 type Project = {
   id: string;
@@ -108,11 +108,7 @@ const ProjectsPage = () => {
       return;
     }
     
-    // В будущем здесь будет переход на страницу создания проекта
-    toast({
-      title: "Функция в разработке",
-      description: "Создание проектов будет доступно в ближайшее время",
-    });
+    navigate('/projects/create');
   };
 
   return (

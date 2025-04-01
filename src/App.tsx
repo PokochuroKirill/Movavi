@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/ProjectsPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
+import CreateProjectPage from "./pages/CreateProjectPage";
 import SnippetsPage from "./pages/SnippetsPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -31,6 +33,12 @@ const App = () => (
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/projects/create" element={
+              <ProtectedRoute>
+                <CreateProjectPage />
+              </ProtectedRoute>
+            } />
             <Route path="/snippets" element={<SnippetsPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/documentation" element={<DocumentationPage />} />
