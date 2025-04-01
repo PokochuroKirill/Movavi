@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { GitHub, Linkedin, Twitter } from 'lucide-react';
+import { Github, Linkedin, Twitter } from 'lucide-react';
 
 const AboutPage = () => {
   // Пример данных команды
@@ -115,7 +115,7 @@ const AboutPage = () => {
                         rel="noopener noreferrer"
                         className="text-gray-500 hover:text-devhub-purple transition-colors"
                       >
-                        <GitHub className="h-5 w-5" />
+                        <Github className="h-5 w-5" />
                       </a>
                       <a
                         href={member.linkedin}
