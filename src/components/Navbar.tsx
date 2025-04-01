@@ -1,12 +1,15 @@
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Code, Home, Search, FolderGit2, Menu, X } from 'lucide-react';
+import { Code, Home, Search, FolderGit2, Menu, X, User, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +26,21 @@ const Navbar = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleAuthClick = () => {
+    if (user) {
+      navigate('/profile');
+    } else {
+      navigate('/auth');
+    }
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -52,7 +70,26 @@ const Navbar = () => {
               <Code className="h-4 w-4" />
               <span>Сниппеты</span>
             </Link>
-            <Button className="gradient-bg text-white">Присоединиться</Button>
+            {user ? (
+              <div className="flex items-center gap-4">
+                <Button 
+                  onClick={() => navigate('/profile')} 
+                  variant="outline" 
+                  className="flex items-center gap-2 border-devhub-purple text-devhub-purple hover:bg-devhub-purple/10"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Профиль</span>
+                </Button>
+                <Button onClick={handleSignOut} variant="ghost" className="text-gray-700 dark:text-gray-300">
+                  <LogOut className="h-4 w-4" />
+                  <span>Выйти</span>
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={handleAuthClick} className="gradient-bg text-white">
+                Войти
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -91,7 +128,29 @@ const Navbar = () => {
                 <Code className="h-5 w-5" />
                 <span>Сниппеты</span>
               </Link>
-              <Button className="gradient-bg text-white w-full">Присоединиться</Button>
+              {user ? (
+                <>
+                  <Link 
+                    to="/profile" 
+                    className="flex items-center gap-2 p-2 text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="h-5 w-5" />
+                    <span>Профиль</span>
+                  </Link>
+                  <button 
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 p-2 text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors w-full text-left"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>Выйти</span>
+                  </button>
+                </>
+              ) : (
+                <Button onClick={handleAuthClick} className="gradient-bg text-white w-full">
+                  Войти
+                </Button>
+              )}
             </div>
           </div>
         )}

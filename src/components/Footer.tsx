@@ -18,13 +18,13 @@ const Footer = () => {
               Сообщество разработчиков для обмена идеями, проектами и кодом.
             </p>
             <div className="flex mt-4 space-x-4">
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
                 <Github className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors">
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>
@@ -55,19 +55,19 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Ресурсы</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                <Link to="/documentation" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                   Документация
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                <Link to="/blog" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                   Блог
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                <Link to="/faq" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                   FAQ
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -76,19 +76,19 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Связаться с нами</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                <Link to="/contact" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                   Контакты
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                   О нас
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                <Link to="/support" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                   Поддержка
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
