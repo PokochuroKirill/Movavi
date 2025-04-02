@@ -32,6 +32,7 @@ const ProjectCard = ({
   comments = 0,
   technologies = [],
   tags = [],
+  imageUrl,
 }: ProjectCardProps) => {
   // Use either technologies or tags, depending on what's provided
   const displayTags = technologies.length > 0 ? technologies : tags;

@@ -104,17 +104,22 @@ const ProfilePage = () => {
   const fetchUserProjects = async () => {
     setProjectsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
           *,
-          profiles(username, full_name, avatar_url)
+          profiles:user_id(username, full_name, avatar_url)
         `)
         .eq('user_id', user!.id);
 
-      if (error) throw error;
+      if (projectsError) throw projectsError;
       
-      const projectsWithCounts = await Promise.all(data.map(async (project) => {
+      if (!projectsData) {
+        setUserProjects([]);
+        return;
+      }
+      
+      const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
         // Get likes count for each project
         const { data: likesCount } = await supabase
           .rpc('get_project_likes_count', { project_id: project.id });
@@ -145,27 +150,30 @@ const ProfilePage = () => {
   const fetchSavedProjects = async () => {
     setSavedProjectsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: savedData, error: savedError } = await supabase
         .from('saved_projects')
-        .select(`
-          project_id
-        `)
+        .select('project_id')
         .eq('user_id', user!.id);
 
-      if (error) throw error;
+      if (savedError) throw savedError;
       
-      if (data.length > 0) {
-        const projectIds = data.map(item => item.project_id);
+      if (savedData && savedData.length > 0) {
+        const projectIds = savedData.map(item => item.project_id);
         
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select(`
             *,
-            profiles(username, full_name, avatar_url)
+            profiles:user_id(username, full_name, avatar_url)
           `)
           .in('id', projectIds);
           
         if (projectsError) throw projectsError;
+        
+        if (!projectsData) {
+          setSavedProjects([]);
+          return;
+        }
         
         const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
           // Get likes count for each project
@@ -188,6 +196,8 @@ const ProfilePage = () => {
         }));
 
         setSavedProjects(projectsWithCounts);
+      } else {
+        setSavedProjects([]);
       }
     } catch (error: any) {
       console.error('Error fetching saved projects:', error.message);
@@ -206,7 +216,7 @@ const ProfilePage = () => {
 
       if (error) throw error;
 
-      setUserSnippets(data);
+      setUserSnippets(data || []);
     } catch (error: any) {
       console.error('Error fetching user snippets:', error.message);
     } finally {
@@ -284,6 +294,7 @@ const ProfilePage = () => {
             <TabsTrigger value="snippets">Мои сниппеты</TabsTrigger>
           </TabsList>
           
+          {/* Tab Content */}
           <TabsContent value="profile">
             <Card>
               <CardHeader>
@@ -442,7 +453,7 @@ const ProfilePage = () => {
                         description={snippet.description}
                         language={snippet.language}
                         tags={snippet.tags || []}
-                        createdAt={snippet.created_at}
+                        created_at={snippet.created_at}
                       />
                     ))}
                   </div>

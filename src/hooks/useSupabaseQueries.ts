@@ -3,37 +3,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useToast } from "./use-toast";
-
-// Type definitions for our custom tables
-export type Comment = {
-  id: string;
-  project_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  profiles?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-};
-
-export type ProjectLike = {
-  id: string;
-  project_id: string;
-  user_id: string;
-  created_at: string;
-};
-
-export type SavedProject = {
-  id: string;
-  project_id: string;
-  user_id: string;
-  created_at: string;
-};
+import { Comment, ProjectLike, SavedProject } from "@/types/database";
 
 // Function to fetch comments for a project
-export const fetchComments = async (projectId: string) => {
+export const fetchComments = async (projectId: string): Promise<Comment[]> => {
   const { data, error } = await supabase
     .from('comments')
     .select(`
@@ -42,17 +15,17 @@ export const fetchComments = async (projectId: string) => {
       created_at,
       user_id,
       project_id,
-      profiles (username, full_name, avatar_url)
+      profiles:user_id(username, full_name, avatar_url)
     `)
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as Comment[];
+  return data as unknown as Comment[];
 };
 
 // Function to post a comment
-export const postComment = async (projectId: string, userId: string, content: string) => {
+export const postComment = async (projectId: string, userId: string, content: string): Promise<Comment> => {
   const { data, error } = await supabase
     .from('comments')
     .insert({
@@ -66,16 +39,16 @@ export const postComment = async (projectId: string, userId: string, content: st
       created_at,
       user_id,
       project_id,
-      profiles (username, full_name, avatar_url)
+      profiles:user_id(username, full_name, avatar_url)
     `)
     .single();
 
   if (error) throw error;
-  return data as Comment;
+  return data as unknown as Comment;
 };
 
 // Function to delete a comment
-export const deleteComment = async (commentId: string, userId: string) => {
+export const deleteComment = async (commentId: string, userId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('comments')
     .delete()
@@ -87,7 +60,7 @@ export const deleteComment = async (commentId: string, userId: string) => {
 };
 
 // Function to check if user has liked a project
-export const hasUserLikedProject = async (projectId: string, userId: string) => {
+export const hasUserLikedProject = async (projectId: string, userId: string): Promise<boolean> => {
   const { data, error } = await supabase
     .rpc('has_user_liked_project', { 
       project_id: projectId,
@@ -99,7 +72,7 @@ export const hasUserLikedProject = async (projectId: string, userId: string) => 
 };
 
 // Function to check if user has saved a project
-export const hasUserSavedProject = async (projectId: string, userId: string) => {
+export const hasUserSavedProject = async (projectId: string, userId: string): Promise<boolean> => {
   const { data, error } = await supabase
     .rpc('has_user_saved_project', { 
       project_id: projectId,
@@ -111,7 +84,7 @@ export const hasUserSavedProject = async (projectId: string, userId: string) => 
 };
 
 // Function to get project likes count
-export const getProjectLikesCount = async (projectId: string) => {
+export const getProjectLikesCount = async (projectId: string): Promise<number> => {
   const { data, error } = await supabase
     .rpc('get_project_likes_count', { project_id: projectId });
     
@@ -120,7 +93,7 @@ export const getProjectLikesCount = async (projectId: string) => {
 };
 
 // Function to get project comments count
-export const getProjectCommentsCount = async (projectId: string) => {
+export const getProjectCommentsCount = async (projectId: string): Promise<number> => {
   const { count, error } = await supabase
     .from('comments')
     .select('id', { count: 'exact', head: true })
@@ -131,7 +104,7 @@ export const getProjectCommentsCount = async (projectId: string) => {
 };
 
 // Function to toggle project like
-export const toggleProjectLike = async (projectId: string, userId: string, isLiked: boolean) => {
+export const toggleProjectLike = async (projectId: string, userId: string, isLiked: boolean): Promise<boolean> => {
   if (isLiked) {
     // Remove like
     const { error } = await supabase
@@ -154,7 +127,7 @@ export const toggleProjectLike = async (projectId: string, userId: string, isLik
 };
 
 // Function to toggle project save
-export const toggleProjectSave = async (projectId: string, userId: string, isSaved: boolean) => {
+export const toggleProjectSave = async (projectId: string, userId: string, isSaved: boolean): Promise<boolean> => {
   if (isSaved) {
     // Remove from saved
     const { error } = await supabase
@@ -207,7 +180,7 @@ export const useComments = (projectId: string) => {
         description: "Для публикации комментария необходимо войти в систему",
         variant: "destructive"
       });
-      return;
+      return false;
     }
 
     if (!content.trim()) {
@@ -216,7 +189,7 @@ export const useComments = (projectId: string) => {
         description: "Комментарий не может быть пустым",
         variant: "destructive"
       });
-      return;
+      return false;
     }
 
     try {
@@ -245,7 +218,7 @@ export const useComments = (projectId: string) => {
         description: "Для удаления комментария необходимо войти в систему",
         variant: "destructive"
       });
-      return;
+      return false;
     }
 
     try {
