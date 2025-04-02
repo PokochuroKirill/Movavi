@@ -59,9 +59,9 @@ const ProjectFilters = ({ onFilterChange, availableTechnologies }: ProjectFilter
   };
   
   const clearFilters = () => {
-    const newFilters = {
+    const newFilters: ProjectFilters = {
       technologies: [],
-      sortBy: 'latest'
+      sortBy: 'latest' as const
     };
     
     setFilters(newFilters);
