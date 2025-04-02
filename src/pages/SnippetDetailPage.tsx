@@ -21,23 +21,12 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-
-interface Snippet {
-  id: string;
-  title: string;
-  description: string;
-  code: string;
-  language: string;
-  tags: string[] | null;
-  created_at: string;
-  user_id: string;
-  profiles: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-}
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import SnippetActions from '@/components/SnippetActions';
+import SnippetCommentSection from '@/components/SnippetCommentSection';
+import { Snippet } from '@/types/database';
 
 const SnippetDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -63,6 +52,7 @@ const SnippetDetailPage = () => {
             language, 
             tags, 
             created_at, 
+            updated_at,
             user_id, 
             profiles(username, full_name, avatar_url)
           `)
@@ -212,16 +202,29 @@ const SnippetDetailPage = () => {
             )}
           </div>
           
-          <div className="flex flex-wrap items-center text-sm text-gray-600 dark:text-gray-300 mb-6">
-            <div className="flex items-center mr-6 mb-2">
-              <User className="h-4 w-4 mr-1" />
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex items-center">
+              <Avatar className="h-8 w-8 mr-2">
+                <AvatarImage src={snippet.profiles?.avatar_url || undefined} />
+                <AvatarFallback>
+                  {(snippet.profiles?.full_name || snippet.profiles?.username || 'U')
+                    .substring(0, 2)
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <span>{snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный пользователь'}</span>
             </div>
             
-            <div className="flex items-center mb-2">
+            <div className="flex items-center">
               <Calendar className="h-4 w-4 mr-1" />
-              <span>{format(new Date(snippet.created_at), 'dd.MM.yyyy')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {format(new Date(snippet.created_at), 'dd MMMM yyyy', { locale: ru })}
+              </span>
             </div>
+
+            <SnippetActions
+              snippetId={snippet.id}
+            />
           </div>
           
           {snippet.description && (
@@ -257,7 +260,7 @@ const SnippetDetailPage = () => {
           </Card>
           
           {snippet.tags && snippet.tags.length > 0 && (
-            <div>
+            <div className="mb-8">
               <p className="text-sm font-medium mb-2">Теги:</p>
               <div className="flex flex-wrap gap-2">
                 {snippet.tags.map((tag, index) => (
@@ -268,6 +271,8 @@ const SnippetDetailPage = () => {
               </div>
             </div>
           )}
+          
+          <SnippetCommentSection snippetId={snippet.id} />
         </div>
       </main>
 

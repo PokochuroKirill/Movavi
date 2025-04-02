@@ -8,14 +8,25 @@ interface SnippetCardProps {
   description: string;
   language: string;
   tags: string[];
-  createdAt?: string;
   created_at?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  likes?: number;
+  comments?: number;
 }
 
-const SnippetCard = ({ id, title, description, language, tags, createdAt, created_at }: SnippetCardProps) => {
-  // Use either createdAt or created_at
-  const dateString = createdAt || created_at;
-
+const SnippetCard = ({ 
+  id, 
+  title, 
+  description, 
+  language, 
+  tags, 
+  created_at, 
+  authorName,
+  authorAvatar,
+  likes,
+  comments
+}: SnippetCardProps) => {
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     
@@ -55,11 +66,24 @@ const SnippetCard = ({ id, title, description, language, tags, createdAt, create
             ))}
           </div>
           
-          {dateString && (
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {formatDate(dateString)}
-            </div>
-          )}
+          <div className="flex items-center">
+            {authorName && authorAvatar && (
+              <div className="flex items-center mr-3">
+                <img
+                  src={authorAvatar || "/placeholder.svg"}
+                  alt={authorName}
+                  className="w-6 h-6 rounded-full mr-1 object-cover"
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">{authorName}</span>
+              </div>
+            )}
+            
+            {created_at && (
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {formatDate(created_at)}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

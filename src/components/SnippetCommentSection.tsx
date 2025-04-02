@@ -6,24 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2 } from 'lucide-react';
-import { useComments } from '@/hooks/useSupabaseQueries';
+import { Trash2 } from 'lucide-react';
+import { useSnippetComments } from '@/hooks/useSnippetQueries';
 
-interface CommentSectionProps {
-  projectId: string;
+interface SnippetCommentSectionProps {
+  snippetId: string;
   onCommentsChange?: (count: number) => void;
 }
 
-const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) => {
+const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSectionProps) => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { comments, isLoading, loadComments, addComment, removeComment } = useComments(projectId);
+  const { comments, isLoading, loadComments, addComment, removeComment } = useSnippetComments(snippetId);
 
   useEffect(() => {
     loadComments();
-  }, [projectId]);
+  }, [snippetId]);
 
   useEffect(() => {
     if (onCommentsChange) {
@@ -78,20 +78,12 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
           className="gradient-bg text-white"
           disabled={isSubmitting || !user}
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Отправка...
-            </>
-          ) : (
-            'Отправить'
-          )}
+          {isSubmitting ? 'Отправка...' : 'Отправить'}
         </Button>
       </form>
       
       {isLoading ? (
         <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
           <p className="text-gray-500">Загрузка комментариев...</p>
         </div>
       ) : comments.length > 0 ? (
@@ -154,4 +146,4 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
   );
 };
 
-export default CommentSection;
+export default SnippetCommentSection;

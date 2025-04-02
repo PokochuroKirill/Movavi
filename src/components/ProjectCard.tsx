@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { Star, GitFork, Eye } from 'lucide-react';
+import { MessageSquare, Heart } from 'lucide-react';
 
 interface ProjectCardProps {
   id: string;
@@ -9,10 +9,7 @@ interface ProjectCardProps {
   description: string;
   author: string;
   authorAvatar?: string;
-  stars?: number;
-  forks?: number;
-  views?: number;
-  likes?: number; 
+  likes?: number;
   comments?: number;
   technologies?: string[];
   tags?: string[];
@@ -25,9 +22,6 @@ const ProjectCard = ({
   description,
   author,
   authorAvatar,
-  stars = 0,
-  forks = 0,
-  views = 0,
   likes = 0,
   comments = 0,
   technologies = [],
@@ -69,16 +63,12 @@ const ProjectCard = ({
           
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-500 dark:text-gray-400">
-              <Star className="h-4 w-4 mr-1" />
-              <span className="text-xs">{likes || stars}</span>
+              <Heart className="h-4 w-4 mr-1" />
+              <span className="text-xs">{likes}</span>
             </div>
             <div className="flex items-center text-gray-500 dark:text-gray-400">
-              <GitFork className="h-4 w-4 mr-1" />
-              <span className="text-xs">{forks}</span>
-            </div>
-            <div className="flex items-center text-gray-500 dark:text-gray-400">
-              <Eye className="h-4 w-4 mr-1" />
-              <span className="text-xs">{views}</span>
+              <MessageSquare className="h-4 w-4 mr-1" />
+              <span className="text-xs">{comments}</span>
             </div>
           </div>
         </div>

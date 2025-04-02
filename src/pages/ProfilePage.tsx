@@ -6,45 +6,15 @@ import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import ProjectCard from '@/components/ProjectCard';
 import SnippetCard from '@/components/SnippetCard';
-
-type Profile = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  created_at: string;
-};
-
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  technologies: string[] | null;
-  created_at: string;
-  image_url: string | null;
-  author: string;
-  authorAvatar?: string;
-  likes_count: number;
-  comments_count: number;
-};
-
-type Snippet = {
-  id: string;
-  title: string;
-  description: string;
-  language: string;
-  tags: string[] | null;
-  created_at: string;
-};
+import ProfileHeader from '@/components/ProfileHeader';
+import EditProfileForm from '@/components/EditProfileForm';
+import { Loader2 } from 'lucide-react';
+import { Profile, Project, Snippet } from '@/types/database';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -52,16 +22,11 @@ const ProfilePage = () => {
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [savedProjects, setSavedProjects] = useState<Project[]>([]);
   const [userSnippets, setUserSnippets] = useState<Snippet[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [snippetsLoading, setSnippetsLoading] = useState(true);
   const [savedProjectsLoading, setSavedProjectsLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [formData, setFormData] = useState({
-    username: '',
-    full_name: '',
-    bio: '',
-  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -75,6 +40,7 @@ const ProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -82,13 +48,7 @@ const ProfilePage = () => {
         .single();
 
       if (error) throw error;
-
-      setProfile(data);
-      setFormData({
-        username: data.username || '',
-        full_name: data.full_name || '',
-        bio: data.bio || '',
-      });
+      setProfile(data as Profile);
     } catch (error: any) {
       console.error('Error fetching profile:', error.message);
       toast({
@@ -136,7 +96,7 @@ const ProfilePage = () => {
           authorAvatar: project.profiles?.avatar_url,
           likes_count: likesCount || 0,
           comments_count: commentsCount || 0
-        };
+        } as Project;
       }));
 
       setUserProjects(projectsWithCounts);
@@ -192,7 +152,7 @@ const ProfilePage = () => {
             authorAvatar: project.profiles?.avatar_url,
             likes_count: likesCount || 0,
             comments_count: commentsCount || 0
-          };
+          } as Project;
         }));
 
         setSavedProjects(projectsWithCounts);
@@ -224,25 +184,12 @@ const ProfilePage = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setUpdating(true);
-
+  const handleUpdateProfile = async (updatedData: Partial<Profile>) => {
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          username: formData.username,
-          full_name: formData.full_name,
-          bio: formData.bio,
+          ...updatedData,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user!.id);
@@ -256,6 +203,7 @@ const ProfilePage = () => {
       
       // Обновляем данные профиля
       fetchProfile();
+      setIsEditing(false);
     } catch (error: any) {
       console.error('Error updating profile:', error.message);
       toast({
@@ -263,8 +211,32 @@ const ProfilePage = () => {
         description: error.message,
         variant: 'destructive',
       });
-    } finally {
-      setUpdating(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user!.id);
+      
+      if (error) throw error;
+      
+      toast({
+        description: 'Проект успешно удален'
+      });
+      
+      // Обновляем список проектов
+      fetchUserProjects();
+    } catch (error: any) {
+      console.error('Error deleting project:', error.message);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить проект',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -273,7 +245,8 @@ const ProfilePage = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
-          <p>Загрузка профиля...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
+          <span className="ml-2 text-lg">Загрузка профиля...</span>
         </div>
         <Footer />
       </div>
@@ -286,70 +259,36 @@ const ProfilePage = () => {
       <div className="flex-grow container mx-auto px-4 py-20">
         <h1 className="text-3xl font-bold mb-8 mt-8">Личный кабинет</h1>
 
-        <Tabs defaultValue="profile" className="w-full max-w-4xl mx-auto">
+        {profile && !isEditing && (
+          <ProfileHeader 
+            profile={profile} 
+            isCurrentUser={true} 
+            onEditClick={() => setIsEditing(true)} 
+          />
+        )}
+
+        {profile && isEditing && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Редактирование профиля</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EditProfileForm 
+                profile={profile} 
+                onUpdate={handleUpdateProfile} 
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs defaultValue="projects" className="w-full max-w-4xl mx-auto">
           <TabsList className="mb-6">
-            <TabsTrigger value="profile">Профиль</TabsTrigger>
             <TabsTrigger value="projects">Мои проекты</TabsTrigger>
             <TabsTrigger value="saved-projects">Сохраненные проекты</TabsTrigger>
             <TabsTrigger value="snippets">Мои сниппеты</TabsTrigger>
           </TabsList>
           
           {/* Tab Content */}
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Информация профиля</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Имя пользователя</Label>
-                    <Input
-                      id="username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleInputChange}
-                      placeholder="username"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Полное имя</Label>
-                    <Input
-                      id="full_name"
-                      name="full_name"
-                      value={formData.full_name}
-                      onChange={handleInputChange}
-                      placeholder="Иван Иванов"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">О себе</Label>
-                    <Textarea
-                      id="bio"
-                      name="bio"
-                      value={formData.bio}
-                      onChange={handleInputChange}
-                      placeholder="Расскажите о себе"
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div className="pt-4">
-                    <Button 
-                      type="submit" 
-                      className="gradient-bg text-white" 
-                      disabled={updating}
-                    >
-                      {updating ? 'Сохранение...' : 'Сохранить изменения'}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
           <TabsContent value="projects">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -362,22 +301,34 @@ const ProfilePage = () => {
               </CardHeader>
               <CardContent>
                 {projectsLoading ? (
-                  <p className="text-center py-10 text-gray-500">Загрузка проектов...</p>
+                  <p className="text-center py-10 text-gray-500">
+                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+                    Загрузка проектов...
+                  </p>
                 ) : userProjects.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {userProjects.map(project => (
-                      <ProjectCard
-                        key={project.id}
-                        id={project.id}
-                        title={project.title}
-                        description={project.description}
-                        technologies={project.technologies || []}
-                        author={project.author}
-                        authorAvatar={project.authorAvatar}
-                        imageUrl={project.image_url || undefined}
-                        likes={project.likes_count}
-                        comments={project.comments_count}
-                      />
+                      <div key={project.id} className="relative">
+                        <ProjectCard
+                          id={project.id}
+                          title={project.title}
+                          description={project.description}
+                          technologies={project.technologies || []}
+                          author={project.author}
+                          authorAvatar={project.authorAvatar}
+                          imageUrl={project.image_url || undefined}
+                          likes={project.likes_count}
+                          comments={project.comments_count}
+                        />
+                        <Button 
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => handleDeleteProject(project.id)}
+                        >
+                          Удалить
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -403,7 +354,10 @@ const ProfilePage = () => {
               </CardHeader>
               <CardContent>
                 {savedProjectsLoading ? (
-                  <p className="text-center py-10 text-gray-500">Загрузка сохраненных проектов...</p>
+                  <p className="text-center py-10 text-gray-500">
+                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+                    Загрузка сохраненных проектов...
+                  </p>
                 ) : savedProjects.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {savedProjects.map(project => (
@@ -442,19 +396,23 @@ const ProfilePage = () => {
               </CardHeader>
               <CardContent>
                 {snippetsLoading ? (
-                  <p className="text-center py-10 text-gray-500">Загрузка сниппетов...</p>
+                  <p className="text-center py-10 text-gray-500">
+                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+                    Загрузка сниппетов...
+                  </p>
                 ) : userSnippets.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {userSnippets.map(snippet => (
-                      <SnippetCard
-                        key={snippet.id}
-                        id={snippet.id}
-                        title={snippet.title}
-                        description={snippet.description}
-                        language={snippet.language}
-                        tags={snippet.tags || []}
-                        created_at={snippet.created_at}
-                      />
+                      <div key={snippet.id} className="relative">
+                        <SnippetCard
+                          id={snippet.id}
+                          title={snippet.title}
+                          description={snippet.description}
+                          language={snippet.language}
+                          tags={snippet.tags || []}
+                          created_at={snippet.created_at}
+                        />
+                      </div>
                     ))}
                   </div>
                 ) : (

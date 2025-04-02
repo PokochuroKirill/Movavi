@@ -45,29 +45,47 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          birthdate: string | null
           created_at: string
           full_name: string | null
+          github: string | null
           id: string
+          linkedin: string | null
+          location: string | null
+          twitter: string | null
           updated_at: string
           username: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          birthdate?: string | null
           created_at?: string
           full_name?: string | null
+          github?: string | null
           id: string
+          linkedin?: string | null
+          location?: string | null
+          twitter?: string | null
           updated_at?: string
           username?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          birthdate?: string | null
           created_at?: string
           full_name?: string | null
+          github?: string | null
           id?: string
+          linkedin?: string | null
+          location?: string | null
+          twitter?: string | null
           updated_at?: string
           username?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -179,6 +197,96 @@ export type Database = {
           },
         ]
       }
+      saved_snippets: {
+        Row: {
+          created_at: string | null
+          id: string
+          snippet_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          snippet_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          snippet_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_snippets_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snippet_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          snippet_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          snippet_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          snippet_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snippet_comments_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snippet_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          snippet_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          snippet_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          snippet_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snippet_likes_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       snippets: {
         Row: {
           code: string
@@ -234,6 +342,12 @@ export type Database = {
         }
         Returns: number
       }
+      get_snippet_likes_count: {
+        Args: {
+          snippet_id: string
+        }
+        Returns: number
+      }
       has_user_liked_project: {
         Args: {
           project_id: string
@@ -241,9 +355,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_user_liked_snippet: {
+        Args: {
+          snippet_id: string
+          user_id: string
+        }
+        Returns: boolean
+      }
       has_user_saved_project: {
         Args: {
           project_id: string
+          user_id: string
+        }
+        Returns: boolean
+      }
+      has_user_saved_snippet: {
+        Args: {
+          snippet_id: string
           user_id: string
         }
         Returns: boolean
