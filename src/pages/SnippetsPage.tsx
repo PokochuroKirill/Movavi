@@ -9,17 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Search, Filter, Plus, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 type Snippet = {
   id: string;
   title: string;
-  code: string;
+  description: string;
   language: string;
+  tags: string[];
   author: string;
   authorAvatar?: string;
-  likes: number;
-  tags: string[];
 };
 
 const SnippetsPage = () => {
@@ -40,8 +39,8 @@ const SnippetsPage = () => {
           .select(`
             id, 
             title, 
-            code, 
-            language,
+            description, 
+            language, 
             tags,
             profiles(username, full_name, avatar_url)
           `)
@@ -53,12 +52,11 @@ const SnippetsPage = () => {
           const formattedSnippets = data.map(item => ({
             id: item.id,
             title: item.title,
-            code: item.code,
+            description: item.description,
             language: item.language,
+            tags: item.tags || [],
             author: item.profiles?.full_name || item.profiles?.username || 'Неизвестный автор',
-            authorAvatar: item.profiles?.avatar_url,
-            likes: Math.floor(Math.random() * 100), // Временно, пока нет реальных данных
-            tags: item.tags || []
+            authorAvatar: item.profiles?.avatar_url
           }));
           setSnippets(formattedSnippets);
           setFilteredSnippets(formattedSnippets);
@@ -67,7 +65,7 @@ const SnippetsPage = () => {
         console.error('Ошибка при загрузке сниппетов:', error);
         toast({
           title: 'Ошибка',
-          description: 'Не удалось загрузить сниппеты',
+          description: 'Не удалось загрузить фрагменты кода',
           variant: 'destructive'
         });
       } finally {
@@ -89,7 +87,7 @@ const SnippetsPage = () => {
     const filtered = snippets.filter(
       snippet => 
         snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        snippet.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        snippet.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         snippet.language.toLowerCase().includes(searchQuery.toLowerCase()) ||
         snippet.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
@@ -101,18 +99,14 @@ const SnippetsPage = () => {
     if (!user) {
       toast({
         title: "Требуется авторизация",
-        description: "Для создания сниппета необходимо войти в систему",
+        description: "Для создания фрагмента кода необходимо войти в систему",
         variant: "destructive"
       });
       navigate('/auth');
       return;
     }
     
-    // В будущем здесь будет переход на страницу создания сниппета
-    toast({
-      title: "Функция в разработке",
-      description: "Создание сниппетов будет доступно в ближайшее время",
-    });
+    navigate('/snippets/create');
   };
 
   return (
@@ -123,9 +117,9 @@ const SnippetsPage = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Сниппеты кода</h1>
+              <h1 className="text-3xl font-bold mb-2">Фрагменты кода</h1>
               <p className="text-gray-600 dark:text-gray-300">
-                Просматривайте и делитесь полезными фрагментами кода
+                Полезные фрагменты кода для использования в ваших проектах
               </p>
             </div>
             
@@ -134,7 +128,7 @@ const SnippetsPage = () => {
               onClick={handleAddSnippet}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Добавить сниппет
+              Добавить фрагмент кода
             </Button>
           </div>
           
@@ -144,7 +138,7 @@ const SnippetsPage = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input 
                   type="text" 
-                  placeholder="Поиск сниппетов..." 
+                  placeholder="Поиск фрагментов..." 
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -160,7 +154,7 @@ const SnippetsPage = () => {
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-              <span className="ml-2 text-lg">Загрузка сниппетов...</span>
+              <span className="ml-2 text-lg">Загрузка фрагментов кода...</span>
             </div>
           ) : filteredSnippets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -169,12 +163,12 @@ const SnippetsPage = () => {
                   key={snippet.id}
                   id={snippet.id}
                   title={snippet.title}
-                  code={snippet.code}
+                  description={snippet.description}
                   language={snippet.language}
+                  tags={snippet.tags}
                   author={snippet.author}
                   authorAvatar={snippet.authorAvatar}
-                  likes={snippet.likes}
-                  tags={snippet.tags}
+                  onClick={() => navigate(`/snippets/${snippet.id}`)}
                 />
               ))}
             </div>
@@ -182,8 +176,8 @@ const SnippetsPage = () => {
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
                 {searchQuery ? 
-                  'Сниппеты не найдены. Попробуйте изменить параметры поиска.' : 
-                  'Сниппетов пока нет. Добавьте первый сниппет!'}
+                  'Фрагменты кода не найдены. Попробуйте изменить параметры поиска.' : 
+                  'Фрагментов кода пока нет. Создайте первый фрагмент!'}
               </p>
               {!searchQuery && (
                 <Button 
@@ -191,7 +185,7 @@ const SnippetsPage = () => {
                   onClick={handleAddSnippet}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Создать сниппет
+                  Создать фрагмент кода
                 </Button>
               )}
             </div>

@@ -9,6 +9,9 @@ import ProjectsPage from "./pages/ProjectsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import CreateProjectPage from "./pages/CreateProjectPage";
 import SnippetsPage from "./pages/SnippetsPage";
+import CreateSnippetPage from "./pages/CreateSnippetPage";
+import SnippetDetailPage from "./pages/SnippetDetailPage";
+import EditSnippetPage from "./pages/EditSnippetPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import AuthPage from "./pages/AuthPage";
@@ -40,6 +43,17 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/snippets" element={<SnippetsPage />} />
+            <Route path="/snippets/:id" element={<SnippetDetailPage />} />
+            <Route path="/snippets/create" element={
+              <ProtectedRoute>
+                <CreateSnippetPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/snippets/edit/:id" element={
+              <ProtectedRoute>
+                <EditSnippetPage />
+              </ProtectedRoute>
+            } />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/documentation" element={<DocumentationPage />} />
             <Route path="/blog" element={<BlogPage />} />
