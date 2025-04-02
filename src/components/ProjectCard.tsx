@@ -8,11 +8,15 @@ interface ProjectCardProps {
   title: string;
   description: string;
   author: string;
-  authorAvatar: string;
-  stars: number;
-  forks: number;
-  views: number;
-  tags: string[];
+  authorAvatar?: string;
+  stars?: number;
+  forks?: number;
+  views?: number;
+  likes?: number; 
+  comments?: number;
+  technologies?: string[];
+  tags?: string[];
+  imageUrl?: string;
 }
 
 const ProjectCard = ({
@@ -21,11 +25,17 @@ const ProjectCard = ({
   description,
   author,
   authorAvatar,
-  stars,
-  forks,
-  views,
-  tags,
+  stars = 0,
+  forks = 0,
+  views = 0,
+  likes = 0,
+  comments = 0,
+  technologies = [],
+  tags = [],
 }: ProjectCardProps) => {
+  // Use either technologies or tags, depending on what's provided
+  const displayTags = technologies.length > 0 ? technologies : tags;
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
       <div className="p-6">
@@ -39,7 +49,7 @@ const ProjectCard = ({
         </p>
         
         <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map((tag) => (
+          {displayTags.map((tag) => (
             <Badge key={tag} variant="outline" className="bg-devhub-purple/10 text-devhub-purple border-devhub-purple/20">
               {tag}
             </Badge>
@@ -49,9 +59,9 @@ const ProjectCard = ({
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center">
             <img 
-              src={authorAvatar} 
+              src={authorAvatar || "/placeholder.svg"} 
               alt={author} 
-              className="w-8 h-8 rounded-full mr-2"
+              className="w-8 h-8 rounded-full mr-2 object-cover"
             />
             <span className="text-sm text-gray-600 dark:text-gray-400">{author}</span>
           </div>
@@ -59,7 +69,7 @@ const ProjectCard = ({
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-500 dark:text-gray-400">
               <Star className="h-4 w-4 mr-1" />
-              <span className="text-xs">{stars}</span>
+              <span className="text-xs">{likes || stars}</span>
             </div>
             <div className="flex items-center text-gray-500 dark:text-gray-400">
               <GitFork className="h-4 w-4 mr-1" />

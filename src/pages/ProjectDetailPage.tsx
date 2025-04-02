@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Github, ExternalLink, ArrowLeft } from 'lucide-react';
 import ProjectActions from '@/components/ProjectActions';
 import CommentSection from '@/components/CommentSection';
+import { 
+  hasUserLikedProject, 
+  hasUserSavedProject, 
+  getProjectLikesCount, 
+  getProjectCommentsCount 
+} from '@/hooks/useSupabaseQueries';
 
 type Project = {
   id: string;
@@ -72,40 +77,20 @@ const ProjectDetailPage = () => {
           });
           
           // Fetch likes count
-          const { data: likesData, error: likesError } = await supabase
-            .rpc('get_project_likes_count', { project_id: id });
-            
-          if (!likesError && likesData !== null) {
-            setLikes(likesData);
-          }
+          const likesData = await getProjectLikesCount(id);
+          setLikes(likesData || 0);
           
           // Fetch comments count
-          const { count: commentsCount, error: commentsError } = await supabase
-            .from('comments')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', id);
-            
-          if (!commentsError && commentsCount !== null) {
-            setComments(commentsCount);
-          }
+          const commentsCount = await getProjectCommentsCount(id);
+          setComments(commentsCount);
           
           // Check if user has liked or saved this project
           if (user) {
-            const { data: likedData } = await supabase
-              .rpc('has_user_liked_project', { 
-                project_id: id,
-                user_id: user.id
-              });
-              
-            setIsLiked(likedData || false);
+            const userLiked = await hasUserLikedProject(id, user.id);
+            setIsLiked(userLiked || false);
             
-            const { data: savedData } = await supabase
-              .rpc('has_user_saved_project', { 
-                project_id: id,
-                user_id: user.id
-              });
-              
-            setIsSaved(savedData || false);
+            const userSaved = await hasUserSavedProject(id, user.id);
+            setIsSaved(userSaved || false);
           }
           
           // Increment view count (for demo purposes, we're just using local state)
@@ -177,84 +162,104 @@ const ProjectDetailPage = () => {
             Назад к проектам
           </Link>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg p-6 mb-8">
-            <h1 className="text-3xl font-bold mb-2">{project.title}</h1>
-            
-            <p className="text-gray-600 dark:text-gray-300 text-lg mb-6">
-              {project.description}
-            </p>
-            
-            <div className="flex flex-wrap gap-2 mb-6">
-              {project.technologies && project.technologies.map((tech) => (
-                <Badge key={tech} variant="outline" className="bg-devhub-purple/10 text-devhub-purple border-devhub-purple/20">
-                  {tech}
-                </Badge>
-              ))}
+          {loading ? (
+            <div className="flex flex-col items-center">
+              <Loader2 className="h-10 w-10 animate-spin text-devhub-purple mb-4" />
+              <p className="text-lg">Загрузка проекта...</p>
             </div>
-            
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-              <div className="flex items-center">
-                <img 
-                  src={project.authorAvatar || "/placeholder.svg"} 
-                  alt={project.author} 
-                  className="w-10 h-10 rounded-full mr-3 object-cover"
-                />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{project.author}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(project.created_at).toLocaleDateString('ru-RU', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </p>
+          ) : !project ? (
+            <div className="text-center">
+              <h1 className="text-3xl font-bold mb-4">Проект не найден</h1>
+              <p className="mb-8">Запрашиваемый проект не существует или был удален</p>
+              <Link to="/projects">
+                <Button className="gradient-bg text-white">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Вернуться к проектам
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg p-6 mb-8">
+                <h1 className="text-3xl font-bold mb-2">{project.title}</h1>
+                
+                <p className="text-gray-600 dark:text-gray-300 text-lg mb-6">
+                  {project.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {project.technologies && project.technologies.map((tech) => (
+                    <Badge key={tech} variant="outline" className="bg-devhub-purple/10 text-devhub-purple border-devhub-purple/20">
+                      {tech}
+                    </Badge>
+                  ))}
+                </div>
+                
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+                  <div className="flex items-center">
+                    <img 
+                      src={project.authorAvatar || "/placeholder.svg"} 
+                      alt={project.author} 
+                      className="w-10 h-10 rounded-full mr-3 object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{project.author}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(project.created_at).toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <ProjectActions 
+                    projectId={project.id} 
+                    initialLikes={likes} 
+                    initialComments={comments}
+                    isLiked={isLiked}
+                    isSaved={isSaved}
+                    onCommentCountChange={handleCommentCountChange}
+                  />
+                </div>
+                
+                <div className="prose dark:prose-invert max-w-none mb-8">
+                  {project.content.split('\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+                </div>
+                
+                <div className="flex flex-wrap gap-4">
+                  {project.github_url && (
+                    <a href={project.github_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" className="flex items-center">
+                        <Github className="mr-2 h-4 w-4" />
+                        GitHub Repository
+                      </Button>
+                    </a>
+                  )}
+                  
+                  {project.live_url && (
+                    <a href={project.live_url} target="_blank" rel="noopener noreferrer">
+                      <Button className="gradient-bg text-white flex items-center">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Открыть проект
+                      </Button>
+                    </a>
+                  )}
                 </div>
               </div>
               
-              <ProjectActions 
-                projectId={project.id} 
-                initialLikes={likes} 
-                initialComments={comments}
-                isLiked={isLiked}
-                isSaved={isSaved}
-                onCommentCountChange={handleCommentCountChange}
-              />
-            </div>
-            
-            <div className="prose dark:prose-invert max-w-none mb-8">
-              {project.content.split('\n').map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
-            </div>
-            
-            <div className="flex flex-wrap gap-4">
-              {project.github_url && (
-                <a href={project.github_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="flex items-center">
-                    <Github className="mr-2 h-4 w-4" />
-                    GitHub Repository
-                  </Button>
-                </a>
-              )}
-              
-              {project.live_url && (
-                <a href={project.live_url} target="_blank" rel="noopener noreferrer">
-                  <Button className="gradient-bg text-white flex items-center">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Открыть проект
-                  </Button>
-                </a>
-              )}
-            </div>
-          </div>
-          
-          {/* Comments Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg p-6">
-            <CommentSection 
-              projectId={project.id} 
-              onCommentsChange={handleCommentCountChange}
-            />
-          </div>
+              {/* Comments Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg p-6">
+                <CommentSection 
+                  projectId={project.id} 
+                  onCommentsChange={handleCommentCountChange}
+                />
+              </div>
+            </>
+          )}
         </div>
       </main>
       
