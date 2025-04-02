@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Code, Github, Twitter, Linkedin } from 'lucide-react';
+import { Code, Twitter } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -18,14 +18,8 @@ const Footer = () => {
               Сообщество разработчиков для обмена идеями, проектами и кодом.
             </p>
             <div className="flex mt-4 space-x-4">
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
-                <Github className="h-5 w-5" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
+              <a href="https://twitter.com/DevHubOfficial" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
                 <Twitter className="h-5 w-5" />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors">
-                <Linkedin className="h-5 w-5" />
               </a>
             </div>
           </div>

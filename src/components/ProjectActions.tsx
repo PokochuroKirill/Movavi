@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { Heart, MessageSquare, Share2, Bookmark } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, MessageSquare, Share2, Bookmark, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,10 +8,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectActionsProps {
   projectId: string;
-  initialLikes: number;
-  initialComments: number;
+  initialLikes?: number;
+  initialComments?: number;
   isLiked?: boolean;
   isSaved?: boolean;
+  onCommentCountChange?: (count: number) => void;
 }
 
 const ProjectActions = ({
@@ -19,7 +20,8 @@ const ProjectActions = ({
   initialLikes = 0,
   initialComments = 0,
   isLiked = false,
-  isSaved = false
+  isSaved = false,
+  onCommentCountChange
 }: ProjectActionsProps) => {
   const [likes, setLikes] = useState(initialLikes);
   const [comments, setComments] = useState(initialComments);
@@ -27,6 +29,57 @@ const ProjectActions = ({
   const [saved, setSaved] = useState(isSaved);
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  useEffect(() => {
+    // Fetch initial like and save status when user is available
+    const fetchUserInteractions = async () => {
+      if (!user) return;
+      
+      try {
+        // Check if user liked the project
+        const { data: likeData, error: likeError } = await supabase
+          .rpc('has_user_liked_project', { 
+            project_id: projectId,
+            user_id: user.id
+          });
+          
+        if (likeError) throw likeError;
+        setLiked(likeData || false);
+        
+        // Check if user saved the project
+        const { data: saveData, error: saveError } = await supabase
+          .rpc('has_user_saved_project', { 
+            project_id: projectId,
+            user_id: user.id
+          });
+          
+        if (saveError) throw saveError;
+        setSaved(saveData || false);
+        
+        // Get updated like count
+        const { data: likesCount, error: countError } = await supabase
+          .rpc('get_project_likes_count', { project_id: projectId });
+          
+        if (countError) throw countError;
+        setLikes(likesCount || 0);
+        
+        // Get updated comment count
+        const { count: commentCount, error: commentError } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', projectId);
+          
+        if (commentError) throw commentError;
+        setComments(commentCount || 0);
+        if (onCommentCountChange) onCommentCountChange(commentCount || 0);
+        
+      } catch (error) {
+        console.error("Error fetching user interactions:", error);
+      }
+    };
+    
+    fetchUserInteractions();
+  }, [projectId, user, onCommentCountChange]);
 
   const handleLike = async () => {
     if (!user) {
@@ -39,21 +92,37 @@ const ProjectActions = ({
     }
     
     try {
-      // Toggle like state
       if (liked) {
-        setLikes(likes - 1);
-        // Here would be API call to remove like
+        // Remove like
+        const { error } = await supabase
+          .from('project_likes')
+          .delete()
+          .eq('project_id', projectId)
+          .eq('user_id', user.id);
+          
+        if (error) throw error;
+        setLikes(prev => prev - 1);
+        
+        toast({
+          title: "Оценка удалена",
+          description: "Вы убрали оценку с проекта",
+        });
       } else {
-        setLikes(likes + 1);
-        // Here would be API call to add like
+        // Add like
+        const { error } = await supabase
+          .from('project_likes')
+          .insert({ project_id: projectId, user_id: user.id });
+          
+        if (error) throw error;
+        setLikes(prev => prev + 1);
+        
+        toast({
+          title: "Проект оценен",
+          description: "Спасибо за вашу оценку!",
+        });
       }
-      setLiked(!liked);
       
-      // For now we'll just show a toast since we haven't created the likes table yet
-      toast({
-        title: liked ? "Вы убрали оценку" : "Вы оценили проект",
-        description: liked ? "Оценка была убрана" : "Спасибо за вашу оценку!",
-      });
+      setLiked(!liked);
     } catch (error) {
       console.error("Error toggling like:", error);
       toast({
@@ -74,11 +143,44 @@ const ProjectActions = ({
       return;
     }
     
-    setSaved(!saved);
-    toast({
-      title: saved ? "Проект удален из сохраненных" : "Проект сохранен",
-      description: saved ? "Проект был удален из коллекции" : "Проект добавлен в вашу коллекцию",
-    });
+    try {
+      if (saved) {
+        // Remove from saved
+        const { error } = await supabase
+          .from('saved_projects')
+          .delete()
+          .eq('project_id', projectId)
+          .eq('user_id', user.id);
+          
+        if (error) throw error;
+        
+        toast({
+          title: "Проект удален из сохраненных",
+          description: "Проект был удален из вашей коллекции",
+        });
+      } else {
+        // Add to saved
+        const { error } = await supabase
+          .from('saved_projects')
+          .insert({ project_id: projectId, user_id: user.id });
+          
+        if (error) throw error;
+        
+        toast({
+          title: "Проект сохранен",
+          description: "Проект добавлен в вашу коллекцию",
+        });
+      }
+      
+      setSaved(!saved);
+    } catch (error) {
+      console.error("Error toggling save:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить статус сохранения",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleShare = () => {

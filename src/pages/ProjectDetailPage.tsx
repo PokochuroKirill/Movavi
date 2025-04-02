@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ type Project = {
   technologies: string[] | null;
   created_at: string;
   author: string;
+  authorId: string;
   authorAvatar?: string;
 };
 
@@ -29,13 +31,19 @@ const ProjectDetailPage = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewCount, setViewCount] = useState(0);
+  const [likes, setLikes] = useState(0);
+  const [comments, setComments] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
         if (!id) return;
         
+        // Fetch project data
         const { data, error } = await supabase
           .from('projects')
           .select(`
@@ -47,7 +55,8 @@ const ProjectDetailPage = () => {
             live_url,
             technologies,
             created_at,
-            profiles(username, full_name, avatar_url)
+            user_id,
+            profiles(id, username, full_name, avatar_url)
           `)
           .eq('id', id)
           .single();
@@ -57,9 +66,47 @@ const ProjectDetailPage = () => {
         if (data) {
           setProject({
             ...data,
+            authorId: data.user_id,
             author: data.profiles?.full_name || data.profiles?.username || 'Неизвестный автор',
             authorAvatar: data.profiles?.avatar_url,
           });
+          
+          // Fetch likes count
+          const { data: likesData, error: likesError } = await supabase
+            .rpc('get_project_likes_count', { project_id: id });
+            
+          if (!likesError && likesData !== null) {
+            setLikes(likesData);
+          }
+          
+          // Fetch comments count
+          const { count: commentsCount, error: commentsError } = await supabase
+            .from('comments')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', id);
+            
+          if (!commentsError && commentsCount !== null) {
+            setComments(commentsCount);
+          }
+          
+          // Check if user has liked or saved this project
+          if (user) {
+            const { data: likedData } = await supabase
+              .rpc('has_user_liked_project', { 
+                project_id: id,
+                user_id: user.id
+              });
+              
+            setIsLiked(likedData || false);
+            
+            const { data: savedData } = await supabase
+              .rpc('has_user_saved_project', { 
+                project_id: id,
+                user_id: user.id
+              });
+              
+            setIsSaved(savedData || false);
+          }
           
           // Increment view count (for demo purposes, we're just using local state)
           setViewCount(Math.floor(Math.random() * 100) + 1);
@@ -77,7 +124,11 @@ const ProjectDetailPage = () => {
     };
 
     fetchProject();
-  }, [id, toast]);
+  }, [id, toast, user]);
+
+  const handleCommentCountChange = (count: number) => {
+    setComments(count);
+  };
 
   if (loading) {
     return (
@@ -162,8 +213,11 @@ const ProjectDetailPage = () => {
               
               <ProjectActions 
                 projectId={project.id} 
-                initialLikes={Math.floor(Math.random() * 50)} 
-                initialComments={Math.floor(Math.random() * 10)}
+                initialLikes={likes} 
+                initialComments={comments}
+                isLiked={isLiked}
+                isSaved={isSaved}
+                onCommentCountChange={handleCommentCountChange}
               />
             </div>
             
@@ -196,7 +250,10 @@ const ProjectDetailPage = () => {
           
           {/* Comments Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg p-6">
-            <CommentSection projectId={project.id} />
+            <CommentSection 
+              projectId={project.id} 
+              onCommentsChange={handleCommentCountChange}
+            />
           </div>
         </div>
       </main>
