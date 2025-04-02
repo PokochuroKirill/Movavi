@@ -1,15 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProjectCard from '@/components/ProjectCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Plus, Loader2 } from 'lucide-react';
+import { Search, Plus, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import ProjectFilters, { ProjectFilters as FiltersType } from '@/components/ProjectFilters';
 
 type Project = {
   id: string;
@@ -28,9 +29,24 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<FiltersType>({
+    technologies: [],
+    sortBy: 'latest'
+  });
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Extract all unique technologies from projects
+  const availableTechnologies = useMemo(() => {
+    const techSet = new Set<string>();
+    projects.forEach(project => {
+      project.tags.forEach(tag => {
+        techSet.add(tag);
+      });
+    });
+    return Array.from(techSet).sort();
+  }, [projects]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -79,22 +95,51 @@ const ProjectsPage = () => {
     fetchProjects();
   }, [toast]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Apply filters and search whenever they change
+  useEffect(() => {
+    let result = [...projects];
     
-    if (searchQuery.trim() === '') {
-      setFilteredProjects(projects);
-      return;
+    // Apply technology filters
+    if (filters.technologies.length > 0) {
+      result = result.filter(project => 
+        filters.technologies.some(tech => project.tags.includes(tech))
+      );
     }
     
-    const filtered = projects.filter(
-      project => 
-        project.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    // Apply search query
+    if (searchQuery.trim()) {
+      result = result.filter(
+        project => 
+          project.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
     
-    setFilteredProjects(filtered);
+    // Apply sorting
+    switch (filters.sortBy) {
+      case 'popular':
+        result.sort((a, b) => b.stars - a.stars);
+        break;
+      case 'views':
+        result.sort((a, b) => b.views - a.views);
+        break;
+      case 'latest':
+      default:
+        // Already sorted by created_at from the server
+        break;
+    }
+    
+    setFilteredProjects(result);
+  }, [searchQuery, filters, projects]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Search is now handled by the useEffect
+  };
+  
+  const handleFilterChange = (newFilters: FiltersType) => {
+    setFilters(newFilters);
   };
 
   const handleAddProject = () => {
@@ -134,7 +179,7 @@ const ProjectsPage = () => {
             </Button>
           </div>
           
-          <div className="mb-8">
+          <div className="mb-8 space-y-4">
             <form onSubmit={handleSearch} className="flex gap-2">
               <div className="relative flex-grow">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -147,10 +192,14 @@ const ProjectsPage = () => {
                 />
               </div>
               <Button type="submit" variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Фильтры
+                Поиск
               </Button>
             </form>
+            
+            <ProjectFilters 
+              onFilterChange={handleFilterChange}
+              availableTechnologies={availableTechnologies}
+            />
           </div>
           
           {loading ? (
@@ -178,11 +227,11 @@ const ProjectsPage = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
-                {searchQuery ? 
+                {searchQuery || filters.technologies.length > 0 ? 
                   'Проекты не найдены. Попробуйте изменить параметры поиска.' : 
                   'Проектов пока нет. Создайте первый проект!'}
               </p>
-              {!searchQuery && (
+              {!searchQuery && filters.technologies.length === 0 && (
                 <Button 
                   className="gradient-bg text-white"
                   onClick={handleAddProject}

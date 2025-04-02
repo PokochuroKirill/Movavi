@@ -8,6 +8,8 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Github, ExternalLink, ArrowLeft } from 'lucide-react';
+import ProjectActions from '@/components/ProjectActions';
+import CommentSection from '@/components/CommentSection';
 
 type Project = {
   id: string;
@@ -26,6 +28,7 @@ const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewCount, setViewCount] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,6 +60,9 @@ const ProjectDetailPage = () => {
             author: data.profiles?.full_name || data.profiles?.username || 'Неизвестный автор',
             authorAvatar: data.profiles?.avatar_url,
           });
+          
+          // Increment view count (for demo purposes, we're just using local state)
+          setViewCount(Math.floor(Math.random() * 100) + 1);
         }
       } catch (error: any) {
         console.error('Ошибка при загрузке проекта:', error);
@@ -135,22 +141,30 @@ const ProjectDetailPage = () => {
               ))}
             </div>
             
-            <div className="flex items-center mb-8">
-              <img 
-                src={project.authorAvatar || "/placeholder.svg"} 
-                alt={project.author} 
-                className="w-10 h-10 rounded-full mr-3 object-cover"
-              />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">{project.author}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(project.created_at).toLocaleDateString('ru-RU', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+              <div className="flex items-center">
+                <img 
+                  src={project.authorAvatar || "/placeholder.svg"} 
+                  alt={project.author} 
+                  className="w-10 h-10 rounded-full mr-3 object-cover"
+                />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">{project.author}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {new Date(project.created_at).toLocaleDateString('ru-RU', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
               </div>
+              
+              <ProjectActions 
+                projectId={project.id} 
+                initialLikes={Math.floor(Math.random() * 50)} 
+                initialComments={Math.floor(Math.random() * 10)}
+              />
             </div>
             
             <div className="prose dark:prose-invert max-w-none mb-8">
@@ -178,6 +192,11 @@ const ProjectDetailPage = () => {
                 </a>
               )}
             </div>
+          </div>
+          
+          {/* Comments Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg p-6">
+            <CommentSection projectId={project.id} />
           </div>
         </div>
       </main>
