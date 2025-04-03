@@ -191,19 +191,26 @@ export const unfollowUser = async (followerId: string, followingId: string): Pro
 // Function to get the followers of a user
 export const fetchFollowers = async (userId: string): Promise<Profile[]> => {
   try {
-    // Use a direct join instead of rpc
-    const { data, error } = await supabase
+    // First get all follower IDs
+    const { data: followData, error: followError } = await supabase
+      .from('user_follows')
+      .select('follower_id')
+      .eq('following_id', userId);
+
+    if (followError) throw followError;
+    if (!followData || followData.length === 0) return [];
+    
+    // Then get profiles for these IDs
+    const followerIds = followData.map(item => item.follower_id);
+    
+    const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .innerJoin('user_follows', 'profiles.id = user_follows.follower_id')
-      .eq('user_follows.following_id', userId);
-
-    if (error) throw error;
+      .in('id', followerIds);
+      
+    if (profilesError) throw profilesError;
     
-    if (!data) return [];
-    
-    // Extract just the profile data from the joined result
-    return data.map(item => item.profiles) as unknown as Profile[];
+    return profilesData as Profile[] || [];
   } catch (error) {
     console.error("Error fetching followers:", error);
     return [];
@@ -213,19 +220,26 @@ export const fetchFollowers = async (userId: string): Promise<Profile[]> => {
 // Function to get the users that a user is following
 export const fetchFollowing = async (userId: string): Promise<Profile[]> => {
   try {
-    // Use a direct join instead of rpc
-    const { data, error } = await supabase
+    // First get all following IDs
+    const { data: followData, error: followError } = await supabase
+      .from('user_follows')
+      .select('following_id')
+      .eq('follower_id', userId);
+
+    if (followError) throw followError;
+    if (!followData || followData.length === 0) return [];
+    
+    // Then get profiles for these IDs
+    const followingIds = followData.map(item => item.following_id);
+    
+    const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .innerJoin('user_follows', 'profiles.id = user_follows.following_id')
-      .eq('user_follows.follower_id', userId);
-
-    if (error) throw error;
+      .in('id', followingIds);
+      
+    if (profilesError) throw profilesError;
     
-    if (!data) return [];
-    
-    // Extract just the profile data from the joined result
-    return data.map(item => item.profiles) as unknown as Profile[];
+    return profilesData as Profile[] || [];
   } catch (error) {
     console.error("Error fetching following:", error);
     return [];
@@ -340,16 +354,16 @@ export const useProfileOperations = () => {
         success = await unfollowUser(currentUserId, profileUserId);
         if (success) {
           toast({
-            title: "Unfollow successful",
-            description: "You are no longer following this user"
+            title: "Отписка выполнена",
+            description: "Вы больше не подписаны на этого пользователя"
           });
         }
       } else {
         success = await followUser(currentUserId, profileUserId);
         if (success) {
           toast({
-            title: "Follow successful",
-            description: "You are now following this user"
+            title: "Подписка выполнена",
+            description: "Вы теперь подписаны на этого пользователя"
           });
         }
       }
@@ -357,8 +371,8 @@ export const useProfileOperations = () => {
       return success;
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update follow status",
+        title: "Ошибка",
+        description: "Не удалось обновить статус подписки",
         variant: "destructive"
       });
       return false;
@@ -371,13 +385,13 @@ export const useProfileOperations = () => {
       
       if (success) {
         toast({
-          title: "Success",
-          description: "Profile updated successfully"
+          title: "Успех",
+          description: "Профиль успешно обновлен"
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to update profile",
+          title: "Ошибка",
+          description: "Не удалось обновить профиль",
           variant: "destructive"
         });
       }
@@ -385,8 +399,8 @@ export const useProfileOperations = () => {
       return success;
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update profile",
+        title: "Ошибка",
+        description: "Не удалось обновить профиль",
         variant: "destructive"
       });
       return false;

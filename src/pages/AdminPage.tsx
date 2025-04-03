@@ -1,233 +1,222 @@
 
-// We'll fix AdminPage to use the proper types for blog_posts and support_requests tables
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BlogPost, SupportRequest } from '@/types/database';
-import { Loader2, PlusCircle } from 'lucide-react';
-
-// Form schema for blog post
-const blogPostSchema = z.object({
-  title: z.string().min(2, {
-    message: "Title must be at least 2 characters.",
-  }),
-  excerpt: z.string().min(10, {
-    message: "Excerpt must be at least 10 characters.",
-  }),
-  content: z.string().min(50, {
-    message: "Content must be at least 50 characters.",
-  }),
-  category: z.string().min(1, {
-    message: "Please select a category.",
-  }),
-  image_url: z.string().optional(),
-});
-
-// Support request status schema
-const supportRequestSchema = z.object({
-  status: z.enum(["pending", "reviewed", "answered"])
-});
-
-type BlogPostFormValues = z.infer<typeof blogPostSchema>;
+import { fetchAllBlogPosts, createBlogPost, deleteBlogPost } from '@/hooks/useBlogQueries';
 
 const AdminPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
   
-  const form = useForm<BlogPostFormValues>({
-    resolver: zodResolver(blogPostSchema),
-    defaultValues: {
-      title: "",
-      excerpt: "",
-      content: "",
-      category: "",
-      image_url: "",
-    },
-  });
+  // Blog post form state
+  const [blogTitle, setBlogTitle] = useState('');
+  const [blogExcerpt, setBlogExcerpt] = useState('');
+  const [blogContent, setBlogContent] = useState('');
+  const [blogCategory, setBlogCategory] = useState('');
+  const [blogImageUrl, setBlogImageUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   useEffect(() => {
-    if (!user) return;
-    
-    const checkAdminStatus = async () => {
-      setLoading(true);
+    const checkAdmin = async () => {
+      if (!user) {
+        navigate('/');
+        return;
+      }
+      
       try {
-        const { data, error } = await supabase
+        // Check if user is an admin
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', user.id)
           .single();
           
-        if (error) {
-          throw error;
+        if (profileError) throw profileError;
+        
+        if (!profileData?.is_admin) {
+          navigate('/');
+          return;
         }
         
-        setIsAdmin(data?.is_admin || false);
-        
-        if (data?.is_admin) {
-          await Promise.all([
-            fetchBlogPosts(),
-            fetchSupportRequests(),
-          ]);
-        }
-      } catch (error) {
+        setIsAdmin(true);
+        await loadAdminData();
+      } catch (error: any) {
         console.error('Error checking admin status:', error);
+        navigate('/');
       } finally {
         setLoading(false);
       }
     };
     
-    checkAdminStatus();
-  }, [user]);
+    checkAdmin();
+  }, [user, navigate]);
   
-  const fetchBlogPosts = async () => {
+  const loadAdminData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select(`
-          *,
-          profiles:author_id (username, full_name, avatar_url)
-        `)
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
+      // Load blog posts
+      const posts = await fetchAllBlogPosts();
+      setBlogPosts(posts);
       
-      setBlogPosts(data as unknown as BlogPost[] || []);
-    } catch (error) {
-      console.error('Error fetching blog posts:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load blog posts',
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  const fetchSupportRequests = async () => {
-    try {
-      const { data, error } = await supabase
+      // Load support requests
+      const { data: requests, error: requestsError } = await supabase
         .from('support_requests')
         .select('*')
         .order('created_at', { ascending: false });
         
-      if (error) throw error;
+      if (requestsError) throw requestsError;
       
-      setSupportRequests(data as SupportRequest[] || []);
+      setSupportRequests(requests as SupportRequest[]);
     } catch (error) {
-      console.error('Error fetching support requests:', error);
+      console.error('Error loading admin data:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load support requests',
-        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось загрузить данные',
+        variant: 'destructive'
       });
     }
   };
   
-  const onSubmitBlogPost = async (values: BlogPostFormValues) => {
-    if (!user) return;
+  const handleCreateBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!blogTitle || !blogExcerpt || !blogContent || !blogCategory) {
+      toast({
+        title: 'Ошибка',
+        description: 'Заполните все обязательные поля',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setSubmitting(true);
     
     try {
-      const { error } = await supabase
+      const blogData = {
+        title: blogTitle,
+        excerpt: blogExcerpt,
+        content: blogContent,
+        category: blogCategory,
+        image_url: blogImageUrl || null
+      };
+      
+      const { data, error } = await supabase
         .from('blog_posts')
         .insert({
-          title: values.title,
-          excerpt: values.excerpt,
-          content: values.content,
-          category: values.category,
-          image_url: values.image_url || null,
-          author_id: user.id,
-        });
+          ...blogData,
+          author_id: user!.id
+        })
+        .select('id')
+        .single();
         
       if (error) throw error;
       
       toast({
-        title: 'Success',
-        description: 'Blog post created successfully',
+        title: 'Успех',
+        description: 'Запись блога успешно создана'
       });
       
-      form.reset();
-      fetchBlogPosts();
+      // Reset form
+      setBlogTitle('');
+      setBlogExcerpt('');
+      setBlogContent('');
+      setBlogCategory('');
+      setBlogImageUrl('');
+      
+      // Reload blogs
+      await loadAdminData();
     } catch (error) {
       console.error('Error creating blog post:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to create blog post',
-        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось создать запись блога',
+        variant: 'destructive'
       });
+    } finally {
+      setSubmitting(false);
     }
   };
   
-  const deleteBlogPost = async (id: string) => {
+  const handleDeleteBlog = async (postId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить эту запись блога?')) return;
+    
     try {
-      const { error } = await supabase
-        .from('blog_posts')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
+      const success = await deleteBlogPost(postId);
       
-      toast({
-        title: 'Success',
-        description: 'Blog post deleted successfully',
-      });
-      
-      fetchBlogPosts();
+      if (success) {
+        // Remove from state
+        setBlogPosts(blogPosts.filter(post => post.id !== postId));
+        toast({
+          title: 'Успех',
+          description: 'Запись блога успешно удалена'
+        });
+      }
     } catch (error) {
       console.error('Error deleting blog post:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete blog post',
-        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось удалить запись блога',
+        variant: 'destructive'
       });
     }
   };
   
-  const updateSupportRequestStatus = async (id: string, status: 'pending' | 'reviewed' | 'answered') => {
+  const handleUpdateSupportRequest = async (requestId: string, status: string) => {
     try {
       const { error } = await supabase
         .from('support_requests')
         .update({ status })
-        .eq('id', id);
+        .eq('id', requestId);
         
       if (error) throw error;
       
-      toast({
-        title: 'Success',
-        description: 'Support request status updated',
-      });
+      // Update local state
+      setSupportRequests(
+        supportRequests.map(request => 
+          request.id === requestId ? { ...request, status } : request
+        )
+      );
       
-      fetchSupportRequests();
+      toast({
+        title: 'Успех',
+        description: 'Статус обращения обновлен'
+      });
     } catch (error) {
       console.error('Error updating support request:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update support request status',
-        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось обновить статус обращения',
+        variant: 'destructive'
       });
     }
   };
   
-  if (!user) {
-    return <Navigate to="/auth" />;
-  }
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
   
   if (loading) {
     return (
@@ -235,7 +224,7 @@ const AdminPage = () => {
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
-          <span>Loading admin panel...</span>
+          <span>Загрузка...</span>
         </div>
         <Footer />
       </div>
@@ -243,233 +232,214 @@ const AdminPage = () => {
   }
   
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-grow container mx-auto px-4 py-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl font-bold mb-6">Access Denied</h1>
-            <p className="mb-4">You do not have permission to access the admin panel.</p>
-            <Button onClick={() => window.history.back()}>Go Back</Button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+    return null; // Should never reach here due to navigate in useEffect
   }
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
+      <div className="flex-grow container mx-auto px-4 py-20">
+        <h1 className="text-3xl font-bold mb-8 mt-8">Панель администратора</h1>
         
-        <Tabs defaultValue="blog">
+        <Tabs defaultValue="blog" className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="blog">Blog Posts</TabsTrigger>
-            <TabsTrigger value="support">Support Requests</TabsTrigger>
+            <TabsTrigger value="blog">Управление блогом</TabsTrigger>
+            <TabsTrigger value="support">Обращения в поддержку</TabsTrigger>
           </TabsList>
           
           <TabsContent value="blog">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-1">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create New Blog Post</CardTitle>
-                    <CardDescription>Fill out the form to create a new blog post.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmitBlogPost)} className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Title</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Blog post title" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="category"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Category</FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a category" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="tutorials">Tutorials</SelectItem>
-                                  <SelectItem value="news">News</SelectItem>
-                                  <SelectItem value="tips">Tips & Tricks</SelectItem>
-                                  <SelectItem value="career">Career</SelectItem>
-                                  <SelectItem value="technology">Technology</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="excerpt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Excerpt</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Short excerpt for the blog post" 
-                                  {...field}
-                                  rows={3}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="content"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Content</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Full blog post content" 
-                                  {...field}
-                                  rows={10}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Use paragraphs separated by a new line.
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="image_url"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Image URL (optional)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="https://example.com/image.jpg" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <Button type="submit" className="w-full">
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          Create Blog Post
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="md:col-span-2">
-                <h2 className="text-2xl font-semibold mb-4">Blog Posts</h2>
-                
-                <div className="space-y-4">
-                  {blogPosts.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                      No blog posts found
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Создать новую запись</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleCreateBlog} className="space-y-4">
+                    <div>
+                      <Label htmlFor="title">Заголовок</Label>
+                      <Input 
+                        id="title"
+                        value={blogTitle}
+                        onChange={(e) => setBlogTitle(e.target.value)}
+                        required
+                      />
                     </div>
-                  ) : (
-                    blogPosts.map((post) => (
-                      <Card key={post.id}>
-                        <CardHeader>
-                          <div className="flex justify-between">
-                            <CardTitle>{post.title}</CardTitle>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => deleteBlogPost(post.id)}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                          <CardDescription>
-                            {new Date(post.created_at).toLocaleDateString()} • {post.category}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-500">{post.excerpt}</p>
-                        </CardContent>
-                      </Card>
+                    
+                    <div>
+                      <Label htmlFor="excerpt">Краткое описание</Label>
+                      <Textarea 
+                        id="excerpt"
+                        value={blogExcerpt}
+                        onChange={(e) => setBlogExcerpt(e.target.value)}
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="content">Содержание</Label>
+                      <Textarea 
+                        id="content"
+                        value={blogContent}
+                        onChange={(e) => setBlogContent(e.target.value)}
+                        rows={10}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="category">Категория</Label>
+                      <Input 
+                        id="category"
+                        value={blogCategory}
+                        onChange={(e) => setBlogCategory(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="imageUrl">URL изображения (необязательно)</Label>
+                      <Input 
+                        id="imageUrl"
+                        value={blogImageUrl}
+                        onChange={(e) => setBlogImageUrl(e.target.value)}
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="gradient-bg text-white w-full"
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Создание...
+                        </>
+                      ) : (
+                        'Опубликовать'
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Опубликованные записи</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
+                  {blogPosts.length > 0 ? (
+                    blogPosts.map(post => (
+                      <div 
+                        key={post.id} 
+                        className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                      >
+                        <h3 className="font-bold">{post.title}</h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {formatDate(post.created_at)} • {post.category}
+                        </p>
+                        <p className="line-clamp-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {post.excerpt}
+                        </p>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteBlog(post.id)}
+                          >
+                            Удалить
+                          </Button>
+                        </div>
+                      </div>
                     ))
+                  ) : (
+                    <p className="text-center py-8 text-gray-500">
+                      Нет опубликованных записей
+                    </p>
                   )}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
           
           <TabsContent value="support">
-            <h2 className="text-2xl font-semibold mb-4">Support Requests</h2>
-            
-            <div className="space-y-4">
-              {supportRequests.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  No support requests found
-                </div>
-              ) : (
-                supportRequests.map((request) => (
-                  <Card key={request.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle>{request.subject}</CardTitle>
-                          <CardDescription>
-                            From: {request.name} ({request.email})
-                          </CardDescription>
+            <Card>
+              <CardHeader>
+                <CardTitle>Обращения в поддержку</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {supportRequests.length > 0 ? (
+                  <div className="space-y-6 max-h-[600px] overflow-y-auto">
+                    {supportRequests.map(request => (
+                      <div 
+                        key={request.id} 
+                        className="p-4 border rounded-lg"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-bold">{request.subject}</h3>
+                            <p className="text-sm">
+                              От: {request.name} ({request.email})
+                            </p>
+                          </div>
+                          <div>
+                            <span 
+                              className={`px-2 py-1 text-xs rounded-full ${
+                                request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                request.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {request.status === 'pending' ? 'В ожидании' : 
+                               request.status === 'in_progress' ? 'В обработке' :
+                               request.status === 'resolved' ? 'Решено' : 'Отклонено'}
+                            </span>
+                          </div>
                         </div>
-                        <Select
-                          defaultValue={request.status}
-                          onValueChange={(value) => updateSupportRequestStatus(
-                            request.id, 
-                            value as 'pending' | 'reviewed' | 'answered'
-                          )}
-                        >
-                          <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="reviewed">Reviewed</SelectItem>
-                            <SelectItem value="answered">Answered</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {formatDate(request.created_at)}
+                        </p>
+                        <p className="text-gray-800 dark:text-gray-200 mb-4 whitespace-pre-wrap">
+                          {request.message}
+                        </p>
+                        
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant={request.status === 'in_progress' ? 'default' : 'outline'}
+                            className={request.status === 'in_progress' ? 'bg-blue-500' : ''}
+                            onClick={() => handleUpdateSupportRequest(request.id, 'in_progress')}
+                          >
+                            В обработке
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={request.status === 'resolved' ? 'default' : 'outline'}
+                            className={request.status === 'resolved' ? 'bg-green-500' : ''}
+                            onClick={() => handleUpdateSupportRequest(request.id, 'resolved')}
+                          >
+                            Решено
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={request.status === 'rejected' ? 'destructive' : 'outline'}
+                            onClick={() => handleUpdateSupportRequest(request.id, 'rejected')}
+                          >
+                            Отклонено
+                          </Button>
+                        </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="whitespace-pre-wrap">{request.message}</p>
-                    </CardContent>
-                    <CardFooter className="text-sm text-gray-500">
-                      Received: {new Date(request.created_at).toLocaleString()}
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center py-8 text-gray-500">
+                    Нет обращений в поддержку
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

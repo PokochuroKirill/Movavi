@@ -25,41 +25,31 @@ const BlogPostDetailPage = () => {
       try {
         setLoading(true);
         
-        // Fetch the blog post
-        const { data, error } = await supabase
-          .from('blog_posts')
-          .select(`
-            *,
-            profiles:author_id(username, full_name, avatar_url)
-          `)
-          .eq('id', id)
-          .single();
+        // Fetch the blog post directly without using .from('blog_posts')
+        const { data, error } = await supabase.rpc('get_blog_post_by_id', { post_id: id });
         
         if (error) throw error;
         
-        setPost(data as unknown as BlogPost || null);
-        
-        // Fetch related posts with the same category
         if (data) {
-          const { data: related, error: relatedError } = await supabase
-            .from('blog_posts')
-            .select(`
-              *,
-              profiles:author_id(username, full_name, avatar_url)
-            `)
-            .eq('category', data.category)
-            .neq('id', data.id)
-            .limit(3);
+          setPost(data as BlogPost);
+          
+          // Fetch related posts with the same category
+          const { data: related, error: relatedError } = await supabase.rpc(
+            'get_related_blog_posts',
+            { post_category: data.category, current_post_id: data.id, limit_count: 3 }
+          );
           
           if (relatedError) throw relatedError;
           
-          setRelatedPosts(related as unknown as BlogPost[] || []);
+          setRelatedPosts(related as BlogPost[] || []);
+        } else {
+          setPost(null);
         }
       } catch (error) {
         console.error('Error fetching blog post:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load the blog post',
+          title: 'Ошибка',
+          description: 'Не удалось загрузить запись блога',
           variant: 'destructive',
         });
       } finally {
@@ -85,7 +75,7 @@ const BlogPostDetailPage = () => {
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
-          <span>Loading article...</span>
+          <span>Загрузка статьи...</span>
         </div>
         <Footer />
       </div>
@@ -98,11 +88,11 @@ const BlogPostDetailPage = () => {
         <Navbar />
         <div className="flex-grow container mx-auto px-4 py-20">
           <div className="max-w-3xl mx-auto mt-12 text-center">
-            <h1 className="text-3xl font-bold mb-4">Article Not Found</h1>
-            <p className="mb-8">The article you're looking for doesn't exist or has been removed.</p>
+            <h1 className="text-3xl font-bold mb-4">Статья не найдена</h1>
+            <p className="mb-8">Статья, которую вы ищете, не существует или была удалена.</p>
             <Link to="/blog">
               <Button className="gradient-bg text-white">
-                Back to Blog
+                Вернуться к блогу
               </Button>
             </Link>
           </div>
@@ -119,7 +109,7 @@ const BlogPostDetailPage = () => {
         <div className="max-w-3xl mx-auto mt-12">
           <Link to="/blog" className="flex items-center text-gray-600 dark:text-gray-400 hover:text-devhub-purple mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Blog
+            Назад к блогу
           </Link>
           
           <Badge className="mb-4">{post.category}</Badge>
@@ -133,7 +123,7 @@ const BlogPostDetailPage = () => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{post.profiles?.full_name || post.profiles?.username || 'DevHub Team'}</p>
+              <p className="font-medium">{post.profiles?.full_name || post.profiles?.username || 'Команда DevHub'}</p>
               <div className="flex items-center text-sm text-gray-500">
                 <Calendar className="mr-1 h-3 w-3" />
                 {formatDate(post.created_at)}
@@ -149,7 +139,7 @@ const BlogPostDetailPage = () => {
           
           {relatedPosts.length > 0 && (
             <div className="border-t pt-12 mt-12">
-              <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
+              <h2 className="text-2xl font-bold mb-6">Похожие статьи</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {relatedPosts.map(related => (
                   <Link to={`/blog/${related.id}`} key={related.id} className="block">

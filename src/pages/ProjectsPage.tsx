@@ -1,228 +1,237 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectFilters from '@/components/ProjectFilters';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Loader2, PlusCircle, Search, X } from 'lucide-react';
 import { Project } from '@/types/database';
 
+// Fix for the ProjectFilters props issue
 const ProjectsPage = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
   const [projects, setProjects] = useState<Project[]>([]);
-  const [displayedProjects, setDisplayedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
-  const [availableTechnologies, setAvailableTechnologies] = useState<string[]>([]);
+  const [availableTech, setAvailableTech] = useState<string[]>([]);
+  const { toast } = useToast();
   
   useEffect(() => {
     fetchProjects();
-  }, []);
+    fetchAvailableTech();
+  }, [search, sortBy, selectedTech]);
   
   const fetchProjects = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('projects')
         .select(`
           *,
           profiles:user_id(username, full_name, avatar_url)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      if (search) {
+        query = query.ilike('title', `%${search}%`);
+      }
+      
+      if (selectedTech.length > 0) {
+        query = query.contains('technologies', selectedTech);
+      }
+      
+      switch (sortBy) {
+        case 'newest':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'most-liked':
+          query = query.order('likes_count', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
-      if (data) {
-        // Process projects data
-        const projectsWithCounts = await Promise.all(data.map(async (project) => {
-          // Get likes count
-          const { data: likesCount } = await supabase
-            .rpc('get_project_likes_count', { project_id: project.id });
-          
-          // Get comments count
-          const { count: commentsCount } = await supabase
-            .from('comments')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id);
-          
-          return {
-            ...project,
-            author: project.profiles?.full_name || project.profiles?.username || 'Unknown Author',
-            authorAvatar: project.profiles?.avatar_url,
-            likes_count: likesCount || 0,
-            comments_count: commentsCount || 0
-          };
-        }));
-        
-        // Extract all unique technologies
-        const techs = new Set<string>();
-        projectsWithCounts.forEach(project => {
-          if (Array.isArray(project.technologies)) {
-            project.technologies.forEach(tech => techs.add(tech));
-          }
-        });
-        
-        setProjects(projectsWithCounts as Project[]);
-        setDisplayedProjects(projectsWithCounts as Project[]);
-        setAvailableTechnologies(Array.from(techs));
+      if (!data) {
+        setProjects([]);
+        return;
       }
+      
+      const projectsWithCounts = await Promise.all(data.map(async (project) => {
+        // Get likes count for each project
+        const { data: likesCount } = await supabase
+          .rpc('get_project_likes_count', { project_id: project.id });
+        
+        // Get comments count for each project
+        const { count: commentsCount } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id);
+        
+        return {
+          ...project,
+          author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
+          authorAvatar: project.profiles?.avatar_url,
+          likes_count: likesCount || 0,
+          comments_count: commentsCount || 0
+        } as Project;
+      }));
+      
+      setProjects(projectsWithCounts);
     } catch (error: any) {
-      console.error("Error fetching projects:", error);
+      console.error('Error fetching projects:', error.message);
       toast({
-        title: "Error",
-        description: "Failed to load projects",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: 'Не удалось загрузить проекты',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
   
-  // Filter projects based on search and tech filters
-  const filterProjects = () => {
-    let filtered = [...projects];
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(project => 
-        project.title.toLowerCase().includes(query) || 
-        project.description.toLowerCase().includes(query)
-      );
+  const fetchAvailableTech = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('technologies');
+      
+      if (error) throw error;
+      
+      const allTech = new Set<string>();
+      data.forEach(project => {
+        if (project.technologies) {
+          project.technologies.forEach(tech => allTech.add(tech));
+        }
+      });
+      
+      setAvailableTech(Array.from(allTech));
+    } catch (error: any) {
+      console.error('Error fetching available technologies:', error.message);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить технологии',
+        variant: 'destructive',
+      });
     }
-    
-    // Apply tech filter
-    if (selectedTech.length > 0) {
-      filtered = filtered.filter(project => 
-        selectedTech.every(tech => 
-          project.technologies?.includes(tech)
-        )
-      );
-    }
-    
-    setDisplayedProjects(filtered);
   };
   
-  // Effect to filter projects when search or tech selection changes
-  useEffect(() => {
-    filterProjects();
-  }, [searchQuery, selectedTech, projects]);
-  
-  // Handle tech filter changes
-  const handleTechFilterChange = (techs: string[]) => {
-    setSelectedTech(techs);
+  const applyFilters = () => {
+    fetchProjects();
   };
   
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchQuery('');
+  const resetFilters = () => {
+    setSearch('');
+    setSortBy('newest');
     setSelectedTech([]);
+    fetchProjects();
   };
   
+  // Fix the ProjectFilters component props
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-grow py-12 container mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Explore Projects</h1>
-          {user && (
-            <Link to="/projects/create">
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create Project
-              </Button>
-            </Link>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="md:col-span-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                className="pl-9"
-                placeholder="Search projects by title or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 hover:text-gray-700"
-                  onClick={() => setSearchQuery('')}
+      <main className="flex-grow container mx-auto px-4 py-20">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-64 shrink-0">
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle>Фильтры</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="sort">Сортировка</Label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger id="sort">
+                      <SelectValue placeholder="Выберите сортировку" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="newest">Сначала новые</SelectItem>
+                        <SelectItem value="oldest">Сначала старые</SelectItem>
+                        <SelectItem value="most-liked">Популярные</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <ProjectFilters 
+                  technologies={selectedTech} 
+                  setTechnologies={setSelectedTech} 
+                  availableTechnologies={availableTech} 
+                />
+
+                <Button 
+                  onClick={applyFilters} 
+                  className="w-full gradient-bg text-white"
                 >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+                  Применить фильтры
+                </Button>
+                <Button 
+                  onClick={resetFilters} 
+                  variant="outline" 
+                  className="w-full"
+                >
+                  Сбросить
+                </Button>
+              </CardContent>
+            </Card>
           </div>
           
-          <div className="md:col-span-1">
-            <ProjectFilters 
-              selectedTech={selectedTech} 
-              onTechChange={handleTechFilterChange} 
-              availableTech={availableTechnologies}
-            />
-          </div>
-        </div>
-        
-        {(searchQuery || selectedTech.length > 0) && (
-          <div className="mb-4 flex items-center">
-            <div className="text-sm text-gray-500">
-              {displayedProjects.length} {displayedProjects.length === 1 ? 'result' : 'results'} found
+          <div className="w-full">
+            <div className="mb-8 flex items-center justify-between">
+              <h1 className="text-3xl font-bold">Проекты</h1>
+              <Input
+                type="search"
+                placeholder="Поиск проектов..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-md"
+              />
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearFilters}
-              className="ml-4 text-sm"
-            >
-              Clear filters
-            </Button>
-          </div>
-        )}
-        
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
-            <span>Loading projects...</span>
-          </div>
-        ) : displayedProjects.length === 0 ? (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-semibold mb-4">No projects found</h2>
-            <p className="text-gray-500 mb-6">
-              {searchQuery || selectedTech.length > 0 ? 
-                "Try changing your search criteria or clearing filters." : 
-                "Be the first to share your project with the community!"
-              }
-            </p>
-            {user && (
-              <Link to="/projects/create">
-                <Button>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Create Project
-                </Button>
-              </Link>
+            
+            {loading ? (
+              <div className="flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
+              </div>
+            ) : projects.length === 0 ? (
+              <p className="text-gray-500 text-center py-12">
+                Нет проектов для отображения.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(project => (
+                  <ProjectCard
+                    key={project.id}
+                    id={project.id}
+                    title={project.title}
+                    description={project.description}
+                    technologies={project.technologies || []}
+                    author={project.author || ''}
+                    authorAvatar={project.authorAvatar || ''}
+                    imageUrl={project.image_url || undefined}
+                    likes={project.likes_count}
+                    comments={project.comments_count}
+                  />
+                ))}
+              </div>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayedProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      </main>
       <Footer />
     </div>
   );
