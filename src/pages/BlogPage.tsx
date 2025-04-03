@@ -34,7 +34,7 @@ const BlogPage = () => {
       
       if (error) throw error;
       
-      setBlogPosts(data as BlogPost[]);
+      setBlogPosts(data || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
     } finally {

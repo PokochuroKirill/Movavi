@@ -85,7 +85,7 @@ const AdminPage = () => {
       
       if (error) throw error;
       
-      setBlogPosts(data as BlogPost[]);
+      setBlogPosts(data || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       toast({
@@ -105,7 +105,7 @@ const AdminPage = () => {
       
       if (error) throw error;
       
-      setSupportRequests(data as SupportRequest[]);
+      setSupportRequests(data || []);
     } catch (error) {
       console.error('Error fetching support requests:', error);
       toast({

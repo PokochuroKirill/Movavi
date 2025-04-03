@@ -37,7 +37,7 @@ const BlogPostDetailPage = () => {
         
         if (error) throw error;
         
-        setPost(data as BlogPost);
+        setPost(data || null);
         
         // Fetch related posts with the same category
         if (data) {
@@ -53,7 +53,7 @@ const BlogPostDetailPage = () => {
           
           if (relatedError) throw relatedError;
           
-          setRelatedPosts(related as BlogPost[]);
+          setRelatedPosts(related || []);
         }
       } catch (error) {
         console.error('Error fetching blog post:', error);

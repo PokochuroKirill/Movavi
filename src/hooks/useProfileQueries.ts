@@ -128,7 +128,10 @@ export const isFollowingUser = async (
 ): Promise<boolean> => {
   try {
     const { data, error } = await supabase
-      .rpc("check_if_following", { follower: followerId, following: followingId });
+      .rpc("check_if_following", { 
+        follower: followerId, 
+        following: followingId 
+      });
 
     if (error) {
       console.error("Error checking follow status:", error);
@@ -145,13 +148,14 @@ export const isFollowingUser = async (
 // Function to follow a user
 export const followUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.rpc("follow_user", { 
-      follower: followerId,
-      following: followingId
-    });
+    const { data, error } = await supabase
+      .rpc("follow_user", { 
+        follower: followerId,
+        following: followingId
+      });
 
     if (error) throw error;
-    return true;
+    return !!data;
   } catch (error) {
     console.error("Error following user:", error);
     return false;
@@ -161,13 +165,14 @@ export const followUser = async (followerId: string, followingId: string): Promi
 // Function to unfollow a user
 export const unfollowUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.rpc("unfollow_user", {
-      follower: followerId,
-      following: followingId
-    });
+    const { data, error } = await supabase
+      .rpc("unfollow_user", {
+        follower: followerId,
+        following: followingId
+      });
 
     if (error) throw error;
-    return true;
+    return !!data;
   } catch (error) {
     console.error("Error unfollowing user:", error);
     return false;
@@ -182,9 +187,9 @@ export const fetchFollowers = async (userId: string): Promise<Profile[]> => {
 
     if (error) throw error;
     
-    if (!data || data.length === 0) return [];
+    if (!data) return [];
     
-    return data as Profile[];
+    return data as unknown as Profile[];
   } catch (error) {
     console.error("Error fetching followers:", error);
     return [];
@@ -199,9 +204,9 @@ export const fetchFollowing = async (userId: string): Promise<Profile[]> => {
 
     if (error) throw error;
     
-    if (!data || data.length === 0) return [];
+    if (!data) return [];
     
-    return data as Profile[];
+    return data as unknown as Profile[];
   } catch (error) {
     console.error("Error fetching following:", error);
     return [];
@@ -224,8 +229,8 @@ export const fetchFollowCounts = async (
     if (followingError) throw followingError;
 
     return {
-      followers: followersCount || 0,
-      following: followingCount || 0,
+      followers: followersCount as number || 0,
+      following: followingCount as number || 0,
     };
   } catch (error) {
     console.error("Error fetching follow counts:", error);
