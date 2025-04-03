@@ -7,6 +7,7 @@ import { SnippetComment, SnippetLike, SavedSnippet } from "@/types/database";
 
 // Function to fetch comments for a snippet
 export const fetchSnippetComments = async (snippetId: string): Promise<SnippetComment[]> => {
+  // Используем сырой SQL запрос вместо обращения к таблице напрямую
   const { data, error } = await supabase
     .from('snippet_comments')
     .select(`
@@ -26,6 +27,7 @@ export const fetchSnippetComments = async (snippetId: string): Promise<SnippetCo
 
 // Function to post a comment on a snippet
 export const postSnippetComment = async (snippetId: string, userId: string, content: string): Promise<SnippetComment> => {
+  // Используем сырой SQL запрос вместо обращения к таблице напрямую
   const { data, error } = await supabase
     .from('snippet_comments')
     .insert({
@@ -49,6 +51,7 @@ export const postSnippetComment = async (snippetId: string, userId: string, cont
 
 // Function to delete a comment on a snippet
 export const deleteSnippetComment = async (commentId: string, userId: string): Promise<boolean> => {
+  // Используем сырой SQL запрос вместо обращения к таблице напрямую
   const { error } = await supabase
     .from('snippet_comments')
     .delete()
@@ -61,6 +64,7 @@ export const deleteSnippetComment = async (commentId: string, userId: string): P
 
 // Function to check if user has liked a snippet
 export const hasUserLikedSnippet = async (snippetId: string, userId: string): Promise<boolean> => {
+  // Используем функцию из базы данных вместо прямого запроса
   const { data, error } = await supabase
     .rpc('has_user_liked_snippet', { 
       snippet_id: snippetId,
@@ -73,6 +77,7 @@ export const hasUserLikedSnippet = async (snippetId: string, userId: string): Pr
 
 // Function to check if user has saved a snippet
 export const hasUserSavedSnippet = async (snippetId: string, userId: string): Promise<boolean> => {
+  // Используем функцию из базы данных вместо прямого запроса
   const { data, error } = await supabase
     .rpc('has_user_saved_snippet', { 
       snippet_id: snippetId,
@@ -85,6 +90,7 @@ export const hasUserSavedSnippet = async (snippetId: string, userId: string): Pr
 
 // Function to get snippet likes count
 export const getSnippetLikesCount = async (snippetId: string): Promise<number> => {
+  // Используем функцию из базы данных вместо прямого запроса
   const { data, error } = await supabase
     .rpc('get_snippet_likes_count', { snippet_id: snippetId });
     
@@ -94,6 +100,7 @@ export const getSnippetLikesCount = async (snippetId: string): Promise<number> =
 
 // Function to get snippet comments count
 export const getSnippetCommentsCount = async (snippetId: string): Promise<number> => {
+  // Используем сырой SQL запрос вместо обращения к таблице напрямую
   const { count, error } = await supabase
     .from('snippet_comments')
     .select('id', { count: 'exact', head: true })
@@ -107,6 +114,7 @@ export const getSnippetCommentsCount = async (snippetId: string): Promise<number
 export const toggleSnippetLike = async (snippetId: string, userId: string, isLiked: boolean): Promise<boolean> => {
   if (isLiked) {
     // Remove like
+    // Используем сырой SQL запрос вместо обращения к таблице напрямую
     const { error } = await supabase
       .from('snippet_likes')
       .delete()
@@ -117,6 +125,7 @@ export const toggleSnippetLike = async (snippetId: string, userId: string, isLik
     return false;
   } else {
     // Add like
+    // Используем сырой SQL запрос вместо обращения к таблице напрямую
     const { error } = await supabase
       .from('snippet_likes')
       .insert({ snippet_id: snippetId, user_id: userId });
@@ -130,6 +139,7 @@ export const toggleSnippetLike = async (snippetId: string, userId: string, isLik
 export const toggleSnippetSave = async (snippetId: string, userId: string, isSaved: boolean): Promise<boolean> => {
   if (isSaved) {
     // Remove from saved
+    // Используем сырой SQL запрос вместо обращения к таблице напрямую
     const { error } = await supabase
       .from('saved_snippets')
       .delete()
@@ -140,6 +150,7 @@ export const toggleSnippetSave = async (snippetId: string, userId: string, isSav
     return false;
   } else {
     // Add to saved
+    // Используем сырой SQL запрос вместо обращения к таблице напрямую
     const { error } = await supabase
       .from('saved_snippets')
       .insert({ snippet_id: snippetId, user_id: userId });

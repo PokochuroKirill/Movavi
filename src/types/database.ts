@@ -88,6 +88,11 @@ export type Project = {
     full_name: string | null;
     avatar_url: string | null;
   };
+  // Расширим тип Project дополнительными полями для совместимости
+  likes_count?: number;
+  comments_count?: number;
+  author?: string;
+  authorAvatar?: string;
 };
 
 export type Snippet = {
@@ -105,4 +110,9 @@ export type Snippet = {
     full_name: string | null;
     avatar_url: string | null;
   };
+  // Расширим тип Snippet дополнительными полями для совместимости
+  likes_count?: number;
+  comments_count?: number;
+  author?: string;
+  authorAvatar?: string;
 };
