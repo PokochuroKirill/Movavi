@@ -1,4 +1,3 @@
-
 export interface Profile {
   id: string;
   username?: string;
@@ -125,7 +124,6 @@ export interface SupportRequest {
   created_at: string;
 }
 
-// Additional interfaces needed
 export interface SnippetComment {
   id: string;
   content: string;
