@@ -9,10 +9,11 @@ interface SnippetCardProps {
   language: string;
   tags: string[];
   created_at?: string;
-  authorName?: string;
+  author?: string;
   authorAvatar?: string;
   likes?: number;
   comments?: number;
+  onClick?: () => void;
 }
 
 const SnippetCard = ({ 
@@ -22,10 +23,11 @@ const SnippetCard = ({
   language, 
   tags, 
   created_at, 
-  authorName,
+  author,
   authorAvatar,
   likes,
-  comments
+  comments,
+  onClick
 }: SnippetCardProps) => {
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -39,7 +41,10 @@ const SnippetCard = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+    <div 
+      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300"
+      onClick={onClick}
+    >
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
           <Link to={`/snippets/${id}`}>
@@ -67,14 +72,14 @@ const SnippetCard = ({
           </div>
           
           <div className="flex items-center">
-            {authorName && authorAvatar && (
+            {author && authorAvatar && (
               <div className="flex items-center mr-3">
                 <img
                   src={authorAvatar || "/placeholder.svg"}
-                  alt={authorName}
+                  alt={author}
                   className="w-6 h-6 rounded-full mr-1 object-cover"
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400">{authorName}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{author}</span>
               </div>
             )}
             

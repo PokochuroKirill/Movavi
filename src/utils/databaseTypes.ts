@@ -8,7 +8,7 @@ export const generateTypesFromTables = async () => {
   console.warn('generateTypesFromTables is disabled due to type incompatibility.');
   return null;
   
-  // Оригинальный код закомментирован, чтобы предотвратить ошибки TypeScript
+  // Original code commented out to prevent TypeScript errors
   /*
   try {
     // Get all tables

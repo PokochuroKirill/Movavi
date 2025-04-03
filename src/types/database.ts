@@ -55,20 +55,61 @@ export type SavedSnippet = {
   created_at: string;
 };
 
+export type UserFollow = {
+  id: string;
+  follower_id: string;
+  following_id: string;
+  created_at: string;
+};
+
+export type BlogPost = {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  author_id: string;
+  category: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+};
+
+export type SupportRequest = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'pending' | 'reviewed' | 'answered';
+  created_at: string;
+  user_id?: string;
+};
+
 export type Profile = {
   id: string;
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   bio: string | null;
   website: string | null;
   twitter: string | null;
   github: string | null;
   linkedin: string | null;
+  telegram: string | null;
+  discord: string | null;
   birthdate: string | null;
   location: string | null;
   created_at: string;
   updated_at: string;
+  followers_count?: number;
+  following_count?: number;
+  is_admin?: boolean;
 };
 
 export type Project = {
@@ -88,7 +129,6 @@ export type Project = {
     full_name: string | null;
     avatar_url: string | null;
   };
-  // Расширим тип Project дополнительными полями для совместимости
   likes_count?: number;
   comments_count?: number;
   author?: string;
@@ -110,7 +150,6 @@ export type Snippet = {
     full_name: string | null;
     avatar_url: string | null;
   };
-  // Расширим тип Snippet дополнительными полями для совместимости
   likes_count?: number;
   comments_count?: number;
   author?: string;

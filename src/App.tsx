@@ -17,11 +17,14 @@ import { AuthProvider } from "./contexts/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import BlogPage from "./pages/BlogPage";
+import BlogPostDetailPage from "./pages/BlogPostDetailPage";
 import FaqPage from "./pages/FaqPage";
 import ContactPage from "./pages/ContactPage";
 import AboutPage from "./pages/AboutPage";
 import SupportPage from "./pages/SupportPage";
 import ProfilePage from "./pages/ProfilePage";
+import UserProfilePage from "./pages/UserProfilePage";
+import AdminPage from "./pages/AdminPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -57,11 +60,14 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/documentation" element={<DocumentationPage />} />
             <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:id" element={<BlogPostDetailPage />} />
             <Route path="/faq" element={<FaqPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/user/:username" element={<UserProfilePage />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,247 +1,205 @@
 
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import ProjectCard from '@/components/ProjectCard';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Loader2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Input } from '@/components/ui/input';
+import ProjectCard from '@/components/ProjectCard';
+import ProjectFilters from '@/components/ProjectFilters';
+import { Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import ProjectFilters, { ProjectFilters as FiltersType } from '@/components/ProjectFilters';
-
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  author: string;
-  authorAvatar?: string;
-  stars: number;
-  forks: number;
-  views: number;
-  tags: string[];
-};
+import { Project } from '@/types/database';
 
 const ProjectsPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FiltersType>({
-    technologies: [],
-    sortBy: 'latest'
-  });
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  // Extract all unique technologies from projects
-  const availableTechnologies = useMemo(() => {
-    const techSet = new Set<string>();
-    projects.forEach(project => {
-      project.tags.forEach(tag => {
-        techSet.add(tag);
-      });
-    });
-    return Array.from(techSet).sort();
-  }, [projects]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTech, setSelectedTech] = useState<string[]>([]);
+  const [availableTech, setAvailableTech] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('projects')
-          .select(`
-            id, 
-            title, 
-            description, 
-            technologies,
-            profiles(username, full_name, avatar_url)
-          `)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (data) {
-          const formattedProjects = data.map(item => ({
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            author: item.profiles?.full_name || item.profiles?.username || 'Неизвестный автор',
-            authorAvatar: item.profiles?.avatar_url,
-            stars: Math.floor(Math.random() * 100), // Временно, пока нет реальных данных
-            forks: Math.floor(Math.random() * 30),  // Временно, пока нет реальных данных
-            views: Math.floor(Math.random() * 1000), // Временно, пока нет реальных данных
-            tags: item.technologies || []
-          }));
-          setProjects(formattedProjects);
-          setFilteredProjects(formattedProjects);
-        }
-      } catch (error: any) {
-        console.error('Ошибка при загрузке проектов:', error);
-        toast({
-          title: 'Ошибка',
-          description: 'Не удалось загрузить проекты',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProjects();
-  }, [toast]);
+  }, []);
 
-  // Apply filters and search whenever they change
   useEffect(() => {
-    let result = [...projects];
-    
-    // Apply technology filters
-    if (filters.technologies.length > 0) {
-      result = result.filter(project => 
-        filters.technologies.some(tech => project.tags.includes(tech))
+    filterProjects();
+  }, [searchTerm, selectedTech, projects]);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          profiles:user_id(username, full_name, avatar_url)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const projectsWithMetadata = await Promise.all((data || []).map(async (project) => {
+        // Get likes count for each project
+        const { data: likesCount } = await supabase
+          .rpc('get_project_likes_count', { project_id: project.id });
+        
+        // Get comments count for each project
+        const { count: commentsCount } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id);
+        
+        return {
+          ...project,
+          author: project.profiles?.full_name || project.profiles?.username || 'Unnamed Author',
+          authorAvatar: project.profiles?.avatar_url,
+          likes_count: likesCount || 0,
+          comments_count: commentsCount || 0
+        } as Project;
+      }));
+
+      setProjects(projectsWithMetadata);
+
+      // Extract all unique technologies
+      const allTechnologies = projectsWithMetadata.reduce((acc: string[], project) => {
+        if (project.technologies && Array.isArray(project.technologies)) {
+          project.technologies.forEach((tech) => {
+            if (!acc.includes(tech)) {
+              acc.push(tech);
+            }
+          });
+        }
+        return acc;
+      }, []);
+
+      setAvailableTech(allTechnologies);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterProjects = () => {
+    let filtered = [...projects];
+
+    // Filter by search term
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (project) =>
+          project.title.toLowerCase().includes(lowerSearchTerm) ||
+          project.description.toLowerCase().includes(lowerSearchTerm)
       );
     }
-    
-    // Apply search query
-    if (searchQuery.trim()) {
-      result = result.filter(
-        project => 
-          project.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-          project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-    
-    // Apply sorting
-    switch (filters.sortBy) {
-      case 'popular':
-        result.sort((a, b) => b.stars - a.stars);
-        break;
-      case 'views':
-        result.sort((a, b) => b.views - a.views);
-        break;
-      case 'latest':
-      default:
-        // Already sorted by created_at from the server
-        break;
-    }
-    
-    setFilteredProjects(result);
-  }, [searchQuery, filters, projects]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Search is now handled by the useEffect
-  };
-  
-  const handleFilterChange = (newFilters: FiltersType) => {
-    setFilters(newFilters);
-  };
-
-  const handleAddProject = () => {
-    if (!user) {
-      toast({
-        title: "Требуется авторизация",
-        description: "Для создания проекта необходимо войти в систему",
-        variant: "destructive"
+    // Filter by selected technologies
+    if (selectedTech.length > 0) {
+      filtered = filtered.filter((project) => {
+        if (!project.technologies) return false;
+        return selectedTech.every((tech) => project.technologies?.includes(tech));
       });
-      navigate('/auth');
-      return;
     }
-    
-    navigate('/projects/create');
+
+    setFilteredProjects(filtered);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleTechChange = (techs: string[]) => {
+    setSelectedTech(techs);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Проекты</h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                Исследуйте и вдохновляйтесь проектами сообщества разработчиков
-              </p>
-            </div>
-            
-            <Button 
-              className="gradient-bg text-white mt-4 md:mt-0"
-              onClick={handleAddProject}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Добавить проект
-            </Button>
+      <main className="flex-grow container mx-auto px-4 py-20">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Projects</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-4 md:mb-0">
+              Discover and explore projects from the community
+            </p>
           </div>
           
-          <div className="mb-8 space-y-4">
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input 
-                  type="text" 
-                  placeholder="Поиск проектов..." 
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+          <Link to="/projects/create">
+            <Button className="gradient-bg text-white">
+              <Plus className="mr-2 h-4 w-4" /> New Project
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Filters Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6">
+              <div className="mb-4">
+                <Input
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={handleSearchChange}
                 />
               </div>
-              <Button type="submit" variant="outline">
-                Поиск
-              </Button>
-            </form>
-            
-            <ProjectFilters 
-              onFilterChange={handleFilterChange}
-              availableTechnologies={availableTechnologies}
-            />
+              
+              <ProjectFilters 
+                availableTech={availableTech} 
+                selectedTech={selectedTech}
+                onTechChange={handleTechChange}
+              />
+            </div>
           </div>
           
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-              <span className="ml-2 text-lg">Загрузка проектов...</span>
-            </div>
-          ) : filteredProjects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  id={project.id}
-                  title={project.title}
-                  description={project.description}
-                  author={project.author}
-                  authorAvatar={project.authorAvatar}
-                  stars={project.stars}
-                  forks={project.forks}
-                  views={project.views}
-                  tags={project.tags}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
-                {searchQuery || filters.technologies.length > 0 ? 
-                  'Проекты не найдены. Попробуйте изменить параметры поиска.' : 
-                  'Проектов пока нет. Создайте первый проект!'}
-              </p>
-              {!searchQuery && filters.technologies.length === 0 && (
-                <Button 
-                  className="gradient-bg text-white"
-                  onClick={handleAddProject}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Создать проект
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Projects Grid */}
+          <div className="lg:col-span-3">
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="h-10 w-10 animate-spin text-devhub-purple mr-2" />
+                <p className="text-lg">Loading projects...</p>
+              </div>
+            ) : filteredProjects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredProjects.map((project) => (
+                  <ProjectCard 
+                    key={project.id}
+                    id={project.id}
+                    title={project.title}
+                    description={project.description}
+                    technologies={project.technologies || []}
+                    author={project.author || ''}
+                    authorAvatar={project.authorAvatar}
+                    imageUrl={project.image_url || undefined}
+                    likes={project.likes_count}
+                    comments={project.comments_count}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-xl mb-4">No projects found</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  {searchTerm || selectedTech.length > 0 
+                    ? "Try adjusting your filters or search term"
+                    : "Be the first to share a project with the community!"}
+                </p>
+                {(searchTerm || selectedTech.length > 0) && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedTech([]);
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </main>
       

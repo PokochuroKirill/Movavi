@@ -1,186 +1,108 @@
 
-import React from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Github, Linkedin, Twitter } from 'lucide-react';
+import { Code, Lightbulb, Users, Globe } from 'lucide-react';
 
 const AboutPage = () => {
-  // Пример данных команды
-  const teamMembers = [
-    {
-      name: 'Александр Иванов',
-      role: 'Основатель и CEO',
-      bio: 'Опытный разработчик с более чем 10-летним стажем в индустрии. Руководил разработкой крупных IT-проектов.',
-      imageUrl: 'https://picsum.photos/id/1001/300/300',
-      github: 'https://github.com',
-      linkedin: 'https://linkedin.com',
-      twitter: 'https://twitter.com',
-    },
-    {
-      name: 'Елена Петрова',
-      role: 'Технический директор',
-      bio: 'Эксперт в области разработки и архитектуры приложений. Ранее работала в ведущих IT-компаниях.',
-      imageUrl: 'https://picsum.photos/id/1005/300/300',
-      github: 'https://github.com',
-      linkedin: 'https://linkedin.com',
-      twitter: 'https://twitter.com',
-    },
-    {
-      name: 'Дмитрий Смирнов',
-      role: 'Руководитель разработки',
-      bio: 'Разработчик с глубокими знаниями в области веб-технологий. Ответственен за техническую реализацию проекта.',
-      imageUrl: 'https://picsum.photos/id/1012/300/300',
-      github: 'https://github.com',
-      linkedin: 'https://linkedin.com',
-      twitter: 'https://twitter.com',
-    },
-    {
-      name: 'Мария Сидорова',
-      role: 'UX/UI Дизайнер',
-      bio: 'Талантливый дизайнер с большим опытом создания пользовательских интерфейсов. Отвечает за дизайн платформы.',
-      imageUrl: 'https://picsum.photos/id/1014/300/300',
-      github: 'https://github.com',
-      linkedin: 'https://linkedin.com',
-      twitter: 'https://twitter.com',
-    },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-20">
-        <div className="max-w-5xl mx-auto mt-12">
-          <h1 className="text-4xl font-bold mb-6">О нас</h1>
-          
-          {/* История и миссия */}
-          <section className="mb-16">
-            <h2 className="text-2xl font-semibold mb-6">Наша история и миссия</h2>
-            <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
-              <p>
-                DevHub был создан в 2023 году группой энтузиастов, объединенных общей идеей — 
-                создать платформу, где разработчики со всего мира могли бы делиться своими проектами, 
-                кодом и идеями.
-              </p>
-              <p>
-                Наша миссия — сделать разработку программного обеспечения более доступной и 
-                коллаборативной. Мы верим, что сообщество разработчиков может достичь большего, 
-                работая вместе и делясь знаниями.
-              </p>
-              <p>
-                За короткое время наша платформа выросла от идеи до полноценного сервиса, 
-                которым пользуются тысячи разработчиков. Мы постоянно развиваемся, 
-                добавляя новые функции и улучшая пользовательский опыт.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="p-6 text-center flex flex-col items-center">
-                <div className="text-4xl font-bold text-devhub-purple mb-2">10,000+</div>
-                <div>Активных пользователей</div>
-              </Card>
-              <Card className="p-6 text-center flex flex-col items-center">
-                <div className="text-4xl font-bold text-devhub-purple mb-2">5,000+</div>
-                <div>Опубликованных проектов</div>
-              </Card>
-              <Card className="p-6 text-center flex flex-col items-center">
-                <div className="text-4xl font-bold text-devhub-purple mb-2">15,000+</div>
-                <div>Сниппетов кода</div>
-              </Card>
-            </div>
-          </section>
-          
-          {/* Наша команда */}
-          <section className="mb-16">
-            <h2 className="text-2xl font-semibold mb-6">Наша команда</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {teamMembers.map((member, index) => (
-                <Card key={index} className="overflow-hidden">
-                  <div className="relative pb-[100%]">
-                    <img
-                      src={member.imageUrl}
-                      alt={member.name}
-                      className="absolute top-0 left-0 w-full h-full object-cover"
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="text-lg font-semibold">{member.name}</h3>
-                    <p className="text-devhub-purple mb-2">{member.role}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{member.bio}</p>
-                    <div className="flex space-x-2">
-                      <a
-                        href={member.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-devhub-purple transition-colors"
-                      >
-                        <Github className="h-5 w-5" />
-                      </a>
-                      <a
-                        href={member.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-devhub-purple transition-colors"
-                      >
-                        <Linkedin className="h-5 w-5" />
-                      </a>
-                      <a
-                        href={member.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-devhub-purple transition-colors"
-                      >
-                        <Twitter className="h-5 w-5" />
-                      </a>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-          
-          {/* Наши ценности */}
-          <section className="mb-16">
-            <h2 className="text-2xl font-semibold mb-6">Наши ценности</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="p-6">
-                <h3 className="text-xl font-semibold mb-3">Открытость</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Мы верим в открытость и прозрачность как фундаментальные принципы сотрудничества. 
-                  Наш код открыт и доступен для всех.
-                </p>
-              </Card>
-              <Card className="p-6">
-                <h3 className="text-xl font-semibold mb-3">Сообщество</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Мы ценим каждого участника нашего сообщества и стремимся создать среду, 
-                  где каждый чувствует себя нужным и важным.
-                </p>
-              </Card>
-              <Card className="p-6">
-                <h3 className="text-xl font-semibold mb-3">Инновации</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Мы постоянно ищем новые решения и подходы, чтобы сделать нашу платформу 
-                  лучше и удобнее для пользователей.
-                </p>
-              </Card>
-            </div>
-          </section>
-          
-          {/* CTA */}
-          <section className="bg-devhub-purple text-white p-8 rounded-lg text-center">
-            <h2 className="text-2xl font-semibold mb-4">Присоединяйтесь к нам</h2>
-            <p className="mb-6 max-w-2xl mx-auto">
-              Станьте частью нашего растущего сообщества разработчиков. 
-              Делитесь своими проектами, изучайте работы других и находите единомышленников.
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-5xl font-bold mb-6">About DevHub</h1>
+            <p className="text-xl max-w-2xl mx-auto mb-10">
+              A community platform built by developers, for developers, to share, learn and grow together.
             </p>
-            <Button className="bg-white text-devhub-purple hover:bg-gray-100">
-              Начать сейчас
-            </Button>
-          </section>
-        </div>
-      </div>
+            <Link to="/auth">
+              <Button className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-700 text-lg py-6 px-8">
+                Get Started Now
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        {/* Mission Section */}
+        <section className="py-16 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
+                DevHub was created to foster a vibrant community where developers can showcase their work,
+                share knowledge through snippets, and connect with like-minded professionals. We believe in
+                the power of open collaboration and knowledge sharing to accelerate innovation in software development.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-16 bg-gray-50 dark:bg-gray-800">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold mb-12 text-center">What Sets Us Apart</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md text-center">
+                <div className="mx-auto bg-blue-100 dark:bg-blue-900 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+                  <Code className="h-8 w-8 text-blue-600 dark:text-blue-300" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Code Snippets</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Share useful code snippets with syntax highlighting and detailed explanations.
+                </p>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md text-center">
+                <div className="mx-auto bg-purple-100 dark:bg-purple-900 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+                  <Lightbulb className="h-8 w-8 text-purple-600 dark:text-purple-300" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Project Showcase</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Display your projects with screenshots, descriptions, and links to live demos.
+                </p>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md text-center">
+                <div className="mx-auto bg-green-100 dark:bg-green-900 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+                  <Users className="h-8 w-8 text-green-600 dark:text-green-300" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Developer Network</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Connect with other developers, follow their work, and collaborate on projects.
+                </p>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md text-center">
+                <div className="mx-auto bg-orange-100 dark:bg-orange-900 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+                  <Globe className="h-8 w-8 text-orange-600 dark:text-orange-300" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Global Community</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Join a worldwide community of developers sharing knowledge across borders.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-6">Ready to Join Our Community?</h2>
+            <p className="text-xl max-w-2xl mx-auto mb-10">
+              Create your account today to start sharing your projects, exploring code snippets,
+              and connecting with developers from around the world.
+            </p>
+            <Link to="/auth">
+              <Button className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-700 text-lg py-6 px-8">
+                Start Now
+              </Button>
+            </Link>
+          </div>
+        </section>
+      </main>
       <Footer />
     </div>
   );
