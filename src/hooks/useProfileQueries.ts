@@ -127,11 +127,13 @@ export const isFollowingUser = async (
   followingId: string
 ): Promise<boolean> => {
   try {
+    // Use direct query instead of rpc
     const { data, error } = await supabase
-      .rpc("check_if_following", { 
-        follower: followerId, 
-        following: followingId 
-      });
+      .from('user_follows')
+      .select('id')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .maybeSingle();
 
     if (error) {
       console.error("Error checking follow status:", error);
@@ -148,14 +150,20 @@ export const isFollowingUser = async (
 // Function to follow a user
 export const followUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
+    // Use direct insert instead of rpc
     const { data, error } = await supabase
-      .rpc("follow_user", { 
-        follower: followerId,
-        following: followingId
-      });
+      .from('user_follows')
+      .insert({
+        follower_id: followerId,
+        following_id: followingId
+      })
+      .select('id')
+      .maybeSingle();
 
-    if (error) throw error;
-    return !!data;
+    if (error && error.code !== '23505') { // Ignore unique violation errors
+      throw error;
+    }
+    return true;
   } catch (error) {
     console.error("Error following user:", error);
     return false;
@@ -165,14 +173,15 @@ export const followUser = async (followerId: string, followingId: string): Promi
 // Function to unfollow a user
 export const unfollowUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .rpc("unfollow_user", {
-        follower: followerId,
-        following: followingId
-      });
+    // Use direct delete instead of rpc
+    const { error } = await supabase
+      .from('user_follows')
+      .delete()
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId);
 
     if (error) throw error;
-    return !!data;
+    return true;
   } catch (error) {
     console.error("Error unfollowing user:", error);
     return false;
@@ -182,14 +191,19 @@ export const unfollowUser = async (followerId: string, followingId: string): Pro
 // Function to get the followers of a user
 export const fetchFollowers = async (userId: string): Promise<Profile[]> => {
   try {
+    // Use a direct join instead of rpc
     const { data, error } = await supabase
-      .rpc("get_followers", { user_id: userId });
+      .from('profiles')
+      .select('*')
+      .innerJoin('user_follows', 'profiles.id = user_follows.follower_id')
+      .eq('user_follows.following_id', userId);
 
     if (error) throw error;
     
     if (!data) return [];
     
-    return data as unknown as Profile[];
+    // Extract just the profile data from the joined result
+    return data.map(item => item.profiles) as unknown as Profile[];
   } catch (error) {
     console.error("Error fetching followers:", error);
     return [];
@@ -199,14 +213,19 @@ export const fetchFollowers = async (userId: string): Promise<Profile[]> => {
 // Function to get the users that a user is following
 export const fetchFollowing = async (userId: string): Promise<Profile[]> => {
   try {
+    // Use a direct join instead of rpc
     const { data, error } = await supabase
-      .rpc("get_following", { user_id: userId });
+      .from('profiles')
+      .select('*')
+      .innerJoin('user_follows', 'profiles.id = user_follows.following_id')
+      .eq('user_follows.follower_id', userId);
 
     if (error) throw error;
     
     if (!data) return [];
     
-    return data as unknown as Profile[];
+    // Extract just the profile data from the joined result
+    return data.map(item => item.profiles) as unknown as Profile[];
   } catch (error) {
     console.error("Error fetching following:", error);
     return [];
@@ -218,19 +237,25 @@ export const fetchFollowCounts = async (
   userId: string
 ): Promise<{ followers: number; following: number }> => {
   try {
-    const { data: followersCount, error: followersError } = await supabase
-      .rpc("count_followers", { user_id: userId });
+    // Count followers
+    const { count: followersCount, error: followersError } = await supabase
+      .from('user_follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('following_id', userId);
 
     if (followersError) throw followersError;
 
-    const { data: followingCount, error: followingError } = await supabase
-      .rpc("count_following", { user_id: userId });
+    // Count following
+    const { count: followingCount, error: followingError } = await supabase
+      .from('user_follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('follower_id', userId);
 
     if (followingError) throw followingError;
 
     return {
-      followers: followersCount as number || 0,
-      following: followingCount as number || 0,
+      followers: followersCount || 0,
+      following: followingCount || 0,
     };
   } catch (error) {
     console.error("Error fetching follow counts:", error);

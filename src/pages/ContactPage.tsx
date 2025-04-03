@@ -1,167 +1,214 @@
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Mail, Phone, MapPin } from 'lucide-react';
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Name must be at least 2 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  subject: z.string().min(5, {
+    message: "Subject must be at least 5 characters.",
+  }),
+  message: z.string().min(10, {
+    message: "Message must be at least 10 characters.",
+  }),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuth();
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      subject: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: user?.user_metadata?.full_name || '',
+      email: user?.email || '',
+      subject: '',
+      message: '',
+    },
+  });
+  
+  const onSubmit = async (values: FormData) => {
+    setIsSubmitting(true);
     
     try {
       const { error } = await supabase
         .from('support_requests')
         .insert({
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-          status: 'pending',
-          user_id: user?.id || null
+          name: values.name,
+          email: values.email,
+          subject: values.subject,
+          message: values.message,
+          user_id: user?.id || null,
+          status: 'pending'
         });
       
       if (error) throw error;
       
       toast({
-        title: "Message sent",
-        description: "We'll respond to you as soon as possible.",
+        title: "Request submitted",
+        description: "We'll get back to you as soon as possible!",
       });
       
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-      });
+      setIsSuccess(true);
+      form.reset();
     } catch (error) {
-      console.error('Error sending support request:', error);
-      
+      console.error("Error submitting support request:", error);
       toast({
         title: "Error",
-        description: "Failed to send your message. Please try again later.",
-        variant: "destructive"
+        description: "Failed to submit your request. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-20">
-        <div className="max-w-3xl mx-auto mt-12">
-          <h1 className="text-4xl font-bold mb-6">Contact Us</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-12 max-w-2xl">
-            Have questions, suggestions, or want to report an issue? Fill out the form below and we'll get back to you as soon as possible.
-          </p>
+      <div className="flex-grow py-16 container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
+            <p className="text-gray-600 dark:text-gray-400 text-xl max-w-2xl mx-auto">
+              Have questions or need help? Reach out to our team and we'll get back to you as soon as possible.
+            </p>
+          </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <h2 className="text-2xl font-semibold mb-6">Send us a message</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="md:col-span-1 space-y-6">
+              <div>
+                <div className="flex items-center mb-2">
+                  <Mail className="h-5 w-5 mr-2 text-devhub-purple" />
+                  <h3 className="font-semibold text-lg">Email</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">support@devhub.com</p>
+              </div>
+              
+              <div>
+                <div className="flex items-center mb-2">
+                  <Phone className="h-5 w-5 mr-2 text-devhub-purple" />
+                  <h3 className="font-semibold text-lg">Phone</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">+1 (123) 456-7890</p>
+              </div>
+              
+              <div>
+                <div className="flex items-center mb-2">
+                  <MapPin className="h-5 w-5 mr-2 text-devhub-purple" />
+                  <h3 className="font-semibold text-lg">Address</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  123 Developer Way<br />
+                  Tech City, CA 94043<br />
+                  United States
+                </p>
+              </div>
+            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Your name</Label>
-                  <Input 
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="John Doe"
-                    required
-                  />
+            <div className="md:col-span-2">
+              {isSuccess ? (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
+                  <h3 className="font-bold text-xl mb-2">Thank You!</h3>
+                  <p className="mb-4">Your message has been sent successfully. We'll get back to you soon.</p>
+                  <Button onClick={() => setIsSuccess(false)}>Send Another Message</Button>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Your Email</Label>
-                  <Input 
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="your@email.com"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
-                <Select value={formData.subject} onValueChange={handleSelectChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General question</SelectItem>
-                    <SelectItem value="support">Technical support</SelectItem>
-                    <SelectItem value="feedback">Platform feedback</SelectItem>
-                    <SelectItem value="partnership">Partnership</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea 
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  placeholder="Your message..."
-                  rows={6}
-                  required
-                />
-              </div>
-              
-              <Button type="submit" className="gradient-bg text-white" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  'Send Message'
-                )}
-              </Button>
-            </form>
+              ) : (
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="subject"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Subject</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Subject of your inquiry" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="message"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Message</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="How can we help you?" 
+                              className="min-h-[150px]" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Sending..." : "Send Message"}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </div>
           </div>
         </div>
       </div>

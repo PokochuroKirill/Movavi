@@ -1,36 +1,38 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectFilters from '@/components/ProjectFilters';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Search, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, PlusCircle, Search, X } from 'lucide-react';
+import { Project } from '@/types/database';
 
 const ProjectsPage = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [displayedProjects, setDisplayedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [availableTech, setAvailableTech] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
-
+  const [availableTechnologies, setAvailableTechnologies] = useState<string[]>([]);
+  
   useEffect(() => {
     fetchProjects();
   }, []);
-
-  useEffect(() => {
-    filterProjects();
-  }, [searchTerm, selectedTech, projects]);
-
+  
   const fetchProjects = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -38,191 +40,188 @@ const ProjectsPage = () => {
           profiles:user_id(username, full_name, avatar_url)
         `)
         .order('created_at', { ascending: false });
-
+      
       if (error) throw error;
-
-      const projectsWithMetadata = await Promise.all((data || []).map(async (project) => {
-        const { data: likesCount } = await supabase
-          .rpc('get_project_likes_count', { project_id: project.id });
+      
+      if (data) {
+        // Process projects data
+        const projectsWithCounts = await Promise.all(data.map(async (project) => {
+          // Get likes count
+          const { data: likesCount } = await supabase
+            .rpc('get_project_likes_count', { project_id: project.id });
+          
+          // Get comments count
+          const { count: commentsCount } = await supabase
+            .from('comments')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', project.id);
+          
+          return {
+            ...project,
+            author: project.profiles?.full_name || project.profiles?.username || 'Unknown Author',
+            authorAvatar: project.profiles?.avatar_url,
+            likes_count: likesCount || 0,
+            comments_count: commentsCount || 0
+          };
+        }));
         
-        const { count: commentsCount } = await supabase
-          .from('comments')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', project.id);
+        // Extract all unique technologies
+        const techs = new Set<string>();
+        projectsWithCounts.forEach(project => {
+          if (Array.isArray(project.technologies)) {
+            project.technologies.forEach(tech => techs.add(tech));
+          }
+        });
         
-        return {
-          ...project,
-          author: project.profiles?.full_name || project.profiles?.username || 'Unnamed Author',
-          authorAvatar: project.profiles?.avatar_url,
-          likes_count: likesCount || 0,
-          comments_count: commentsCount || 0
-        } as Project;
-      }));
-
-      setProjects(projectsWithMetadata);
-
-      const allTechnologies = projectsWithMetadata.reduce((acc: string[], project) => {
-        if (project.technologies && Array.isArray(project.technologies)) {
-          project.technologies.forEach((tech) => {
-            if (!acc.includes(tech)) {
-              acc.push(tech);
-            }
-          });
-        }
-        return acc;
-      }, []);
-
-      setAvailableTech(allTechnologies);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
+        setProjects(projectsWithCounts as Project[]);
+        setDisplayedProjects(projectsWithCounts as Project[]);
+        setAvailableTechnologies(Array.from(techs));
+      }
+    } catch (error: any) {
+      console.error("Error fetching projects:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
-
+  
+  // Filter projects based on search and tech filters
   const filterProjects = () => {
     let filtered = [...projects];
-
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (project) =>
-          project.title.toLowerCase().includes(lowerSearchTerm) ||
-          project.description.toLowerCase().includes(lowerSearchTerm)
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(project => 
+        project.title.toLowerCase().includes(query) || 
+        project.description.toLowerCase().includes(query)
       );
     }
-
+    
+    // Apply tech filter
     if (selectedTech.length > 0) {
-      filtered = filtered.filter((project) => {
-        if (!project.technologies) return false;
-        return selectedTech.every((tech) => project.technologies?.includes(tech));
-      });
+      filtered = filtered.filter(project => 
+        selectedTech.every(tech => 
+          project.technologies?.includes(tech)
+        )
+      );
     }
-
-    setFilteredProjects(filtered);
+    
+    setDisplayedProjects(filtered);
   };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleTechChange = (techs: string[]) => {
+  
+  // Effect to filter projects when search or tech selection changes
+  useEffect(() => {
+    filterProjects();
+  }, [searchQuery, selectedTech, projects]);
+  
+  // Handle tech filter changes
+  const handleTechFilterChange = (techs: string[]) => {
     setSelectedTech(techs);
   };
-
+  
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedTech([]);
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-20 flex-grow">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Projects</h1>
+      <div className="flex-grow py-12 container mx-auto px-4">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Explore Projects</h1>
           {user && (
-            <Link to="/create-project">
-              <Button className="gradient-bg text-white">
-                <Plus className="mr-2 h-4 w-4" /> Create Project
+            <Link to="/projects/create">
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Project
               </Button>
             </Link>
           )}
         </div>
         
-        <div className="mb-8">
-          <Tabs defaultValue="all" className="w-full">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
-              <TabsList className="mb-2 md:mb-0">
-                <TabsTrigger value="all">All Projects</TabsTrigger>
-                {user && (
-                  <>
-                    <TabsTrigger value="my">My Projects</TabsTrigger>
-                    <TabsTrigger value="saved">Saved Projects</TabsTrigger>
-                  </>
-                )}
-              </TabsList>
-              <div className="flex-grow relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <Input
-                  type="search"
-                  placeholder="Search projects..."
-                  className="pl-10 w-full"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <ProjectFilters 
-                selectedTech={selectedTech}
-                onTechChange={(techs) => setSelectedTech(techs)}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="md:col-span-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                className="pl-9"
+                placeholder="Search projects by title or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button 
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 hover:text-gray-700"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6">
-                  <div className="mb-4">
-                    <Input
-                      placeholder="Search projects..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                    />
-                  </div>
-                  
-                  <ProjectFilters 
-                    availableTech={availableTech} 
-                    selectedTech={selectedTech}
-                    onTechChange={handleTechChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="lg:col-span-3">
-                {loading ? (
-                  <div className="flex justify-center items-center py-20">
-                    <Loader2 className="h-10 w-10 animate-spin text-devhub-purple mr-2" />
-                    <p className="text-lg">Loading projects...</p>
-                  </div>
-                ) : filteredProjects.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredProjects.map((project) => (
-                      <ProjectCard 
-                        key={project.id}
-                        id={project.id}
-                        title={project.title}
-                        description={project.description}
-                        technologies={project.technologies || []}
-                        author={project.author || ''}
-                        authorAvatar={project.authorAvatar}
-                        imageUrl={project.image_url || undefined}
-                        likes={project.likes_count}
-                        comments={project.comments_count}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-xl mb-4">No projects found</p>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      {searchTerm || selectedTech.length > 0 
-                        ? "Try adjusting your filters or search term"
-                        : "Be the first to share a project with the community!"}
-                    </p>
-                    {(searchTerm || selectedTech.length > 0) && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setSearchTerm('');
-                          setSelectedTech([]);
-                        }}
-                      >
-                        Clear Filters
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </Tabs>
+          </div>
+          
+          <div className="md:col-span-1">
+            <ProjectFilters 
+              selectedTech={selectedTech} 
+              onTechChange={handleTechFilterChange} 
+              availableTech={availableTechnologies}
+            />
+          </div>
         </div>
+        
+        {(searchQuery || selectedTech.length > 0) && (
+          <div className="mb-4 flex items-center">
+            <div className="text-sm text-gray-500">
+              {displayedProjects.length} {displayedProjects.length === 1 ? 'result' : 'results'} found
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearFilters}
+              className="ml-4 text-sm"
+            >
+              Clear filters
+            </Button>
+          </div>
+        )}
+        
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
+            <span>Loading projects...</span>
+          </div>
+        ) : displayedProjects.length === 0 ? (
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-semibold mb-4">No projects found</h2>
+            <p className="text-gray-500 mb-6">
+              {searchQuery || selectedTech.length > 0 ? 
+                "Try changing your search criteria or clearing filters." : 
+                "Be the first to share your project with the community!"
+              }
+            </p>
+            {user && (
+              <Link to="/projects/create">
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create Project
+                </Button>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        )}
       </div>
       <Footer />
     </div>

@@ -438,6 +438,80 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_if_following: {
+        Args: {
+          follower: string
+          following: string
+        }
+        Returns: boolean
+      }
+      count_followers: {
+        Args: {
+          user_id: string
+        }
+        Returns: number
+      }
+      count_following: {
+        Args: {
+          user_id: string
+        }
+        Returns: number
+      }
+      follow_user: {
+        Args: {
+          follower: string
+          following: string
+        }
+        Returns: boolean
+      }
+      get_followers: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
+          birthdate: string | null
+          created_at: string
+          discord: string | null
+          full_name: string | null
+          github: string | null
+          id: string
+          is_admin: boolean | null
+          linkedin: string | null
+          location: string | null
+          telegram: string | null
+          twitter: string | null
+          updated_at: string
+          username: string | null
+          website: string | null
+        }[]
+      }
+      get_following: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
+          birthdate: string | null
+          created_at: string
+          discord: string | null
+          full_name: string | null
+          github: string | null
+          id: string
+          is_admin: boolean | null
+          linkedin: string | null
+          location: string | null
+          telegram: string | null
+          twitter: string | null
+          updated_at: string
+          username: string | null
+          website: string | null
+        }[]
+      }
       get_project_likes_count: {
         Args: {
           project_id: string
@@ -475,6 +549,13 @@ export type Database = {
         Args: {
           snippet_id: string
           user_id: string
+        }
+        Returns: boolean
+      }
+      unfollow_user: {
+        Args: {
+          follower: string
+          following: string
         }
         Returns: boolean
       }

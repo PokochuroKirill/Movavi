@@ -1,77 +1,102 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// We'll fix AdminPage to use the proper types for blog_posts and support_requests tables
+import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, Clock, CheckCircle2, Mail } from 'lucide-react';
-import { BlogPost, SupportRequest } from '@/types/database';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { BlogPost, SupportRequest } from '@/types/database';
+import { Loader2, PlusCircle } from 'lucide-react';
+
+// Form schema for blog post
+const blogPostSchema = z.object({
+  title: z.string().min(2, {
+    message: "Title must be at least 2 characters.",
+  }),
+  excerpt: z.string().min(10, {
+    message: "Excerpt must be at least 10 characters.",
+  }),
+  content: z.string().min(50, {
+    message: "Content must be at least 50 characters.",
+  }),
+  category: z.string().min(1, {
+    message: "Please select a category.",
+  }),
+  image_url: z.string().optional(),
+});
+
+// Support request status schema
+const supportRequestSchema = z.object({
+  status: z.enum(["pending", "reviewed", "answered"])
+});
+
+type BlogPostFormValues = z.infer<typeof blogPostSchema>;
 
 const AdminPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
   
-  // Blog post form state
-  const [blogForm, setBlogForm] = useState({
-    title: '',
-    excerpt: '',
-    content: '',
-    category: '',
+  const form = useForm<BlogPostFormValues>({
+    resolver: zodResolver(blogPostSchema),
+    defaultValues: {
+      title: "",
+      excerpt: "",
+      content: "",
+      category: "",
+      image_url: "",
+    },
   });
-  const [submittingBlog, setSubmittingBlog] = useState(false);
   
   useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) {
-        navigate('/');
-        return;
-      }
-      
+    if (!user) return;
+    
+    const checkAdminStatus = async () => {
+      setLoading(true);
       try {
-        // Check if user is admin
         const { data, error } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', user.id)
           .single();
-        
-        if (error || !data || !data.is_admin) {
-          navigate('/');
-          return;
+          
+        if (error) {
+          throw error;
         }
         
-        setIsAdmin(true);
+        setIsAdmin(data?.is_admin || false);
         
-        // Fetch blog posts
-        fetchBlogPosts();
-        
-        // Fetch support requests
-        fetchSupportRequests();
+        if (data?.is_admin) {
+          await Promise.all([
+            fetchBlogPosts(),
+            fetchSupportRequests(),
+          ]);
+        }
       } catch (error) {
         console.error('Error checking admin status:', error);
-        navigate('/');
       } finally {
         setLoading(false);
       }
     };
     
-    checkAdmin();
-  }, [user, navigate]);
+    checkAdminStatus();
+  }, [user]);
   
   const fetchBlogPosts = async () => {
     try {
@@ -79,13 +104,13 @@ const AdminPage = () => {
         .from('blog_posts')
         .select(`
           *,
-          profiles:author_id(username, full_name, avatar_url)
+          profiles:author_id (username, full_name, avatar_url)
         `)
         .order('created_at', { ascending: false });
-      
+        
       if (error) throw error;
       
-      setBlogPosts(data || []);
+      setBlogPosts(data as unknown as BlogPost[] || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       toast({
@@ -102,10 +127,10 @@ const AdminPage = () => {
         .from('support_requests')
         .select('*')
         .order('created_at', { ascending: false });
-      
+        
       if (error) throw error;
       
-      setSupportRequests(data || []);
+      setSupportRequests(data as SupportRequest[] || []);
     } catch (error) {
       console.error('Error fetching support requests:', error);
       toast({
@@ -116,39 +141,21 @@ const AdminPage = () => {
     }
   };
   
-  const handleBlogFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setBlogForm(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  
-  const handleBlogSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!blogForm.title || !blogForm.excerpt || !blogForm.content || !blogForm.category) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill all required fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setSubmittingBlog(true);
+  const onSubmitBlogPost = async (values: BlogPostFormValues) => {
+    if (!user) return;
     
     try {
       const { error } = await supabase
         .from('blog_posts')
         .insert({
-          title: blogForm.title,
-          excerpt: blogForm.excerpt,
-          content: blogForm.content,
-          category: blogForm.category,
-          author_id: user!.id,
+          title: values.title,
+          excerpt: values.excerpt,
+          content: values.content,
+          category: values.category,
+          image_url: values.image_url || null,
+          author_id: user.id,
         });
-      
+        
       if (error) throw error;
       
       toast({
@@ -156,13 +163,7 @@ const AdminPage = () => {
         description: 'Blog post created successfully',
       });
       
-      setBlogForm({
-        title: '',
-        excerpt: '',
-        content: '',
-        category: '',
-      });
-      
+      form.reset();
       fetchBlogPosts();
     } catch (error) {
       console.error('Error creating blog post:', error);
@@ -171,22 +172,16 @@ const AdminPage = () => {
         description: 'Failed to create blog post',
         variant: 'destructive',
       });
-    } finally {
-      setSubmittingBlog(false);
     }
   };
   
-  const handleDeleteBlog = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this blog post? This action cannot be undone.')) {
-      return;
-    }
-    
+  const deleteBlogPost = async (id: string) => {
     try {
       const { error } = await supabase
         .from('blog_posts')
         .delete()
         .eq('id', id);
-      
+        
       if (error) throw error;
       
       toast({
@@ -205,18 +200,18 @@ const AdminPage = () => {
     }
   };
   
-  const handleUpdateSupportRequest = async (id: string, status: 'pending' | 'reviewed' | 'answered') => {
+  const updateSupportRequestStatus = async (id: string, status: 'pending' | 'reviewed' | 'answered') => {
     try {
       const { error } = await supabase
         .from('support_requests')
         .update({ status })
         .eq('id', id);
-      
+        
       if (error) throw error;
       
       toast({
         title: 'Success',
-        description: 'Support request updated successfully',
+        description: 'Support request status updated',
       });
       
       fetchSupportRequests();
@@ -224,19 +219,23 @@ const AdminPage = () => {
       console.error('Error updating support request:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update support request',
+        description: 'Failed to update support request status',
         variant: 'destructive',
       });
     }
   };
+  
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
   
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-          <span className="ml-2 text-lg">Loading admin panel...</span>
+          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
+          <span>Loading admin panel...</span>
         </div>
         <Footer />
       </div>
@@ -244,217 +243,233 @@ const AdminPage = () => {
   }
   
   if (!isAdmin) {
-    return null; // Should never render this as we redirect non-admins
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow container mx-auto px-4 py-20">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-3xl font-bold mb-6">Access Denied</h1>
+            <p className="mb-4">You do not have permission to access the admin panel.</p>
+            <Button onClick={() => window.history.back()}>Go Back</Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
   }
-
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-20">
-        <h1 className="text-3xl font-bold mb-8 mt-8">Admin Panel</h1>
-
-        <Tabs defaultValue="blogs" className="w-full">
+      <div className="flex-grow container mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
+        
+        <Tabs defaultValue="blog">
           <TabsList className="mb-6">
-            <TabsTrigger value="blogs">Blog Management</TabsTrigger>
+            <TabsTrigger value="blog">Blog Posts</TabsTrigger>
             <TabsTrigger value="support">Support Requests</TabsTrigger>
           </TabsList>
           
-          {/* Blog Management */}
-          <TabsContent value="blogs">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Create Blog Post Form */}
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Plus className="mr-2 h-5 w-5" />
-                    Create New Blog Post
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleBlogSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Title</Label>
-                      <Input
-                        id="title"
-                        name="title"
-                        value={blogForm.title}
-                        onChange={handleBlogFormChange}
-                        placeholder="Blog post title"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Input
-                        id="category"
-                        name="category"
-                        value={blogForm.category}
-                        onChange={handleBlogFormChange}
-                        placeholder="e.g. JavaScript, API, TypeScript"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="excerpt">Excerpt</Label>
-                      <Textarea
-                        id="excerpt"
-                        name="excerpt"
-                        value={blogForm.excerpt}
-                        onChange={handleBlogFormChange}
-                        placeholder="Brief summary of the blog post"
-                        rows={2}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="content">Content</Label>
-                      <Textarea
-                        id="content"
-                        name="content"
-                        value={blogForm.content}
-                        onChange={handleBlogFormChange}
-                        placeholder="Full blog post content"
-                        rows={10}
-                        required
-                      />
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="gradient-bg text-white w-full" 
-                      disabled={submittingBlog}
-                    >
-                      {submittingBlog ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Blog Post'
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-              
-              {/* Blog Posts List */}
-              <div className="lg:col-span-2 space-y-6">
+          <TabsContent value="blog">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="md:col-span-1">
                 <Card>
                   <CardHeader>
-                    <CardTitle>All Blog Posts</CardTitle>
+                    <CardTitle>Create New Blog Post</CardTitle>
+                    <CardDescription>Fill out the form to create a new blog post.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {blogPosts.length === 0 ? (
-                      <p className="text-center py-6 text-gray-500">No blog posts found</p>
-                    ) : (
-                      <div className="space-y-6">
-                        {blogPosts.map(post => (
-                          <div key={post.id} className="border-b pb-4 last:border-0">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="font-semibold text-lg">{post.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {new Date(post.created_at).toLocaleDateString()} • {post.profiles?.full_name || post.profiles?.username}
-                                </p>
-                              </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-red-500 hover:text-red-700"
-                                onClick={() => handleDeleteBlog(post.id)}
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmitBlogPost)} className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Blog post title" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="category"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Category</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <p className="mt-2 text-gray-700 dark:text-gray-300">{post.excerpt}</p>
-                            <Badge className="mt-2 bg-gray-100 text-gray-800 hover:bg-gray-200">{post.category}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a category" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="tutorials">Tutorials</SelectItem>
+                                  <SelectItem value="news">News</SelectItem>
+                                  <SelectItem value="tips">Tips & Tricks</SelectItem>
+                                  <SelectItem value="career">Career</SelectItem>
+                                  <SelectItem value="technology">Technology</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="excerpt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Excerpt</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Short excerpt for the blog post" 
+                                  {...field}
+                                  rows={3}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="content"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Content</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Full blog post content" 
+                                  {...field}
+                                  rows={10}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Use paragraphs separated by a new line.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="image_url"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Image URL (optional)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://example.com/image.jpg" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <Button type="submit" className="w-full">
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Create Blog Post
+                        </Button>
+                      </form>
+                    </Form>
                   </CardContent>
                 </Card>
+              </div>
+              
+              <div className="md:col-span-2">
+                <h2 className="text-2xl font-semibold mb-4">Blog Posts</h2>
+                
+                <div className="space-y-4">
+                  {blogPosts.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      No blog posts found
+                    </div>
+                  ) : (
+                    blogPosts.map((post) => (
+                      <Card key={post.id}>
+                        <CardHeader>
+                          <div className="flex justify-between">
+                            <CardTitle>{post.title}</CardTitle>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => deleteBlogPost(post.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                          <CardDescription>
+                            {new Date(post.created_at).toLocaleDateString()} • {post.category}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-500">{post.excerpt}</p>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </TabsContent>
           
-          {/* Support Requests */}
           <TabsContent value="support">
-            <Card>
-              <CardHeader>
-                <CardTitle>Support Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {supportRequests.length === 0 ? (
-                  <p className="text-center py-6 text-gray-500">No support requests found</p>
-                ) : (
-                  <div className="space-y-6">
-                    {supportRequests.map(request => (
-                      <div key={request.id} className="border p-4 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold">{request.subject}</h3>
-                            <p className="text-sm text-gray-500">
-                              From: {request.name} ({request.email})
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                          <Badge 
-                            className={
-                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              request.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
-                              'bg-green-100 text-green-800'
-                            }
-                          >
-                            {request.status}
-                          </Badge>
+            <h2 className="text-2xl font-semibold mb-4">Support Requests</h2>
+            
+            <div className="space-y-4">
+              {supportRequests.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  No support requests found
+                </div>
+              ) : (
+                supportRequests.map((request) => (
+                  <Card key={request.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle>{request.subject}</CardTitle>
+                          <CardDescription>
+                            From: {request.name} ({request.email})
+                          </CardDescription>
                         </div>
-                        
-                        <p className="mt-3 border-t pt-3">{request.message}</p>
-                        
-                        <div className="mt-4 flex space-x-2">
-                          {request.status === 'pending' && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleUpdateSupportRequest(request.id, 'reviewed')}
-                            >
-                              <Clock className="mr-1 h-4 w-4" />
-                              Mark as Reviewed
-                            </Button>
+                        <Select
+                          defaultValue={request.status}
+                          onValueChange={(value) => updateSupportRequestStatus(
+                            request.id, 
+                            value as 'pending' | 'reviewed' | 'answered'
                           )}
-                          
-                          {(request.status === 'pending' || request.status === 'reviewed') && (
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleUpdateSupportRequest(request.id, 'answered')}
-                              className="gradient-bg text-white"
-                            >
-                              <CheckCircle2 className="mr-1 h-4 w-4" />
-                              Mark as Answered
-                            </Button>
-                          )}
-                          
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => window.location.href = `mailto:${request.email}?subject=Re: ${request.subject}`}
-                          >
-                            <Mail className="mr-1 h-4 w-4" />
-                            Reply via Email
-                          </Button>
-                        </div>
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="reviewed">Reviewed</SelectItem>
+                            <SelectItem value="answered">Answered</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="whitespace-pre-wrap">{request.message}</p>
+                    </CardContent>
+                    <CardFooter className="text-sm text-gray-500">
+                      Received: {new Date(request.created_at).toLocaleString()}
+                    </CardFooter>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
