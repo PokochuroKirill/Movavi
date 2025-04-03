@@ -1,12 +1,11 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useToast } from "./use-toast";
-import { SnippetComment, SnippetLike, SavedSnippet } from "@/types/database";
+import { Snippet, Comment } from "@/types/database";
 
 // Function to fetch comments for a snippet
-export const fetchSnippetComments = async (snippetId: string): Promise<SnippetComment[]> => {
+export const fetchSnippetComments = async (snippetId: string): Promise<Comment[]> => {
   // Используем сырой SQL запрос вместо обращения к таблице напрямую
   const { data, error } = await supabase
     .from('snippet_comments')
@@ -22,11 +21,11 @@ export const fetchSnippetComments = async (snippetId: string): Promise<SnippetCo
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as unknown as SnippetComment[];
+  return data as unknown as Comment[];
 };
 
 // Function to post a comment on a snippet
-export const postSnippetComment = async (snippetId: string, userId: string, content: string): Promise<SnippetComment> => {
+export const postSnippetComment = async (snippetId: string, userId: string, content: string): Promise<Comment> => {
   // Используем сырой SQL запрос вместо обращения к таблице напрямую
   const { data, error } = await supabase
     .from('snippet_comments')
@@ -46,7 +45,7 @@ export const postSnippetComment = async (snippetId: string, userId: string, cont
     .single();
 
   if (error) throw error;
-  return data as unknown as SnippetComment;
+  return data as unknown as Comment;
 };
 
 // Function to delete a comment on a snippet
@@ -162,7 +161,7 @@ export const toggleSnippetSave = async (snippetId: string, userId: string, isSav
 
 // Hook to handle snippet comments operations
 export const useSnippetComments = (snippetId: string) => {
-  const [comments, setComments] = useState<SnippetComment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -347,7 +346,7 @@ export const useSnippetInteractions = (snippetId: string) => {
       console.error("Error toggling save:", error);
       toast({
         title: "Ошибка",
-        description: "Не удалось обновить статус сохранения",
+        description: "Не удалось обновить статус сохра��ения",
         variant: "destructive"
       });
     }

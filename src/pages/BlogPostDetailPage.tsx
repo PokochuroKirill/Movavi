@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { BlogPost } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { fetchBlogPostById, fetchRelatedBlogPosts } from '@/hooks/useBlogQueries';
 
 const BlogPostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,23 +25,19 @@ const BlogPostDetailPage = () => {
       try {
         setLoading(true);
         
-        // Fetch the blog post directly without using .from('blog_posts')
-        const { data, error } = await supabase.rpc('get_blog_post_by_id', { post_id: id });
+        const postData = await fetchBlogPostById(id);
         
-        if (error) throw error;
-        
-        if (data) {
-          setPost(data as BlogPost);
+        if (postData) {
+          setPost(postData);
           
           // Fetch related posts with the same category
-          const { data: related, error: relatedError } = await supabase.rpc(
-            'get_related_blog_posts',
-            { post_category: data.category, current_post_id: data.id, limit_count: 3 }
+          const relatedData = await fetchRelatedBlogPosts(
+            postData.category,
+            postData.id,
+            3
           );
           
-          if (relatedError) throw relatedError;
-          
-          setRelatedPosts(related as BlogPost[] || []);
+          setRelatedPosts(relatedData);
         } else {
           setPost(null);
         }

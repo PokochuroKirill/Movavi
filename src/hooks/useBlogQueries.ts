@@ -6,11 +6,29 @@ import { useToast } from "@/hooks/use-toast";
 // Function to fetch all blog posts
 export const fetchAllBlogPosts = async (): Promise<BlogPost[]> => {
   try {
-    const { data, error } = await supabase.rpc('get_all_blog_posts');
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(`
+        id,
+        title,
+        excerpt,
+        content,
+        category,
+        image_url,
+        created_at,
+        updated_at,
+        author_id,
+        profiles:author_id (
+          username,
+          full_name,
+          avatar_url
+        )
+      `)
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return data as BlogPost[] || [];
+    return data as unknown as BlogPost[] || [];
   } catch (error) {
     console.error("Error fetching blog posts:", error);
     return [];
@@ -20,16 +38,72 @@ export const fetchAllBlogPosts = async (): Promise<BlogPost[]> => {
 // Function to fetch a blog post by id
 export const fetchBlogPostById = async (postId: string): Promise<BlogPost | null> => {
   try {
-    const { data, error } = await supabase.rpc('get_blog_post_by_id', { post_id: postId });
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(`
+        id,
+        title,
+        excerpt,
+        content,
+        category,
+        image_url,
+        created_at,
+        updated_at,
+        author_id,
+        profiles:author_id (
+          username,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('id', postId)
+      .single();
     
     if (error) throw error;
-    
-    if (!data || data.length === 0) return null;
     
     return data as BlogPost;
   } catch (error) {
     console.error("Error fetching blog post:", error);
     return null;
+  }
+};
+
+// Function to fetch related blog posts by category
+export const fetchRelatedBlogPosts = async (
+  category: string,
+  currentPostId: string,
+  limit: number = 3
+): Promise<BlogPost[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(`
+        id,
+        title,
+        excerpt,
+        content,
+        category,
+        image_url,
+        created_at,
+        updated_at,
+        author_id,
+        profiles:author_id (
+          username,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('category', category)
+      .neq('id', currentPostId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    
+    return data as unknown as BlogPost[] || [];
+  } catch (error) {
+    console.error("Error fetching related blog posts:", error);
+    return [];
   }
 };
 

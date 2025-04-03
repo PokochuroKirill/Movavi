@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -10,6 +9,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Loader2, ArrowRight } from 'lucide-react';
 import { BlogPost } from '@/types/database';
+import { fetchAllBlogPosts } from '@/hooks/useBlogQueries';
 
 const BlogPage = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -17,15 +17,12 @@ const BlogPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const loadPosts = async () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase.rpc('get_all_blog_posts');
-        
-        if (error) throw error;
-        
-        setPosts(data as BlogPost[] || []);
+        const data = await fetchAllBlogPosts();
+        setPosts(data);
       } catch (error: any) {
         console.error('Ошибка при загрузке записей блога:', error);
         toast({
@@ -38,7 +35,7 @@ const BlogPage = () => {
       }
     };
 
-    fetchPosts();
+    loadPosts();
   }, [toast]);
 
   const formatDate = (dateString: string) => {

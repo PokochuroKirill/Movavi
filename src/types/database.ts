@@ -124,3 +124,31 @@ export interface SupportRequest {
   user_id?: string;
   created_at: string;
 }
+
+// Additional interfaces needed
+export interface SnippetComment {
+  id: string;
+  content: string;
+  user_id: string;
+  snippet_id: string;
+  created_at: string;
+  profiles?: {
+    username?: string;
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
+
+export interface SnippetLike {
+  id: string;
+  user_id: string;
+  snippet_id: string;
+  created_at: string;
+}
+
+export interface SavedSnippet {
+  id: string;
+  user_id: string;
+  snippet_id: string;
+  created_at: string;
+}
