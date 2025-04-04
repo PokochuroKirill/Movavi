@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Calendar, MapPin, Link as LinkIcon, Twitter, Github, Linkedin, MessageCircle, Hash, Check } from "lucide-react";
@@ -59,7 +58,7 @@ const ProfileHeader = ({
               className="mb-4"
             >
               <Pencil className="h-4 w-4 mr-1" />
-              Edit
+              Редактировать
             </Button>
           )}
         </div>

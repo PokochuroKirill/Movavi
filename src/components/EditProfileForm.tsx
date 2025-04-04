@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,6 +84,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
+      console.log("No file selected");
       return;
     }
     
@@ -94,35 +94,54 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     const filePath = `banners/${fileName}`;
     
     setUploading(true);
+    console.log("Starting banner upload process", { fileName, filePath });
     
     try {
-      // Создаём хранилище, если его нет
-      const { error: bucketError } = await supabase.storage
-        .getBucket('profiles')
-        .catch(() => ({ error: new Error('Bucket does not exist') }));
+      // Check if profiles bucket exists
+      console.log("Checking if 'profiles' storage bucket exists");
+      try {
+        const { data: bucketData, error: bucketError } = await supabase.storage
+          .getBucket('profiles');
+          
+        console.log("Bucket check result:", { bucketData, bucketError });
         
-      if (bucketError) {
-        try {
-          await supabase.storage.createBucket('profiles', {
-            public: true,
-            fileSizeLimit: 5242880, // 5MB
-          });
-        } catch (createBucketError) {
-          console.error('Error creating bucket:', createBucketError);
+        if (bucketError) {
+          console.log("Bucket doesn't exist, creating new bucket");
+          try {
+            const { data: newBucket, error: createError } = await supabase.storage
+              .createBucket('profiles', {
+                public: true,
+                fileSizeLimit: 5242880, // 5MB
+              });
+            console.log("Bucket creation result:", { newBucket, createError });
+            
+            if (createError) throw createError;
+          } catch (createBucketError) {
+            console.error('Error creating bucket:', createBucketError);
+            throw createBucketError;
+          }
         }
+      } catch (bucketCheckError) {
+        console.error("Error checking bucket:", bucketCheckError);
       }
       
       // Upload the file to Supabase storage
-      const { error: uploadError } = await supabase.storage
+      console.log("Uploading file to storage");
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(filePath, file, { upsert: true });
+      
+      console.log("Upload result:", { uploadData, uploadError });
       
       if (uploadError) throw uploadError;
       
       // Get the public URL
+      console.log("Getting public URL");
       const { data } = supabase.storage
         .from('profiles')
         .getPublicUrl(filePath);
+      
+      console.log("Public URL:", data);
       
       setBanner(data.publicUrl);
       
@@ -134,7 +153,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
       console.error('Ошибка при загрузке баннера:', error);
       toast({
         title: "Ошибка загрузки",
-        description: "Не удалось загрузить баннер профиля",
+        description: "Не удалось загрузить баннер профиля: " + (error?.message || "Неизвестная ошибка"),
         variant: "destructive"
       });
     } finally {
@@ -338,7 +357,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
               Сохранение...
             </>
           ) : (
-            'Сохранить изменения'
+            'Сохранить изм��нения'
           )}
         </Button>
       </div>
