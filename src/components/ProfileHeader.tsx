@@ -1,6 +1,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, Calendar, MapPin, Link as LinkIcon, Twitter, Github, Linkedin, MessageCircle, Hash } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Calendar, MapPin, Link as LinkIcon, Twitter, Github, Linkedin, MessageCircle, Hash, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -65,9 +66,17 @@ const ProfileHeader = ({
         
         {/* User info */}
         <div className="py-4">
-          <h2 className="text-xl font-bold">
-            {profile.full_name || 'User'}
-          </h2>
+          <div className="flex items-center">
+            <h2 className="text-xl font-bold">
+              {profile.full_name || 'User'}
+            </h2>
+            {profile.is_verified && (
+              <Badge className="ml-2 gradient-bg text-white">
+                <Check className="h-3 w-3 mr-1" />
+                Верифицирован
+              </Badge>
+            )}
+          </div>
           <p className="text-gray-500 dark:text-gray-400">
             @{profile.username || 'username'}
           </p>

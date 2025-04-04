@@ -6,45 +6,171 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2 } from 'lucide-react';
-import { useSnippetComments } from '@/hooks/useSnippetQueries';
+import { Trash2, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SnippetCommentSectionProps {
   snippetId: string;
   onCommentsChange?: (count: number) => void;
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  snippet_id: string;
+  user_id: string;
+  profiles?: {
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSectionProps) => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { comments, isLoading, loadComments, addComment, removeComment } = useSnippetComments(snippetId);
+
+  const loadComments = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('snippet_comments')
+        .select(`
+          *,
+          profiles:user_id (username, full_name, avatar_url)
+        `)
+        .eq('snippet_id', snippetId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setComments(data || []);
+      
+      if (onCommentsChange) {
+        onCommentsChange(data?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить комментарии',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadComments();
+    
+    // Set up real-time subscription for new comments
+    const channel = supabase
+      .channel('public:snippet_comments')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'snippet_comments',
+          filter: `snippet_id=eq.${snippetId}`
+        }, 
+        () => {
+          loadComments();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [snippetId]);
-
-  useEffect(() => {
-    if (onCommentsChange) {
-      onCommentsChange(comments.length);
-    }
-  }, [comments.length, onCommentsChange]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
-    const success = await addComment(newComment);
-    if (success) {
-      setNewComment('');
+    if (!user) {
+      toast({
+        title: 'Ошибка',
+        description: 'Вы должны войти в систему, чтобы оставить комментарий',
+        variant: 'destructive'
+      });
+      return;
     }
     
-    setIsSubmitting(false);
+    if (!newComment.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Комментарий не может быть пустым',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('snippet_comments')
+        .insert({
+          content: newComment,
+          snippet_id: snippetId,
+          user_id: user.id
+        });
+        
+      if (error) throw error;
+      
+      setNewComment('');
+      loadComments();
+      
+      toast({
+        description: 'Комментарий успешно добавлен'
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось добавить комментарий',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    await removeComment(commentId);
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('snippet_comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setComments(comments.filter(comment => comment.id !== commentId));
+      
+      toast({
+        description: 'Комментарий успешно удален'
+      });
+      
+      if (onCommentsChange) {
+        onCommentsChange(comments.length - 1);
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить комментарий',
+        variant: 'destructive'
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -76,14 +202,22 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
         <Button 
           type="submit" 
           className="gradient-bg text-white"
-          disabled={isSubmitting || !user}
+          disabled={isSubmitting || !user || !newComment.trim()}
         >
-          {isSubmitting ? 'Отправка...' : 'Отправить'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Отправка...
+            </>
+          ) : (
+            'Отправить'
+          )}
         </Button>
       </form>
       
       {isLoading ? (
         <div className="text-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
           <p className="text-gray-500">Загрузка комментариев...</p>
         </div>
       ) : comments.length > 0 ? (

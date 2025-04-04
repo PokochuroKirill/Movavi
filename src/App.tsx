@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +24,7 @@ import SupportPage from "./pages/SupportPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AdminPage from "./pages/AdminPage";
+import AdminProPage from "./pages/AdminProPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -38,37 +38,25 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/projects/create" element={
-              <ProtectedRoute>
-                <CreateProjectPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/snippets" element={<SnippetsPage />} />
-            <Route path="/snippets/:id" element={<SnippetDetailPage />} />
-            <Route path="/snippets/create" element={
-              <ProtectedRoute>
-                <CreateSnippetPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/snippets/edit/:id" element={
-              <ProtectedRoute>
-                <EditSnippetPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/faq" element={<FaqPage />} />
+            <Route path="/support" element={<SupportPage />} />
             <Route path="/documentation" element={<DocumentationPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+            <Route path="/admin-pro" element={<AdminProPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:id" element={<BlogPostDetailPage />} />
-            <Route path="/faq" element={<FaqPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/support" element={<SupportPage />} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/user/:username" element={<UserProfilePage />} />
-            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/create" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/snippets" element={<SnippetsPage />} />
+            <Route path="/snippets/create" element={<ProtectedRoute><CreateSnippetPage /></ProtectedRoute>} />
+            <Route path="/snippets/:id" element={<SnippetDetailPage />} />
+            <Route path="/snippets/:id/edit" element={<ProtectedRoute><EditSnippetPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

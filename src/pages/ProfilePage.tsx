@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -80,11 +79,9 @@ const ProfilePage = () => {
       }
       
       const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
-        // Get likes count for each project
         const { data: likesCount } = await supabase
           .rpc('get_project_likes_count', { project_id: project.id });
         
-        // Get comments count for each project
         const { count: commentsCount } = await supabase
           .from('comments')
           .select('id', { count: 'exact', head: true })
@@ -136,11 +133,9 @@ const ProfilePage = () => {
         }
         
         const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
-          // Get likes count for each project
           const { data: likesCount } = await supabase
             .rpc('get_project_likes_count', { project_id: project.id });
           
-          // Get comments count for each project
           const { count: commentsCount } = await supabase
             .from('comments')
             .select('id', { count: 'exact', head: true })
@@ -201,7 +196,6 @@ const ProfilePage = () => {
         description: 'Профиль успешно обновлен',
       });
       
-      // Обновляем данные профиля
       fetchProfile();
       setIsEditing(false);
     } catch (error: any) {
@@ -228,7 +222,6 @@ const ProfilePage = () => {
         description: 'Проект успешно удален'
       });
       
-      // Обновляем список проектов
       fetchUserProjects();
     } catch (error: any) {
       console.error('Error deleting project:', error.message);
@@ -259,178 +252,184 @@ const ProfilePage = () => {
       <div className="flex-grow container mx-auto px-4 py-20">
         <h1 className="text-3xl font-bold mb-8 mt-8">Личный кабинет</h1>
 
-        {profile && !isEditing && (
-          <ProfileHeader 
-            profile={profile} 
-            isCurrentUser={true} 
-            onEditClick={() => setIsEditing(true)} 
-          />
-        )}
-
-        {profile && isEditing && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Редактирование профиля</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EditProfileForm 
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-5">
+            {profile && !isEditing && (
+              <ProfileHeader 
                 profile={profile} 
-                onUpdate={handleUpdateProfile} 
+                isCurrentUser={true} 
+                onEditClick={() => setIsEditing(true)} 
               />
-            </CardContent>
-          </Card>
-        )}
+            )}
 
-        <Tabs defaultValue="projects" className="w-full max-w-4xl mx-auto">
-          <TabsList className="mb-6">
-            <TabsTrigger value="projects">Мои проекты</TabsTrigger>
-            <TabsTrigger value="saved-projects">Сохраненные проекты</TabsTrigger>
-            <TabsTrigger value="snippets">Мои сниппеты</TabsTrigger>
-          </TabsList>
-          
-          {/* Tab Content */}
-          <TabsContent value="projects">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Мои проекты</CardTitle>
-                <Link to="/projects/create">
-                  <Button className="gradient-bg text-white">
-                    Создать проект
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                {projectsLoading ? (
-                  <p className="text-center py-10 text-gray-500">
-                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                    Загрузка проектов...
-                  </p>
-                ) : userProjects.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userProjects.map(project => (
-                      <div key={project.id} className="relative">
-                        <ProjectCard
-                          id={project.id}
-                          title={project.title}
-                          description={project.description}
-                          technologies={project.technologies || []}
-                          author={project.author}
-                          authorAvatar={project.authorAvatar}
-                          imageUrl={project.image_url || undefined}
-                          likes={project.likes_count}
-                          comments={project.comments_count}
-                        />
-                        <Button 
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => handleDeleteProject(project.id)}
-                        >
-                          Удалить
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10">
-                    <p className="text-muted-foreground mb-4">
-                      У вас пока нет проектов. Создайте свой первый проект!
-                    </p>
+            {profile && isEditing && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Редактирование профиля</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <EditProfileForm 
+                    profile={profile} 
+                    onUpdate={handleUpdateProfile} 
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="lg:col-span-7">
+            <Tabs defaultValue="projects" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="projects">Мои проекты</TabsTrigger>
+                <TabsTrigger value="saved-projects">Сохраненные проекты</TabsTrigger>
+                <TabsTrigger value="snippets">Мои сниппеты</TabsTrigger>
+              </TabsList>
+              
+              {/* Tab Content */}
+              <TabsContent value="projects">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Мои проекты</CardTitle>
                     <Link to="/projects/create">
                       <Button className="gradient-bg text-white">
                         Создать проект
                       </Button>
                     </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="saved-projects">
-            <Card>
-              <CardHeader>
-                <CardTitle>Сохраненные проекты</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {savedProjectsLoading ? (
-                  <p className="text-center py-10 text-gray-500">
-                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                    Загрузка сохраненных проектов...
-                  </p>
-                ) : savedProjects.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {savedProjects.map(project => (
-                      <ProjectCard
-                        key={project.id}
-                        id={project.id}
-                        title={project.title}
-                        description={project.description}
-                        technologies={project.technologies || []}
-                        author={project.author}
-                        authorAvatar={project.authorAvatar}
-                        imageUrl={project.image_url || undefined}
-                        likes={project.likes_count}
-                        comments={project.comments_count}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-10 text-gray-500">
-                    У вас нет сохраненных проектов. Нажмите на иконку закладки на странице проекта, чтобы сохранить его.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="snippets">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Мои сниппеты</CardTitle>
-                <Link to="/snippets/create">
-                  <Button className="gradient-bg text-white">
-                    Создать сниппет
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                {snippetsLoading ? (
-                  <p className="text-center py-10 text-gray-500">
-                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                    Загрузка сниппетов...
-                  </p>
-                ) : userSnippets.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userSnippets.map(snippet => (
-                      <div key={snippet.id} className="relative">
-                        <SnippetCard
-                          id={snippet.id}
-                          title={snippet.title}
-                          description={snippet.description}
-                          language={snippet.language}
-                          tags={snippet.tags || []}
-                          created_at={snippet.created_at}
-                        />
+                  </CardHeader>
+                  <CardContent>
+                    {projectsLoading ? (
+                      <p className="text-center py-10 text-gray-500">
+                        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+                        Загрузка проектов...
+                      </p>
+                    ) : userProjects.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {userProjects.map(project => (
+                          <div key={project.id} className="relative">
+                            <ProjectCard
+                              id={project.id}
+                              title={project.title}
+                              description={project.description}
+                              technologies={project.technologies || []}
+                              author={project.author}
+                              authorAvatar={project.authorAvatar}
+                              imageUrl={project.image_url || undefined}
+                              likes={project.likes_count}
+                              comments={project.comments_count}
+                            />
+                            <Button 
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={() => handleDeleteProject(project.id)}
+                            >
+                              Удалить
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10">
-                    <p className="text-muted-foreground mb-4">
-                      У вас пока нет сниппетов. Создайте свой первый сниппет!
-                    </p>
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-muted-foreground mb-4">
+                          У вас пока нет проектов. Создайте свой первый проект!
+                        </p>
+                        <Link to="/projects/create">
+                          <Button className="gradient-bg text-white">
+                            Создать проект
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="saved-projects">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Сохраненные проекты</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {savedProjectsLoading ? (
+                      <p className="text-center py-10 text-gray-500">
+                        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+                        Загрузка сохраненных проектов...
+                      </p>
+                    ) : savedProjects.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {savedProjects.map(project => (
+                          <ProjectCard
+                            key={project.id}
+                            id={project.id}
+                            title={project.title}
+                            description={project.description}
+                            technologies={project.technologies || []}
+                            author={project.author}
+                            authorAvatar={project.authorAvatar}
+                            imageUrl={project.image_url || undefined}
+                            likes={project.likes_count}
+                            comments={project.comments_count}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center py-10 text-gray-500">
+                        У вас нет сохраненных проектов. Нажмите на иконку закладки на странице проекта, чтобы сохранить его.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="snippets">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Мои сниппеты</CardTitle>
                     <Link to="/snippets/create">
                       <Button className="gradient-bg text-white">
                         Создать сниппет
                       </Button>
                     </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  </CardHeader>
+                  <CardContent>
+                    {snippetsLoading ? (
+                      <p className="text-center py-10 text-gray-500">
+                        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+                        Загрузка сниппетов...
+                      </p>
+                    ) : userSnippets.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {userSnippets.map(snippet => (
+                          <div key={snippet.id} className="relative">
+                            <SnippetCard
+                              id={snippet.id}
+                              title={snippet.title}
+                              description={snippet.description}
+                              language={snippet.language}
+                              tags={snippet.tags || []}
+                              created_at={snippet.created_at}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-muted-foreground mb-4">
+                          У вас пока нет сниппетов. Создайте свой первый сниппет!
+                        </p>
+                        <Link to="/snippets/create">
+                          <Button className="gradient-bg text-white">
+                            Создать сниппет
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
       <Footer />
     </div>

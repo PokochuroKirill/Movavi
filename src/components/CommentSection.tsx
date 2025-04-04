@@ -7,44 +7,170 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2, Loader2 } from 'lucide-react';
-import { useComments } from '@/hooks/useSupabaseQueries';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CommentSectionProps {
   projectId: string;
   onCommentsChange?: (count: number) => void;
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  project_id: string;
+  user_id: string;
+  profiles?: {
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { comments, isLoading, loadComments, addComment, removeComment } = useComments(projectId);
+
+  const loadComments = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          profiles:user_id (username, full_name, avatar_url)
+        `)
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setComments(data || []);
+      
+      if (onCommentsChange) {
+        onCommentsChange(data?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить комментарии',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadComments();
+    
+    // Set up real-time subscription for new comments
+    const channel = supabase
+      .channel('public:comments')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'comments',
+          filter: `project_id=eq.${projectId}`
+        }, 
+        () => {
+          loadComments();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [projectId]);
-
-  useEffect(() => {
-    if (onCommentsChange) {
-      onCommentsChange(comments.length);
-    }
-  }, [comments.length, onCommentsChange]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
-    const success = await addComment(newComment);
-    if (success) {
-      setNewComment('');
+    if (!user) {
+      toast({
+        title: 'Ошибка',
+        description: 'Вы должны войти в систему, чтобы оставить комментарий',
+        variant: 'destructive'
+      });
+      return;
     }
     
-    setIsSubmitting(false);
+    if (!newComment.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Комментарий не может быть пустым',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          content: newComment,
+          project_id: projectId,
+          user_id: user.id
+        });
+        
+      if (error) throw error;
+      
+      setNewComment('');
+      loadComments();
+      
+      toast({
+        description: 'Комментарий успешно добавлен'
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось добавить комментарий',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    await removeComment(commentId);
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setComments(comments.filter(comment => comment.id !== commentId));
+      
+      toast({
+        description: 'Комментарий успешно удален'
+      });
+      
+      if (onCommentsChange) {
+        onCommentsChange(comments.length - 1);
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить комментарий',
+        variant: 'destructive'
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -76,7 +202,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
         <Button 
           type="submit" 
           className="gradient-bg text-white"
-          disabled={isSubmitting || !user}
+          disabled={isSubmitting || !user || !newComment.trim()}
         >
           {isSubmitting ? (
             <>

@@ -1,22 +1,22 @@
-
 export interface Profile {
   id: string;
-  username?: string;
-  full_name?: string;
-  avatar_url?: string;
-  banner_url?: string;
-  bio?: string;
-  website?: string;
-  github?: string;
-  twitter?: string;
-  linkedin?: string;
-  telegram?: string;
-  discord?: string;
-  location?: string;
-  birthdate?: string;
+  username: string | null;
+  full_name: string | null;
+  bio: string | null;
+  website: string | null;
+  location: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
   created_at: string;
   updated_at: string;
+  birthdate: string | null;
+  telegram: string | null;
+  discord: string | null;
+  github: string | null;
+  twitter: string | null;
+  linkedin: string | null;
   is_admin?: boolean;
+  is_verified?: boolean;
 }
 
 export interface Project {
@@ -125,7 +125,6 @@ export interface SupportRequest {
   created_at: string;
 }
 
-// Additional interfaces needed
 export interface SnippetComment {
   id: string;
   content: string;
