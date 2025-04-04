@@ -58,7 +58,7 @@ const SnippetsPage = () => {
         
         return {
           ...snippet,
-          author: snippet.profiles?.full_name || snippet.profiles?.username || 'Unnamed Author',
+          author: snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный автор',
           authorAvatar: snippet.profiles?.avatar_url,
           likes_count: likesCount || 0,
           comments_count: commentsCount || 0
@@ -85,7 +85,7 @@ const SnippetsPage = () => {
 
       setAvailableTags(allTags);
     } catch (error) {
-      console.error('Error fetching snippets:', error);
+      console.error('Ошибка при загрузке сниппетов:', error);
     } finally {
       setLoading(false);
     }
@@ -149,15 +149,15 @@ const SnippetsPage = () => {
       <main className="flex-grow container mx-auto px-4 py-20">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Code Snippets</h1>
+            <h1 className="text-3xl font-bold mb-2">Фрагменты кода</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4 md:mb-0">
-              Discover useful code snippets shared by the community
+              Откройте полезные фрагменты кода, которыми делится сообщество
             </p>
           </div>
           
           <Link to="/snippets/create">
             <Button className="gradient-bg text-white">
-              <Plus className="mr-2 h-4 w-4" /> New Snippet
+              <Plus className="mr-2 h-4 w-4" /> Новый сниппет
             </Button>
           </Link>
         </div>
@@ -168,20 +168,20 @@ const SnippetsPage = () => {
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6">
               <div className="mb-4">
                 <Input
-                  placeholder="Search snippets..."
+                  placeholder="Поиск сниппетов..."
                   value={searchTerm}
                   onChange={handleSearchChange}
                 />
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Language</label>
+                <label className="block text-sm font-medium mb-2">Язык программирования</label>
                 <Select value={languageFilter} onValueChange={handleLanguageChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All languages" />
+                    <SelectValue placeholder="Все языки" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All languages</SelectItem>
+                    <SelectItem value="">Все языки</SelectItem>
                     {availableLanguages.map(language => (
                       <SelectItem key={language} value={language}>{language}</SelectItem>
                     ))}
@@ -190,13 +190,13 @@ const SnippetsPage = () => {
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Tag</label>
+                <label className="block text-sm font-medium mb-2">Тег</label>
                 <Select value={tagFilter} onValueChange={handleTagChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All tags" />
+                    <SelectValue placeholder="Все теги" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All tags</SelectItem>
+                    <SelectItem value="">Все теги</SelectItem>
                     {availableTags.map(tag => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                     ))}
@@ -206,13 +206,13 @@ const SnippetsPage = () => {
               
               {(searchTerm || languageFilter || tagFilter) && (
                 <Button variant="outline" onClick={clearFilters} className="w-full">
-                  Clear Filters
+                  Сбросить фильтры
                 </Button>
               )}
               
               <div className="mt-6">
                 <h3 className="text-sm font-medium mb-2 flex items-center">
-                  <Tag className="h-4 w-4 mr-1" /> Popular Tags
+                  <Tag className="h-4 w-4 mr-1" /> Популярные теги
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {availableTags.slice(0, 10).map(tag => (
@@ -235,7 +235,7 @@ const SnippetsPage = () => {
             {loading ? (
               <div className="flex justify-center items-center py-20">
                 <Loader2 className="h-10 w-10 animate-spin text-devhub-purple mr-2" />
-                <p className="text-lg">Loading snippets...</p>
+                <p className="text-lg">Загрузка сниппетов...</p>
               </div>
             ) : filteredSnippets.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -254,15 +254,15 @@ const SnippetsPage = () => {
               </div>
             ) : (
               <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-xl mb-4">No snippets found</p>
+                <p className="text-xl mb-4">Сниппеты не найдены</p>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   {searchTerm || languageFilter || tagFilter
-                    ? "Try adjusting your filters or search term"
-                    : "Be the first to share a snippet with the community!"}
+                    ? "Попробуйте изменить фильтры или поисковый запрос"
+                    : "Будьте первым, кто поделится сниппетом с сообществом!"}
                 </p>
                 {(searchTerm || languageFilter || tagFilter) && (
                   <Button variant="outline" onClick={clearFilters}>
-                    Clear Filters
+                    Сбросить фильтры
                   </Button>
                 )}
               </div>

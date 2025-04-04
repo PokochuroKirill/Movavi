@@ -21,12 +21,16 @@ const HomePage = () => {
             Делитесь проектами, кодом, идеями и находите единомышленников. Совершенствуйте свои навыки и создавайте удивительные вещи вместе.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" className="gradient-bg text-white">
-              Начать сейчас
-            </Button>
-            <Button size="lg" variant="outline" className="border-devhub-purple text-devhub-purple hover:bg-devhub-purple/10">
-              Узнать больше
-            </Button>
+            <Link to="/auth">
+              <Button size="lg" className="gradient-bg text-white">
+                Начать сейчас
+              </Button>
+            </Link>
+            <Link to="/faq">
+              <Button size="lg" variant="outline" className="border-devhub-purple text-devhub-purple hover:bg-devhub-purple/10">
+                Узнать больше
+              </Button>
+            </Link>
           </div>
           
           <div className="mt-20 w-full max-w-5xl">
@@ -76,9 +80,9 @@ const HomePage = () => {
               <p className="text-gray-600 dark:text-gray-300 mb-4">
                 Знакомьтесь с другими разработчиками, обменивайтесь идеями и создавайте вместе.
               </p>
-              <a href="#" className="text-devhub-purple flex items-center gap-1 hover:gap-2 transition-all">
+              <Link to="/auth" className="text-devhub-purple flex items-center gap-1 hover:gap-2 transition-all">
                 Присоединиться к сообществу <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -91,9 +95,11 @@ const HomePage = () => {
           <p className="text-xl opacity-90 max-w-2xl mx-auto mb-10">
             Станьте частью растущего сообщества разработчиков, делитесь своими знаниями и учитесь у других.
           </p>
-          <Button size="lg" className="bg-white text-devhub-purple hover:bg-gray-100">
-            Зарегистрироваться бесплатно
-          </Button>
+          <Link to="/auth">
+            <Button size="lg" className="bg-white text-devhub-purple hover:bg-gray-100">
+              Зарегистрироваться бесплатно
+            </Button>
+          </Link>
         </div>
       </section>
       

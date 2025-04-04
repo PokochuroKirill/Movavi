@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { Code, Twitter } from 'lucide-react';
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
-
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4">
@@ -89,7 +87,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-gray-200 dark:border-gray-800 mt-12 pt-8 text-center text-gray-600 dark:text-gray-400">
-          <p>&copy; {currentYear} DevHub. Все права защищены.</p>
+          {/* Copyright text removed as requested */}
         </div>
       </div>
     </footer>

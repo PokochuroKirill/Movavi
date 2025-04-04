@@ -14,40 +14,40 @@ import Footer from '@/components/Footer';
 const FaqPage = () => {
   const faqs = [
     {
-      question: "What is DevHub?",
-      answer: "DevHub is a platform where developers can share projects, code snippets, gain inspiration, and connect with like-minded programmers. It offers tools for showcasing your work and discovering interesting projects from the community."
+      question: "Что такое DevHub?",
+      answer: "DevHub — это платформа, где разработчики могут делиться проектами, фрагментами кода, получать вдохновение и общаться с единомышленниками. Она предлагает инструменты для демонстрации ваших работ и открытия интересных проектов сообщества."
     },
     {
-      question: "How do I create an account?",
-      answer: "Click the 'Sign Up' button in the top right corner of the page. You can register using your email address, and then complete your profile by adding information about yourself and your areas of expertise."
+      question: "Как создать аккаунт?",
+      answer: "Нажмите кнопку 'Войти' в правом верхнем углу страницы. Вы можете зарегистрироваться, используя свой email-адрес, а затем заполнить свой профиль, добавив информацию о себе и своих областях специализации."
     },
     {
-      question: "Can I share private repositories?",
-      answer: "Currently, DevHub supports public sharing only. However, you can choose what specific details to share about your projects, including limiting the amount of code displayed."
+      question: "Могу ли я делиться приватными репозиториями?",
+      answer: "В настоящее время DevHub поддерживает только публичный обмен. Однако вы можете выбирать, какими конкретными деталями делиться о своих проектах, включая ограничение объема отображаемого кода."
     },
     {
-      question: "How do I add a project to my profile?",
-      answer: "After logging in, navigate to your profile and click 'Create Project.' You can then enter details about your project including title, description, technologies used, and links to GitHub or live demos."
+      question: "Как добавить проект в мой профиль?",
+      answer: "После входа в систему перейдите в свой профиль и нажмите 'Создать проект'. Затем вы можете ввести информацию о своем проекте, включая название, описание, используемые технологии и ссылки на GitHub или живые демо."
     },
     {
-      question: "What types of projects can I share?",
-      answer: "You can share any software development project including websites, mobile apps, games, libraries, tools, or experiments. There are no limitations on programming languages or frameworks."
+      question: "Какие типы проектов я могу публиковать?",
+      answer: "Вы можете делиться любыми проектами по разработке программного обеспечения, включая веб-сайты, мобильные приложения, игры, библиотеки, инструменты или эксперименты. Нет ограничений на языки программирования или фреймворки."
     },
     {
-      question: "How do code snippets work?",
-      answer: "Code snippets are smaller pieces of code that solve specific problems or demonstrate particular techniques. You can publish snippets with syntax highlighting for various languages, add explanations, and categorize them with tags."
+      question: "Как работают фрагменты кода?",
+      answer: "Фрагменты кода — это небольшие части кода, которые решают конкретные проблемы или демонстрируют определенные техники. Вы можете публиковать фрагменты с подсветкой синтаксиса для различных языков, добавлять объяснения и классифицировать их с помощью тегов."
     },
     {
-      question: "Can I follow other developers?",
-      answer: "Yes, you can follow other users to see their projects and snippets in your feed. This helps you stay updated with content from developers whose work interests you."
+      question: "Могу ли я подписаться на других разработчиков?",
+      answer: "Да, вы можете подписаться на других пользователей, чтобы видеть их проекты и фрагменты кода в своей ленте. Это помогает вам быть в курсе контента от разработчиков, чья работа вас интересует."
     },
     {
-      question: "How can I report inappropriate content?",
-      answer: "If you find content that violates our community guidelines, use the report function available on each project or snippet page, or contact our support team directly."
+      question: "Как сообщить о неприемлемом контенте?",
+      answer: "Если вы обнаружите контент, нарушающий правила нашего сообщества, используйте функцию жалобы, доступную на странице каждого проекта или фрагмента кода, или свяжитесь с нашей командой поддержки напрямую."
     },
     {
-      question: "Is DevHub free to use?",
-      answer: "Yes, DevHub is currently free to use with all core features available to everyone. We may introduce premium features in the future, but the basic functionality will remain free."
+      question: "DevHub бесплатен для использования?",
+      answer: "Да, DevHub в настоящее время бесплатен для использования, все основные функции доступны каждому. В будущем мы можем ввести премиум-функции, но базовая функциональность останется бесплатной."
     }
   ];
 
@@ -56,9 +56,9 @@ const FaqPage = () => {
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-20">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold mb-6">Frequently Asked Questions</h1>
+          <h1 className="text-4xl font-bold mb-6">Часто задаваемые вопросы</h1>
           <p className="text-gray-600 dark:text-gray-300 mb-10">
-            Find answers to common questions about using DevHub. Can't find what you're looking for? Contact our support team for assistance.
+            Найдите ответы на распространенные вопросы об использовании DevHub. Не можете найти то, что ищете? Обратитесь в нашу службу поддержки за помощью.
           </p>
           
           <Accordion type="single" collapsible className="mb-10">
@@ -75,13 +75,13 @@ const FaqPage = () => {
           </Accordion>
           
           <div className="text-center bg-gray-50 dark:bg-gray-800 p-8 rounded-lg shadow-sm">
-            <h2 className="text-2xl font-bold mb-4">Still have questions?</h2>
+            <h2 className="text-2xl font-bold mb-4">Остались вопросы?</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Our support team is ready to help you with any other questions you might have about DevHub.
+              Наша команда поддержки готова помочь вам с любыми другими вопросами, которые у вас могут возникнуть о DevHub.
             </p>
             <Link to="/contact">
               <Button className="gradient-bg text-white">
-                Contact Support
+                Связаться с поддержкой
               </Button>
             </Link>
           </div>

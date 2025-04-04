@@ -8,6 +8,7 @@ import { Loader2, Upload } from 'lucide-react';
 import AvatarUpload from './AvatarUpload';
 import { Profile } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface EditProfileFormProps {
   profile: Profile;
@@ -32,6 +33,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
   const [banner, setBanner] = useState(profile.banner_url);
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -60,6 +62,18 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         location: formData.location,
         banner_url: banner,
       });
+      
+      toast({
+        title: "Профиль обновлен",
+        description: "Изменения были успешно сохранены",
+      });
+    } catch (error) {
+      console.error('Ошибка при обновлении профиля:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить профиль",
+        variant: "destructive"
+      });
     } finally {
       setUpdating(false);
     }
@@ -82,6 +96,22 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     setUploading(true);
     
     try {
+      // Создаём хранилище, если его нет
+      const { error: bucketError } = await supabase.storage
+        .getBucket('profiles')
+        .catch(() => ({ error: new Error('Bucket does not exist') }));
+        
+      if (bucketError) {
+        try {
+          await supabase.storage.createBucket('profiles', {
+            public: true,
+            fileSizeLimit: 5242880, // 5MB
+          });
+        } catch (createBucketError) {
+          console.error('Error creating bucket:', createBucketError);
+        }
+      }
+      
       // Upload the file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('profiles')
@@ -95,9 +125,18 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         .getPublicUrl(filePath);
       
       setBanner(data.publicUrl);
+      
+      toast({
+        title: "Баннер загружен",
+        description: "Баннер профиля успешно обновлен"
+      });
     } catch (error) {
-      console.error('Error uploading banner:', error);
-      alert('Error uploading banner. Please try again.');
+      console.error('Ошибка при загрузке баннера:', error);
+      toast({
+        title: "Ошибка загрузки",
+        description: "Не удалось загрузить баннер профиля",
+        variant: "destructive"
+      });
     } finally {
       setUploading(false);
     }
@@ -114,13 +153,13 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="banner">Profile Banner</Label>
+        <Label htmlFor="banner">Баннер профиля</Label>
         <div className="flex items-center space-x-4">
           {banner && (
             <div className="h-20 w-40 rounded-md overflow-hidden">
               <img 
                 src={banner} 
-                alt="Profile banner" 
+                alt="Баннер профиля" 
                 className="h-full w-full object-cover" 
               />
             </div>
@@ -142,12 +181,12 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
               {uploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
+                  Загрузка...
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  {banner ? "Change Banner" : "Upload Banner"}
+                  {banner ? "Изменить баннер" : "Загрузить баннер"}
                 </>
               )}
             </Button>
@@ -157,7 +196,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="username">Имя пользователя</Label>
           <Input
             id="username"
             name="username"
@@ -168,32 +207,32 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="full_name">Full Name</Label>
+          <Label htmlFor="full_name">Полное имя</Label>
           <Input
             id="full_name"
             name="full_name"
             value={formData.full_name}
             onChange={handleInputChange}
-            placeholder="John Doe"
+            placeholder="Иван Иванов"
           />
         </div>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="bio">About Me</Label>
+        <Label htmlFor="bio">О себе</Label>
         <Textarea
           id="bio"
           name="bio"
           value={formData.bio}
           onChange={handleInputChange}
-          placeholder="Tell us about yourself"
+          placeholder="Расскажите о себе"
           rows={3}
         />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="website">Personal Website</Label>
+          <Label htmlFor="website">Личный сайт</Label>
           <Input
             id="website"
             name="website"
@@ -204,13 +243,13 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
+          <Label htmlFor="location">Местоположение</Label>
           <Input
             id="location"
             name="location"
             value={formData.location}
             onChange={handleInputChange}
-            placeholder="Moscow, Russia"
+            placeholder="Москва, Россия"
           />
         </div>
       </div>
@@ -223,7 +262,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
             name="twitter"
             value={formData.twitter}
             onChange={handleInputChange}
-            placeholder="username (without @)"
+            placeholder="username (без @)"
           />
         </div>
         
@@ -271,12 +310,12 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
             name="discord"
             value={formData.discord}
             onChange={handleInputChange}
-            placeholder="username#0000 or ID"
+            placeholder="username#0000 или ID"
           />
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="birthdate">Birth Date</Label>
+          <Label htmlFor="birthdate">Дата рождения</Label>
           <Input
             id="birthdate"
             name="birthdate"
@@ -296,10 +335,10 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
           {updating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              Сохранение...
             </>
           ) : (
-            'Save Changes'
+            'Сохранить изменения'
           )}
         </Button>
       </div>
