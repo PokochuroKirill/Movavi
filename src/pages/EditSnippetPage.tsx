@@ -12,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2, Save } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const languageOptions = [
   "javascript",
@@ -191,18 +190,19 @@ const EditSnippetPage = () => {
                   
                   <div>
                     <Label htmlFor="language">Язык программирования</Label>
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger id="language">
-                        <SelectValue placeholder="Выберите язык программирования" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languageOptions.map((lang) => (
-                          <SelectItem key={lang} value={lang}>
-                            {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select
+                      id="language"
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      required
+                    >
+                      {languageOptions.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div>

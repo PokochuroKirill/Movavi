@@ -73,14 +73,14 @@ const SnippetCard = ({
           
           <div className="flex items-center">
             {author && authorAvatar && (
-              <Link to={`/user/${author}`} className="flex items-center mr-3 hover:text-devhub-purple transition-colors">
+              <div className="flex items-center mr-3">
                 <img
                   src={authorAvatar || "/placeholder.svg"}
                   alt={author}
                   className="w-6 h-6 rounded-full mr-1 object-cover"
                 />
                 <span className="text-xs text-gray-500 dark:text-gray-400">{author}</span>
-              </Link>
+              </div>
             )}
             
             {created_at && (

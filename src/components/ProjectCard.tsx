@@ -57,14 +57,14 @@ const ProjectCard = ({
         </div>
         
         <div className="flex items-center justify-between mt-4">
-          <Link to={`/user/${author}`} className="flex items-center hover:text-devhub-purple transition-colors">
+          <div className="flex items-center">
             <img 
               src={authorAvatar || "/placeholder.svg"} 
               alt={author} 
               className="w-8 h-8 rounded-full mr-2 object-cover"
             />
             <span className="text-sm text-gray-600 dark:text-gray-400">{author}</span>
-          </Link>
+          </div>
           
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-500 dark:text-gray-400">

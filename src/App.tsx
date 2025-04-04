@@ -1,90 +1,80 @@
 
-import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider } from './contexts/AuthContext';
-import { Toaster } from "./components/ui/toaster";
-import { Loader2 } from "lucide-react";
-import './App.css';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import ProjectsPage from "./pages/ProjectsPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
+import CreateProjectPage from "./pages/CreateProjectPage";
+import SnippetsPage from "./pages/SnippetsPage";
+import CreateSnippetPage from "./pages/CreateSnippetPage";
+import SnippetDetailPage from "./pages/SnippetDetailPage";
+import EditSnippetPage from "./pages/EditSnippetPage";
+import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./contexts/AuthContext";
+import AuthPage from "./pages/AuthPage";
+import DocumentationPage from "./pages/DocumentationPage";
+import BlogPage from "./pages/BlogPage";
+import BlogPostDetailPage from "./pages/BlogPostDetailPage";
+import FaqPage from "./pages/FaqPage";
+import ContactPage from "./pages/ContactPage";
+import AboutPage from "./pages/AboutPage";
+import SupportPage from "./pages/SupportPage";
+import ProfilePage from "./pages/ProfilePage";
+import UserProfilePage from "./pages/UserProfilePage";
+import AdminPage from "./pages/AdminPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// Import pages
-import Index from './pages/Index';
+const queryClient = new QueryClient();
 
-// Lazy-loaded pages
-const HomePage = lazy(() => import('./pages/HomePage'));
-const AuthPage = lazy(() => import('./pages/AuthPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const UserProfilePage = lazy(() => import('./pages/UserProfilePage'));
-const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
-const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
-const CreateProjectPage = lazy(() => import('./pages/CreateProjectPage'));
-const SnippetsPage = lazy(() => import('./pages/SnippetsPage'));
-const SnippetDetailPage = lazy(() => import('./pages/SnippetDetailPage'));
-const CreateSnippetPage = lazy(() => import('./pages/CreateSnippetPage'));
-const EditSnippetPage = lazy(() => import('./pages/EditSnippetPage'));
-const BlogPage = lazy(() => import('./pages/BlogPage'));
-const BlogPostDetailPage = lazy(() => import('./pages/BlogPostDetailPage'));
-const AboutPage = lazy(() => import('./pages/AboutPage'));
-const ContactPage = lazy(() => import('./pages/ContactPage'));
-const FaqPage = lazy(() => import('./pages/FaqPage'));
-const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
-const SupportPage = lazy(() => import('./pages/SupportPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
-const NotFound = lazy(() => import('./pages/NotFound'));
-
-function App() {
-  return (
-    <Router>
-      <AuthProvider>
-        <Suspense fallback={
-          <div className="h-screen w-screen flex flex-col items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-devhub-purple mb-4" />
-            <p className="text-xl font-medium text-gray-700 dark:text-gray-300">Loading...</p>
-          </div>
-        }>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            
-            {/* User profile routes */}
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/user/:username" element={<UserProfilePage />} />
-            
-            {/* Project routes */}
+            <Route path="/" element={<HomePage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/projects/create" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
-            
-            {/* Snippet routes */}
+            <Route path="/projects/create" element={
+              <ProtectedRoute>
+                <CreateProjectPage />
+              </ProtectedRoute>
+            } />
             <Route path="/snippets" element={<SnippetsPage />} />
             <Route path="/snippets/:id" element={<SnippetDetailPage />} />
-            <Route path="/snippets/create" element={<ProtectedRoute><CreateSnippetPage /></ProtectedRoute>} />
-            <Route path="/snippets/edit/:id" element={<ProtectedRoute><EditSnippetPage /></ProtectedRoute>} />
-            
-            {/* Blog routes */}
+            <Route path="/snippets/create" element={
+              <ProtectedRoute>
+                <CreateSnippetPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/snippets/edit/:id" element={
+              <ProtectedRoute>
+                <EditSnippetPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/documentation" element={<DocumentationPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:id" element={<BlogPostDetailPage />} />
-            
-            {/* Static pages */}
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
             <Route path="/faq" element={<FaqPage />} />
-            <Route path="/documentation" element={<DocumentationPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/support" element={<SupportPage />} />
-            
-            {/* Admin route */}
-            <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminPage /></ProtectedRoute>} />
-            
-            {/* Catch-all route */}
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/user/:username" element={<UserProfilePage />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Suspense>
-        
-        <Toaster />
-      </AuthProvider>
-    </Router>
-  );
-}
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;
