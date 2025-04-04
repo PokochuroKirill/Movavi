@@ -18,8 +18,8 @@ const SnippetsPage = () => {
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [languageFilter, setLanguageFilter] = useState<string>('');
-  const [tagFilter, setTagFilter] = useState<string>('');
+  const [languageFilter, setLanguageFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -106,12 +106,12 @@ const SnippetsPage = () => {
     }
 
     // Filter by language
-    if (languageFilter) {
+    if (languageFilter && languageFilter !== 'all') {
       filtered = filtered.filter(snippet => snippet.language === languageFilter);
     }
 
     // Filter by tag
-    if (tagFilter) {
+    if (tagFilter && tagFilter !== 'all') {
       filtered = filtered.filter(snippet => 
         snippet.tags && snippet.tags.includes(tagFilter)
       );
@@ -134,8 +134,8 @@ const SnippetsPage = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setLanguageFilter('');
-    setTagFilter('');
+    setLanguageFilter('all');
+    setTagFilter('all');
   };
 
   const handleSnippetClick = (id: string) => {
@@ -181,7 +181,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="All languages" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All languages</SelectItem>
+                    <SelectItem value="all">All languages</SelectItem>
                     {availableLanguages.map(language => (
                       <SelectItem key={language} value={language}>{language}</SelectItem>
                     ))}
@@ -196,7 +196,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="All tags" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All tags</SelectItem>
+                    <SelectItem value="all">All tags</SelectItem>
                     {availableTags.map(tag => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                     ))}
@@ -204,7 +204,7 @@ const SnippetsPage = () => {
                 </Select>
               </div>
               
-              {(searchTerm || languageFilter || tagFilter) && (
+              {(searchTerm || languageFilter !== 'all' || tagFilter !== 'all') && (
                 <Button variant="outline" onClick={clearFilters} className="w-full">
                   Clear Filters
                 </Button>
@@ -220,7 +220,7 @@ const SnippetsPage = () => {
                       key={tag} 
                       className={`cursor-pointer ${tagFilter === tag ? 'gradient-bg text-white' : ''}`}
                       variant={tagFilter === tag ? "default" : "secondary"}
-                      onClick={() => setTagFilter(tagFilter === tag ? '' : tag)}
+                      onClick={() => setTagFilter(tagFilter === tag ? 'all' : tag)}
                     >
                       {tag}
                     </Badge>
@@ -256,11 +256,11 @@ const SnippetsPage = () => {
               <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xl mb-4">No snippets found</p>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {searchTerm || languageFilter || tagFilter
+                  {searchTerm || languageFilter !== 'all' || tagFilter !== 'all'
                     ? "Try adjusting your filters or search term"
                     : "Be the first to share a snippet with the community!"}
                 </p>
-                {(searchTerm || languageFilter || tagFilter) && (
+                {(searchTerm || languageFilter !== 'all' || tagFilter !== 'all') && (
                   <Button variant="outline" onClick={clearFilters}>
                     Clear Filters
                   </Button>
