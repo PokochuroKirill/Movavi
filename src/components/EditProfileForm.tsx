@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +17,7 @@ import { Profile } from '@/types/database';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { Label } from "@/components/ui/label"
 
 // Add imports for banner upload
 import { supabase } from '@/integrations/supabase/client';

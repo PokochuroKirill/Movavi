@@ -1,26 +1,38 @@
 
-import { Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-devhub-purple mb-4" />
-        <p className="text-lg">Загрузка...</p>
-      </div>
-    );
-  }
-
+const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  
   if (!user) {
-    // Save the current path to redirect back after authentication
-    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+    toast({
+      title: "Требуется авторизация",
+      description: "Пожалуйста, войдите в систему для доступа к этой странице",
+      variant: "destructive",
+    });
+    
+    return <Navigate to="/auth" replace />;
   }
-
+  
+  if (adminOnly && !profile?.is_admin) {
+    toast({
+      title: "Доступ запрещен",
+      description: "У вас нет прав для доступа к этой странице",
+      variant: "destructive",
+    });
+    
+    return <Navigate to="/" replace />;
+  }
+  
   return <>{children}</>;
 };
 
