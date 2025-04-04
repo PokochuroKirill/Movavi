@@ -41,14 +41,19 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       const { data, error } = await supabase
         .from('comments')
         .select(`
-          *,
+          id,
+          content,
+          created_at,
+          project_id,
+          user_id,
           profiles:user_id (username, full_name, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setComments(data || []);
+      // Type assertion to ensure we have the correct shape
+      setComments(data as Comment[] || []);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);

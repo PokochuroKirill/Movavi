@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -132,9 +133,9 @@ export interface SnippetComment {
   snippet_id: string;
   created_at: string;
   profiles?: {
-    username?: string;
-    full_name?: string;
-    avatar_url?: string;
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
   };
 }
 

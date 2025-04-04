@@ -41,14 +41,19 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       const { data, error } = await supabase
         .from('snippet_comments')
         .select(`
-          *,
+          id,
+          content,
+          created_at,
+          snippet_id,
+          user_id,
           profiles:user_id (username, full_name, avatar_url)
         `)
         .eq('snippet_id', snippetId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setComments(data || []);
+      // Type assertion to ensure we have the correct shape
+      setComments(data as Comment[] || []);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
