@@ -69,6 +69,7 @@ const AdminProPage = () => {
       if (error) throw error;
       
       setProfiles(data || []);
+      console.log("Loaded profiles:", data);
     } catch (error) {
       console.error('Error loading profiles:', error);
       toast({
@@ -110,12 +111,17 @@ const AdminProPage = () => {
 
   const verifyProfile = async (id: string, isVerified: boolean) => {
     try {
+      console.log(`Updating profile ${id} verification to ${isVerified}`);
+      
       const { error } = await supabase
         .from('profiles')
         .update({ is_verified: isVerified })
         .eq('id', id);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error in update query:', error);
+        throw error;
+      }
       
       setProfiles(
         profiles.map(profile => 

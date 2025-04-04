@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Twitter, Github, Linkedin, Mail } from 'lucide-react';
+import { Twitter } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -16,22 +16,13 @@ const Footer = () => {
               Платформа для разработчиков, где вы можете делиться проектами, находить вдохновение и общаться с сообществом.
             </p>
             <div className="flex space-x-4 mt-6">
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="Twitter">
+              <a href="https://twitter.com/DevHubOfficial" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="Twitter">
                 <Twitter size={20} />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="GitHub">
-                <Github size={20} />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="LinkedIn">
-                <Linkedin size={20} />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="Email">
-                <Mail size={20} />
               </a>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div>
               <h3 className="text-lg font-medium mb-4">Навигация</h3>
               <ul className="space-y-2">
@@ -51,29 +42,8 @@ const Footer = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/blog" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    Блог
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium mb-4">Ресурсы</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="/documentation" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    Документация
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/support" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    Поддержка
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/faq" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    FAQ
+                  <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                    О нас
                   </Link>
                 </li>
               </ul>

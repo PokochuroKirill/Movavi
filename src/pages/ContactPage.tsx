@@ -51,7 +51,10 @@ const ContactPage = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase
+      console.log("Submitting support request:", values);
+      console.log("User ID:", user?.id);
+      
+      const { data, error } = await supabase
         .from('support_requests')
         .insert({
           name: values.name,
@@ -60,9 +63,15 @@ const ContactPage = () => {
           message: values.message,
           user_id: user?.id || null,
           status: 'pending'
-        });
+        })
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting support request:", error);
+        throw error;
+      }
+      
+      console.log("Support request submitted successfully:", data);
       
       toast({
         title: "Запрос отправлен",
