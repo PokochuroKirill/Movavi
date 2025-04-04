@@ -52,8 +52,18 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      // Type assertion to ensure we have the correct shape
-      setComments(data as Comment[] || []);
+      
+      // Create a properly shaped array of comments with appropriate profile data
+      const formattedComments: Comment[] = (data || []).map(item => ({
+        id: item.id,
+        content: item.content,
+        created_at: item.created_at,
+        project_id: item.project_id,
+        user_id: item.user_id,
+        profiles: item.profiles as Comment['profiles']
+      }));
+      
+      setComments(formattedComments);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
