@@ -181,7 +181,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="Все языки" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Все языки</SelectItem>
+                    <SelectItem value="all">Все языки</SelectItem>
                     {availableLanguages.map(language => (
                       <SelectItem key={language} value={language}>{language}</SelectItem>
                     ))}
@@ -196,7 +196,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="Все теги" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Все теги</SelectItem>
+                    <SelectItem value="all">Все теги</SelectItem>
                     {availableTags.map(tag => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                     ))}
