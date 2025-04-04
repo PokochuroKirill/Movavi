@@ -54,14 +54,21 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       if (error) throw error;
       
       // Create a properly shaped array of comments with appropriate profile data
-      const formattedComments: Comment[] = (data || []).map(item => ({
-        id: item.id,
-        content: item.content,
-        created_at: item.created_at,
-        project_id: item.project_id,
-        user_id: item.user_id,
-        profiles: item.profiles as Comment['profiles']
-      }));
+      const formattedComments: Comment[] = (data || []).map(item => {
+        // Check if profiles is an error and provide default values if needed
+        const profileData = typeof item.profiles === 'object' && item.profiles !== null 
+          ? item.profiles 
+          : { username: null, full_name: null, avatar_url: null };
+        
+        return {
+          id: item.id,
+          content: item.content,
+          created_at: item.created_at,
+          project_id: item.project_id,
+          user_id: item.user_id,
+          profiles: profileData
+        };
+      });
       
       setComments(formattedComments);
       
