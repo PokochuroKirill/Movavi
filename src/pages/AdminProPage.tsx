@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
@@ -102,8 +101,13 @@ const AdminProPage = () => {
         
       if (error) throw error;
       
-      setProfiles(data || []);
-      console.log("Loaded profiles:", data);
+      const profilesWithVerification = data?.map(profile => ({
+        ...profile,
+        is_verified: profile.is_verified || false
+      })) || [];
+      
+      setProfiles(profilesWithVerification);
+      console.log("Loaded profiles:", profilesWithVerification);
     } catch (error) {
       console.error('Error loading profiles:', error);
       toast({
