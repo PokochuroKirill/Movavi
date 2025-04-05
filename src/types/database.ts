@@ -16,7 +16,7 @@ export interface Profile {
   twitter: string | null;
   linkedin: string | null;
   is_admin?: boolean;
-  is_verified?: boolean;
+  is_verified: boolean;
 }
 
 export interface Project {
