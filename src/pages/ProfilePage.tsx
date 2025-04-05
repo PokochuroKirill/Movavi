@@ -329,13 +329,11 @@ const ProfilePage = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10">
-                        <Link to="/projects/create">
-                          <Button className="gradient-bg text-white">
-                            Создать проект
-                          </Button>
-                        </Link>
-                      </div>
+                      <Link to="/projects/create" className="block text-center py-10">
+                        <Button className="gradient-bg text-white">
+                          Создать проект
+                        </Button>
+                      </Link>
                     )}
                   </CardContent>
                 </Card>
@@ -410,13 +408,11 @@ const ProfilePage = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10">
-                        <Link to="/snippets/create">
-                          <Button className="gradient-bg text-white">
-                            Создать сниппет
-                          </Button>
-                        </Link>
-                      </div>
+                      <Link to="/snippets/create" className="block text-center py-10">
+                        <Button className="gradient-bg text-white">
+                          Создать сниппет
+                        </Button>
+                      </Link>
                     )}
                   </CardContent>
                 </Card>

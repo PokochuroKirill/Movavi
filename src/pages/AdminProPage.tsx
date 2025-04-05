@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
@@ -326,7 +327,7 @@ const AdminProPage = () => {
                                 {profile.full_name || profile.username || 'Пользователь'}
                               </h3>
                               {profile.is_verified && (
-                                <Badge className="ml-2 gradient-bg text-white">
+                                <Badge className="ml-2 bg-gradient-to-r from-blue-500 to-devhub-purple text-white">
                                   <Check className="h-3 w-3 mr-1" />
                                   Верифицирован
                                 </Badge>

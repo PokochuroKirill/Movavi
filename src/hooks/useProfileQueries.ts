@@ -305,16 +305,25 @@ export const uploadProfileBanner = async (
   file: File
 ): Promise<string | null> => {
   try {
+    console.log("Starting banner upload for user:", userId);
+    
     // Upload banner to storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}-banner.${fileExt}`;
     const filePath = `banners/${fileName}`;
     
-    const { error: uploadError } = await supabase.storage
+    console.log("Uploading to path:", filePath);
+    
+    const { error: uploadError, data: uploadData } = await supabase.storage
       .from('profiles')
       .upload(filePath, file, { upsert: true });
     
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw uploadError;
+    }
+    
+    console.log("Upload successful, getting public URL");
     
     // Get public URL
     const { data } = supabase.storage
@@ -322,15 +331,21 @@ export const uploadProfileBanner = async (
       .getPublicUrl(filePath);
     
     const bannerUrl = data.publicUrl;
+    console.log("Banner URL:", bannerUrl);
     
     // Update profile
+    console.log("Updating profile with banner URL");
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ banner_url: bannerUrl })
       .eq('id', userId);
     
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error("Profile update error:", updateError);
+      throw updateError;
+    }
     
+    console.log("Banner update complete");
     return bannerUrl;
   } catch (error) {
     console.error("Error uploading banner:", error);

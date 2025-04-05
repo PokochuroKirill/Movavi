@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Profile } from "@/types/database";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -71,10 +72,20 @@ const ProfileHeader = ({
               {profile.full_name || 'User'}
             </h2>
             {profile.is_verified && (
-              <Badge className="ml-2 gradient-bg text-white">
-                <Check className="h-3 w-3 mr-1" />
-                Верифицирован
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge className="ml-2 bg-gradient-to-r from-blue-500 to-devhub-purple text-white">
+                      <Check className="h-3 w-3 mr-1" />
+                      Верифицирован
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Данная учетная запись подтверждена</p>
+                    <p className="text-xs text-gray-400">Апрель 2025</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           <p className="text-gray-500 dark:text-gray-400">

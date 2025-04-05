@@ -41,27 +41,6 @@ const Footer = () => {
                     Сниппеты
                   </Link>
                 </li>
-                <li>
-                  <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    О нас
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium mb-4">О нас</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    О проекте
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
-                    Контакты
-                  </Link>
-                </li>
               </ul>
             </div>
           </div>
