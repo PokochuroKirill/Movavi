@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
@@ -13,7 +12,6 @@ import { Check, Search, MessageSquare, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Profile } from '@/types/database';
 
-// Define types
 interface SupportRequest {
   id: string;
   name: string;
@@ -35,7 +33,42 @@ const AdminProPage = () => {
   useEffect(() => {
     loadSupportMessages();
     loadProfiles();
+    verifyDevHub();
   }, []);
+
+  const verifyDevHub = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', 'DevHub')
+        .single();
+        
+      if (error) {
+        console.error('Error finding DevHub profile:', error);
+        return;
+      }
+      
+      if (data && !data.is_verified) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ is_verified: true })
+          .eq('id', data.id);
+          
+        if (updateError) {
+          console.error('Error verifying DevHub:', updateError);
+        } else {
+          console.log('DevHub profile has been verified successfully');
+          toast({
+            title: 'Успех',
+            description: '@DevHub получил верификацию',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error in DevHub verification:', error);
+    }
+  };
 
   const loadSupportMessages = async () => {
     try {

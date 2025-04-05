@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,11 +23,8 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     website: profile.website || '',
     twitter: profile.twitter || '',
     github: profile.github || '',
-    linkedin: profile.linkedin || '',
-    telegram: profile.telegram || '',
     discord: profile.discord || '',
     birthdate: profile.birthdate ? profile.birthdate.split('T')[0] : '',
-    location: profile.location || '',
   });
   const [avatar, setAvatar] = useState(profile.avatar_url);
   const [banner, setBanner] = useState(profile.banner_url);
@@ -54,11 +52,8 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         website: formData.website,
         twitter: formData.twitter,
         github: formData.github,
-        linkedin: formData.linkedin,
-        telegram: formData.telegram,
         discord: formData.discord,
         birthdate: formData.birthdate ? new Date(formData.birthdate).toISOString() : null,
-        location: formData.location,
         banner_url: banner,
       });
       
@@ -94,39 +89,9 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     const filePath = `banners/${fileName}`;
     
     setUploading(true);
-    console.log("Starting banner upload process", { fileName, filePath });
     
     try {
-      // Check if profiles bucket exists
-      console.log("Checking if 'profiles' storage bucket exists");
-      try {
-        const { data: bucketData, error: bucketError } = await supabase.storage
-          .getBucket('profiles');
-          
-        console.log("Bucket check result:", { bucketData, bucketError });
-        
-        if (bucketError) {
-          console.log("Bucket doesn't exist, creating new bucket");
-          try {
-            const { data: newBucket, error: createError } = await supabase.storage
-              .createBucket('profiles', {
-                public: true,
-                fileSizeLimit: 5242880, // 5MB
-              });
-            console.log("Bucket creation result:", { newBucket, createError });
-            
-            if (createError) throw createError;
-          } catch (createBucketError) {
-            console.error('Error creating bucket:', createBucketError);
-            throw createBucketError;
-          }
-        }
-      } catch (bucketCheckError) {
-        console.error("Error checking bucket:", bucketCheckError);
-      }
-      
       // Upload the file to Supabase storage
-      console.log("Uploading file to storage");
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(filePath, file, { upsert: true });
@@ -136,7 +101,6 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
       if (uploadError) throw uploadError;
       
       // Get the public URL
-      console.log("Getting public URL");
       const { data } = supabase.storage
         .from('profiles')
         .getPublicUrl(filePath);
@@ -153,7 +117,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
       console.error('Ошибка при загрузке баннера:', error);
       toast({
         title: "Ошибка загрузки",
-        description: "Не удалось загрузить баннер профиля: " + (error?.message || "Неизвестная ошибка"),
+        description: "Не удалось загрузить баннер профиля: " + (error.message || "Неизвестная ошибка"),
         variant: "destructive"
       });
     } finally {
@@ -249,28 +213,15 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="website">Личный сайт</Label>
-          <Input
-            id="website"
-            name="website"
-            value={formData.website}
-            onChange={handleInputChange}
-            placeholder="https://example.com"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="location">Местоположение</Label>
-          <Input
-            id="location"
-            name="location"
-            value={formData.location}
-            onChange={handleInputChange}
-            placeholder="Москва, Россия"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="website">Личный сайт</Label>
+        <Input
+          id="website"
+          name="website"
+          value={formData.website}
+          onChange={handleInputChange}
+          placeholder="https://example.com"
+        />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -291,30 +242,6 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
             id="github"
             name="github"
             value={formData.github}
-            onChange={handleInputChange}
-            placeholder="username"
-          />
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="linkedin">LinkedIn</Label>
-          <Input
-            id="linkedin"
-            name="linkedin"
-            value={formData.linkedin}
-            onChange={handleInputChange}
-            placeholder="username"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="telegram">Telegram</Label>
-          <Input
-            id="telegram"
-            name="telegram"
-            value={formData.telegram}
             onChange={handleInputChange}
             placeholder="username"
           />
@@ -357,7 +284,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
               Сохранение...
             </>
           ) : (
-            'Сохранить изм��нения'
+            'Сохранить изменения'
           )}
         </Button>
       </div>

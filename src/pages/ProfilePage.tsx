@@ -330,9 +330,6 @@ const ProfilePage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-10">
-                        <p className="text-muted-foreground mb-4">
-                          У вас пока нет проектов. Создайте свой первый проект!
-                        </p>
                         <Link to="/projects/create">
                           <Button className="gradient-bg text-white">
                             Создать проект
@@ -414,9 +411,6 @@ const ProfilePage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-10">
-                        <p className="text-muted-foreground mb-4">
-                          У вас пока нет сниппетов. Создайте свой первый сниппет!
-                        </p>
                         <Link to="/snippets/create">
                           <Button className="gradient-bg text-white">
                             Создать сниппет

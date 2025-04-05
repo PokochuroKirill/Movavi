@@ -1,6 +1,7 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Calendar, MapPin, Link as LinkIcon, Twitter, Github, Linkedin, MessageCircle, Hash, Check } from "lucide-react";
+import { Pencil, Calendar, MapPin, Link as LinkIcon, Twitter, Github, MessageCircle, Hash, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -111,22 +112,15 @@ const ProfileHeader = ({
           
           {/* Additional info */}
           <div className="flex flex-wrap mt-4 gap-y-2">
-            {profile.location && (
-              <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span className="text-sm">{profile.location}</span>
-              </div>
-            )}
-            
             <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
               <Calendar className="h-4 w-4 mr-1" />
-              <span className="text-sm">Joined {formatDate(profile.created_at)}</span>
+              <span className="text-sm">Регистрация {formatDate(profile.created_at)}</span>
             </div>
             
             {profile.birthdate && (
               <div className="flex items-center text-gray-500 dark:text-gray-400">
                 <Calendar className="h-4 w-4 mr-1" />
-                <span className="text-sm">Born {formatDate(profile.birthdate)}</span>
+                <span className="text-sm">Дата рождения {formatDate(profile.birthdate)}</span>
               </div>
             )}
           </div>
@@ -166,30 +160,6 @@ const ProfileHeader = ({
               >
                 <Github className="h-4 w-4 mr-1" />
                 <span className="text-sm">GitHub</span>
-              </a>
-            )}
-            
-            {profile.linkedin && (
-              <a 
-                href={`https://linkedin.com/in/${profile.linkedin}`}
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center text-devhub-purple hover:underline"
-              >
-                <Linkedin className="h-4 w-4 mr-1" />
-                <span className="text-sm">LinkedIn</span>
-              </a>
-            )}
-            
-            {profile.telegram && (
-              <a 
-                href={`https://t.me/${profile.telegram}`}
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center text-devhub-purple hover:underline"
-              >
-                <MessageCircle className="h-4 w-4 mr-1" />
-                <span className="text-sm">Telegram</span>
               </a>
             )}
             
