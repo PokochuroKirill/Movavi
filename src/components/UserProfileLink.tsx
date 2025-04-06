@@ -19,7 +19,11 @@ const UserProfileLink = ({
   className = ""
 }: UserProfileLinkProps) => {
   const displayName = fullName || username || 'Неизвестный пользователь';
-  const linkPath = username ? `/user/${username}` : (userId ? `/user/${userId}` : '#');
+  
+  // Use userId for navigation if username is not available
+  const linkPath = userId 
+    ? (username ? `/user/${username}` : `/user/id/${userId}`) 
+    : '#';
   
   return (
     <Link 
