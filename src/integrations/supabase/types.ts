@@ -89,6 +89,8 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_verified: boolean
+          last_username_change: string | null
           linkedin: string | null
           location: string | null
           telegram: string | null
@@ -108,6 +110,8 @@ export type Database = {
           github?: string | null
           id: string
           is_admin?: boolean | null
+          is_verified?: boolean
+          last_username_change?: string | null
           linkedin?: string | null
           location?: string | null
           telegram?: string | null
@@ -127,6 +131,8 @@ export type Database = {
           github?: string | null
           id?: string
           is_admin?: boolean | null
+          is_verified?: boolean
+          last_username_change?: string | null
           linkedin?: string | null
           location?: string | null
           telegram?: string | null
@@ -479,6 +485,8 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_verified: boolean
+          last_username_change: string | null
           linkedin: string | null
           location: string | null
           telegram: string | null
@@ -503,6 +511,8 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_verified: boolean
+          last_username_change: string | null
           linkedin: string | null
           location: string | null
           telegram: string | null
