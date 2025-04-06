@@ -24,7 +24,6 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     twitter: profile.twitter || '',
     github: profile.github || '',
     discord: profile.discord || '',
-    birthdate: profile.birthdate ? profile.birthdate.split('T')[0] : '',
   });
   const [avatar, setAvatar] = useState(profile.avatar_url);
   const [banner, setBanner] = useState(profile.banner_url);
@@ -53,7 +52,6 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         twitter: formData.twitter,
         github: formData.github,
         discord: formData.discord,
-        birthdate: formData.birthdate ? new Date(formData.birthdate).toISOString() : null,
         banner_url: banner,
       });
       
@@ -113,7 +111,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         title: "Баннер загружен",
         description: "Баннер профиля успешно обновлен"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при загрузке баннера:', error);
       toast({
         title: "Ошибка загрузки",
@@ -248,28 +246,15 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="discord">Discord</Label>
-          <Input
-            id="discord"
-            name="discord"
-            value={formData.discord}
-            onChange={handleInputChange}
-            placeholder="username#0000 или ID"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="birthdate">Дата рождения</Label>
-          <Input
-            id="birthdate"
-            name="birthdate"
-            type="date"
-            value={formData.birthdate}
-            onChange={handleInputChange}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="discord">Discord</Label>
+        <Input
+          id="discord"
+          name="discord"
+          value={formData.discord}
+          onChange={handleInputChange}
+          placeholder="username#0000 или ID"
+        />
       </div>
       
       <div className="pt-4">

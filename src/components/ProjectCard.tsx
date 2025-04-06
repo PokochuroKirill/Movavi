@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Heart } from 'lucide-react';
+import UserProfileLink from './UserProfileLink';
 
 interface ProjectCardProps {
   id: string;
@@ -13,6 +14,8 @@ interface ProjectCardProps {
   comments?: number;
   technologies?: string[];
   imageUrl?: string;
+  authorId?: string;
+  authorUsername?: string;
 }
 
 const ProjectCard = ({
@@ -25,6 +28,8 @@ const ProjectCard = ({
   comments = 0,
   technologies = [],
   imageUrl,
+  authorId,
+  authorUsername,
 }: ProjectCardProps) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -57,14 +62,12 @@ const ProjectCard = ({
         </div>
         
         <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center">
-            <img 
-              src={authorAvatar || "/placeholder.svg"} 
-              alt={author} 
-              className="w-8 h-8 rounded-full mr-2 object-cover"
-            />
-            <span className="text-sm text-gray-600 dark:text-gray-400">{author}</span>
-          </div>
+          <UserProfileLink 
+            username={authorUsername}
+            fullName={author}
+            avatarUrl={authorAvatar}
+            userId={authorId}
+          />
           
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-500 dark:text-gray-400">

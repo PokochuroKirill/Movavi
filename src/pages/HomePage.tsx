@@ -1,105 +1,105 @@
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Code, FolderGit2, Share2, Users } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import RecommendationSystem from '@/components/RecommendationSystem';
 
 const HomePage = () => {
+  const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-white to-gray-100 dark:from-gray-900 dark:to-devhub-veryDarkPurple">
-        <div className="container mx-auto px-4 flex flex-col items-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-center mb-6">
-            <span className="text-gradient">DevHub</span> - Ваш центр для<br />
-            разработки, сотрудничества и обучения
+      <section className="flex-grow flex flex-col justify-center items-center text-center px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-devhub-purple/30 dark:from-blue-500/10 dark:to-devhub-purple/10 -z-10"></div>
+        
+        <div className="max-w-3xl mx-auto pt-24 pb-20">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-blue-500 to-devhub-purple text-transparent bg-clip-text">
+              Сообщество для разработчиков
+            </span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 text-center max-w-3xl mb-10">
-            Делитесь проектами, кодом, идеями и находите единомышленников. Совершенствуйте свои навыки и создавайте удивительные вещи вместе.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/auth">
-              <Button size="lg" className="gradient-bg text-white">
-                Начать сейчас
-              </Button>
-            </Link>
-            <Link to="/about">
-              <Button size="lg" variant="outline" className="border-devhub-purple text-devhub-purple hover:bg-devhub-purple/10">
-                Узнать больше
-              </Button>
-            </Link>
-          </div>
           
-          <div className="mt-20 w-full max-w-5xl">
-            <div className="relative w-full h-[400px] bg-devhub-veryDarkPurple rounded-lg shadow-xl overflow-hidden">
-              <div className="absolute inset-0 p-8 bg-devhub-veryDarkPurple/80 backdrop-blur flex items-center justify-center">
-                <div className="code-block w-full max-w-2xl text-left">
-                  <pre className="text-green-400"># DevHub - ваш код, ваши проекты, ваше сообщество</pre>
-                  <pre className="text-blue-400">join(DevHub)<span className="text-white cursor-blink">|</span></pre>
-                </div>
-              </div>
-            </div>
+          <p className="text-xl mb-10 text-gray-600 dark:text-gray-300">
+            Делитесь своими проектами, получайте обратную связь, изучайте код других разработчиков и находите вдохновение для своих следующих проектов.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg" className="gradient-bg text-white">
+              <Link to="/projects">
+                Исследовать проекты
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            
+            <Button asChild variant="outline" size="lg">
+              <Link to="/about">
+                Узнать больше
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
-      
+
       {/* Features Section */}
-      <section className="py-20 bg-white dark:bg-gray-900">
+      <section className="bg-gray-50 dark:bg-gray-800/50 py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Что вы можете делать на DevHub?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Что вы найдете на DevHub</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg card-hover">
-              <FolderGit2 className="h-12 w-12 text-devhub-purple mb-4" />
-              <h3 className="text-xl font-bold mb-4">Делиться проектами</h3>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+              <h3 className="text-xl font-bold mb-4">Проекты</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Публикуйте свои проекты, получайте обратную связь и сотрудничайте с другими разработчиками.
+                Просматривайте, публикуйте и получайте обратную связь по вашим проектам от сообщества разработчиков.
               </p>
-              <Link to="/projects" className="text-devhub-purple flex items-center gap-1 hover:gap-2 transition-all">
-                Исследовать проекты <ArrowRight className="h-4 w-4" />
+              <Link to="/projects" className="text-devhub-purple hover:underline flex items-center">
+                Перейти к проектам
+                <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg card-hover">
-              <Code className="h-12 w-12 text-devhub-purple mb-4" />
-              <h3 className="text-xl font-bold mb-4">Обмениваться кодом</h3>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+              <h3 className="text-xl font-bold mb-4">Сниппеты</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Делитесь фрагментами кода, алгоритмами и полезными решениями с сообществом.
+                Делитесь полезными фрагментами кода, решениями типичных задач и изучайте лучшие практики.
               </p>
-              <Link to="/snippets" className="text-devhub-purple flex items-center gap-1 hover:gap-2 transition-all">
-                Просмотреть сниппеты <ArrowRight className="h-4 w-4" />
+              <Link to="/snippets" className="text-devhub-purple hover:underline flex items-center">
+                Перейти к сниппетам
+                <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg card-hover">
-              <Users className="h-12 w-12 text-devhub-purple mb-4" />
-              <h3 className="text-xl font-bold mb-4">Находить единомышленников</h3>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+              <h3 className="text-xl font-bold mb-4">Сообщество</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Знакомьтесь с другими разработчиками, обменивайтесь идеями и создавайте вместе.
+                Присоединяйтесь к растущему сообществу разработчиков, находите единомышленников и стройте свою сеть.
               </p>
-              <Link to="/auth" className="text-devhub-purple flex items-center gap-1 hover:gap-2 transition-all">
-                Присоединиться к сообществу <ArrowRight className="h-4 w-4" />
+              <Link to="/about" className="text-devhub-purple hover:underline flex items-center">
+                Узнать больше
+                <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
           </div>
         </div>
       </section>
       
-      {/* CTA Section */}
-      <section className="py-20 bg-devhub-purple text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-6">Готовы присоединиться к сообществу?</h2>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto mb-10">
-            Станьте частью растущего сообщества разработчиков, делитесь своими знаниями и учитесь у других.
-          </p>
-          <Link to="/auth">
-            <Button size="lg" className="bg-white text-devhub-purple hover:bg-gray-100">
-              Зарегистрироваться бесплатно
-            </Button>
-          </Link>
+      {/* Recommendations Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <RecommendationSystem userId={user?.id} />
         </div>
       </section>
       

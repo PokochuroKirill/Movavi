@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import UserProfileLink from './UserProfileLink';
 
 interface SnippetCardProps {
   id: string;
@@ -11,6 +12,8 @@ interface SnippetCardProps {
   created_at?: string;
   author?: string;
   authorAvatar?: string;
+  authorId?: string;
+  authorUsername?: string;
   likes?: number;
   comments?: number;
   onClick?: () => void;
@@ -25,6 +28,8 @@ const SnippetCard = ({
   created_at, 
   author,
   authorAvatar,
+  authorId,
+  authorUsername,
   likes,
   comments,
   onClick
@@ -72,14 +77,15 @@ const SnippetCard = ({
           </div>
           
           <div className="flex items-center">
-            {author && authorAvatar && (
+            {author && (
               <div className="flex items-center mr-3">
-                <img
-                  src={authorAvatar || "/placeholder.svg"}
-                  alt={author}
-                  className="w-6 h-6 rounded-full mr-1 object-cover"
+                <UserProfileLink 
+                  username={authorUsername}
+                  fullName={author}
+                  avatarUrl={authorAvatar}
+                  userId={authorId}
+                  className="text-xs"
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400">{author}</span>
               </div>
             )}
             
