@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectFilters from '@/components/ProjectFilters';
 import { Project } from '@/types/database';
 
-// Fix for the ProjectFilters props issue
 const ProjectsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,7 @@ const ProjectsPage = () => {
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
   const [availableTech, setAvailableTech] = useState<string[]>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   useEffect(() => {
     fetchProjects();
@@ -71,11 +72,9 @@ const ProjectsPage = () => {
       }
       
       const projectsWithCounts = await Promise.all(data.map(async (project) => {
-        // Get likes count for each project
         const { data: likesCount } = await supabase
           .rpc('get_project_likes_count', { project_id: project.id });
         
-        // Get comments count for each project
         const { count: commentsCount } = await supabase
           .from('comments')
           .select('id', { count: 'exact', head: true })
@@ -140,11 +139,21 @@ const ProjectsPage = () => {
     fetchProjects();
   };
   
-  // Fix the ProjectFilters component props
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-20">
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Проекты</h1>
+          {user && (
+            <Link to="/projects/create">
+              <Button className="gradient-bg text-white">
+                <Plus className="h-4 w-4 mr-2" /> Создать проект
+              </Button>
+            </Link>
+          )}
+        </div>
+        
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-64 shrink-0">
             <Card className="sticky top-24">
@@ -193,7 +202,6 @@ const ProjectsPage = () => {
           
           <div className="w-full">
             <div className="mb-8 flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Проекты</h1>
               <Input
                 type="search"
                 placeholder="Поиск проектов..."

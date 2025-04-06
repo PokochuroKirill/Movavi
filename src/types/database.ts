@@ -9,7 +9,7 @@ export interface Profile {
   banner_url: string | null;
   created_at: string;
   updated_at: string;
-  birthdate: string | null;
+  birthdate?: string | null;
   telegram: string | null;
   discord: string | null;
   github: string | null;

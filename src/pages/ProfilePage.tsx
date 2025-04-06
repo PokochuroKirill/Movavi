@@ -287,13 +287,8 @@ const ProfilePage = () => {
               
               <TabsContent value="projects">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader>
                     <CardTitle>Мои проекты</CardTitle>
-                    <Link to="/projects/create">
-                      <Button className="gradient-bg text-white">
-                        Создать проект
-                      </Button>
-                    </Link>
                   </CardHeader>
                   <CardContent>
                     {projectsLoading ? (
@@ -328,11 +323,9 @@ const ProfilePage = () => {
                         ))}
                       </div>
                     ) : (
-                      <Link to="/projects/create" className="block text-center py-10">
-                        <Button className="gradient-bg text-white">
-                          Создать проект
-                        </Button>
-                      </Link>
+                      <p className="text-center py-10 text-gray-500">
+                        У вас пока нет проектов. Вы можете создать проект на странице проектов.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -377,13 +370,8 @@ const ProfilePage = () => {
               
               <TabsContent value="snippets">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader>
                     <CardTitle>Мои сниппеты</CardTitle>
-                    <Link to="/snippets/create">
-                      <Button className="gradient-bg text-white">
-                        Создать сниппет
-                      </Button>
-                    </Link>
                   </CardHeader>
                   <CardContent>
                     {snippetsLoading ? (
@@ -407,11 +395,9 @@ const ProfilePage = () => {
                         ))}
                       </div>
                     ) : (
-                      <Link to="/snippets/create" className="block text-center py-10">
-                        <Button className="gradient-bg text-white">
-                          Создать сниппет
-                        </Button>
-                      </Link>
+                      <p className="text-center py-10 text-gray-500">
+                        У вас пока нет сниппетов. Вы можете создать сниппет на странице сниппетов.
+                      </p>
                     )}
                   </CardContent>
                 </Card>

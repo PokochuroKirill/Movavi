@@ -1,16 +1,18 @@
-
-import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Edit, CheckCheck, MapPin, Calendar, ExternalLink } from 'lucide-react';
-import { formatDistance } from 'date-fns';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Pencil, MapPin, Globe, Calendar, Users, Upload } from 'lucide-react';
 import { Profile } from '@/types/database';
+import { formatDateInRussian } from '@/utils/dateUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProfileHeaderProps {
   profile: Profile;
-  isCurrentUser?: boolean;
+  isCurrentUser: boolean;
   onEditClick?: () => void;
   followersCount?: number;
   followingCount?: number;
@@ -18,137 +20,255 @@ interface ProfileHeaderProps {
   onFollowingClick?: () => void;
 }
 
-const ProfileHeader = ({
+const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   profile,
-  isCurrentUser = false,
+  isCurrentUser,
   onEditClick,
-  followersCount,
-  followingCount,
+  followersCount = 0,
+  followingCount = 0,
   onFollowersClick,
   onFollowingClick
-}: ProfileHeaderProps) => {
-  const joinedDate = new Date(profile.created_at);
-  const timeAgo = formatDistance(joinedDate, new Date(), { addSuffix: true });
-  
+}) => {
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      return;
+    }
+
+    const file = e.target.files[0];
+    const fileSize = file.size / 1024 / 1024; // size in MB
+    
+    if (fileSize > 5) {
+      toast({
+        title: "Файл слишком большой",
+        description: "Максимальный размер файла - 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+      
+      // Upload banner to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}-banner.${fileExt}`;
+      const filePath = `banners/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // Get public URL
+      const { data } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+      
+      const bannerUrl = data.publicUrl;
+      
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ banner_url: bannerUrl })
+        .eq('id', profile.id);
+      
+      if (updateError) {
+        throw updateError;
+      }
+      
+      toast({
+        title: "Баннер обновлен",
+        description: "Ваш баннер профиля был успешно обновлен"
+      });
+      
+      // Reload the page to show the new banner
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Error uploading banner:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить баннер",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      {/* Banner */}
-      <div 
-        className="h-32 md:h-48 bg-gradient-to-r from-blue-500 to-devhub-purple flex items-center justify-center text-white"
-        style={profile.banner_url ? { backgroundImage: `url(${profile.banner_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
-      >
-        {!profile.banner_url && <span className="text-lg opacity-50">Баннер профиля</span>}
+    <Card className="mb-6 overflow-hidden">
+      <div className="relative h-48 bg-gradient-to-r from-blue-500 to-devhub-purple">
+        {profile.banner_url && (
+          <img 
+            src={profile.banner_url} 
+            alt="Profile banner" 
+            className="w-full h-full object-cover"
+          />
+        )}
+        
+        {isCurrentUser && (
+          <div className="absolute top-4 right-4">
+            <label htmlFor="banner-upload" className="cursor-pointer">
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <Upload className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </div>
+              <input 
+                id="banner-upload" 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleBannerUpload}
+                disabled={uploading}
+              />
+            </label>
+          </div>
+        )}
+        
+        <div className="absolute -bottom-16 left-8">
+          <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
+            <AvatarImage src={profile.avatar_url || undefined} alt={profile.username || 'User'} />
+            <AvatarFallback className="text-4xl bg-devhub-purple text-white">
+              {profile.username ? profile.username[0].toUpperCase() : 'U'}
+            </AvatarFallback>
+          </Avatar>
+        </div>
       </div>
       
-      <div className="p-6">
-        <div className="flex flex-col md:flex-row items-start md:items-end space-y-4 md:space-y-0 md:space-x-6 -mt-12">
-          {/* Avatar */}
-          <div className="relative">
-            <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800">
-              <AvatarImage src={profile.avatar_url || undefined} />
-              <AvatarFallback className="text-2xl">
-                {profile.full_name ? profile.full_name.substring(0, 2).toUpperCase() : 
-                 profile.username ? profile.username.substring(0, 2).toUpperCase() : 'U'}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-          
-          {/* Name and Username */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold">
-                {profile.full_name || profile.username || 'Пользователь'}
-              </h2>
-              
+      <CardContent className="pt-20 pb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold">
+              {profile.full_name || profile.username || 'Пользователь'}
               {profile.is_verified && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge className="bg-gradient-to-r from-blue-500 to-devhub-purple text-white">
-                        <CheckCheck className="h-4 w-4" />
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Подтвержденный аккаунт</p>
-                      <p className="text-xs text-gray-500">Подтвержден {new Date().toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Badge className="ml-2 bg-blue-500 text-white">Проверено</Badge>
               )}
-            </div>
-            
+            </h2>
             {profile.username && (
               <p className="text-gray-500 dark:text-gray-400">@{profile.username}</p>
             )}
           </div>
           
-          {/* Edit Button (only shown for own profile) */}
           {isCurrentUser && onEditClick && (
-            <Button onClick={onEditClick} variant="outline" className="flex items-center gap-2">
-              <Edit className="h-4 w-4" /> 
-              Редактировать
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 md:mt-0"
+              onClick={onEditClick}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Редактировать профиль
             </Button>
           )}
         </div>
         
-        {/* Bio Section */}
         {profile.bio && (
-          <p className="mt-4 text-gray-700 dark:text-gray-300">
-            {profile.bio}
-          </p>
+          <p className="text-gray-700 dark:text-gray-300 mb-6">{profile.bio}</p>
         )}
         
-        {/* Stats */}
-        <div className="mt-4 flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {profile.location && (
-            <div className="flex items-center space-x-1">
-              <MapPin className="h-4 w-4" />
+            <div className="flex items-center text-gray-600 dark:text-gray-400">
+              <MapPin className="h-4 w-4 mr-2" />
               <span>{profile.location}</span>
             </div>
           )}
           
-          <div className="flex items-center space-x-1">
-            <Calendar className="h-4 w-4" />
-            <span>Присоединился {timeAgo}</span>
-          </div>
-          
           {profile.website && (
+            <div className="flex items-center text-gray-600 dark:text-gray-400">
+              <Globe className="h-4 w-4 mr-2" />
+              <a 
+                href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-devhub-purple hover:underline"
+              >
+                {profile.website}
+              </a>
+            </div>
+          )}
+          
+          <div className="flex items-center text-gray-600 dark:text-gray-400">
+            <Calendar className="h-4 w-4 mr-2" />
+            <span>Присоединился {formatDateInRussian(profile.created_at)}</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-6">
+          <button 
+            onClick={onFollowersClick} 
+            className="flex items-center text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+          >
+            <Users className="h-4 w-4 mr-1" />
+            <span className="font-medium">{followersCount}</span>
+            <span className="ml-1 text-gray-600 dark:text-gray-400">Подписчиков</span>
+          </button>
+          
+          <button 
+            onClick={onFollowingClick} 
+            className="flex items-center text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+          >
+            <span className="font-medium">{followingCount}</span>
+            <span className="ml-1 text-gray-600 dark:text-gray-400">Подписок</span>
+          </button>
+        </div>
+        
+        <div className="mt-6 flex flex-wrap gap-2">
+          {profile.github && (
             <a 
-              href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
-              target="_blank"
+              href={`https://github.com/${profile.github}`} 
+              target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center space-x-1 text-devhub-purple hover:underline"
+              className="text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
             >
-              <ExternalLink className="h-4 w-4" />
-              <span>Сайт</span>
+              <Badge variant="outline">GitHub</Badge>
+            </a>
+          )}
+          
+          {profile.twitter && (
+            <a 
+              href={`https://twitter.com/${profile.twitter}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+            >
+              <Badge variant="outline">Twitter</Badge>
+            </a>
+          )}
+          
+          {profile.linkedin && (
+            <a 
+              href={`https://linkedin.com/in/${profile.linkedin}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+            >
+              <Badge variant="outline">LinkedIn</Badge>
+            </a>
+          )}
+          
+          {profile.discord && (
+            <Badge variant="outline">Discord: {profile.discord}</Badge>
+          )}
+          
+          {profile.telegram && (
+            <a 
+              href={`https://t.me/${profile.telegram}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+            >
+              <Badge variant="outline">Telegram</Badge>
             </a>
           )}
         </div>
-        
-        {/* Followers/Following */}
-        {(typeof followersCount !== 'undefined' || typeof followingCount !== 'undefined') && (
-          <div className="mt-4 flex items-center space-x-6 text-sm">
-            {typeof followersCount !== 'undefined' && (
-              <button 
-                onClick={onFollowersClick} 
-                className="hover:text-devhub-purple transition-colors"
-              >
-                <span className="font-bold">{followersCount}</span> подписчиков
-              </button>
-            )}
-            
-            {typeof followingCount !== 'undefined' && (
-              <button 
-                onClick={onFollowingClick} 
-                className="hover:text-devhub-purple transition-colors"
-              >
-                <span className="font-bold">{followingCount}</span> подписок
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

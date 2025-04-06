@@ -26,7 +26,7 @@ const HomePage = () => {
                 Начать сейчас
               </Button>
             </Link>
-            <Link to="/faq">
+            <Link to="/about">
               <Button size="lg" variant="outline" className="border-devhub-purple text-devhub-purple hover:bg-devhub-purple/10">
                 Узнать больше
               </Button>

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Snippet } from '@/types/database';
 
 const SnippetsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,11 +157,13 @@ const SnippetsPage = () => {
             </p>
           </div>
           
-          <Link to="/snippets/create">
-            <Button className="gradient-bg text-white">
-              <Plus className="mr-2 h-4 w-4" /> Новый сниппет
-            </Button>
-          </Link>
+          {user && (
+            <Link to="/snippets/create">
+              <Button className="gradient-bg text-white">
+                <Plus className="mr-2 h-4 w-4" /> Новый сниппет
+              </Button>
+            </Link>
+          )}
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
