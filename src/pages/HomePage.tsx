@@ -99,7 +99,7 @@ const HomePage = () => {
       {/* Recommendations Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <RecommendationSystem userId={user?.id} />
+          {user ? <RecommendationSystem userId={user.id} /> : <RecommendationSystem />}
         </div>
       </section>
       

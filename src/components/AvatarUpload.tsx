@@ -10,9 +10,10 @@ interface AvatarUploadProps {
   userId: string;
   avatarUrl: string | null;
   onAvatarUpdate: (url: string) => void;
+  className?: string; // Add className prop
 }
 
-const AvatarUpload = ({ userId, avatarUrl, onAvatarUpdate }: AvatarUploadProps) => {
+const AvatarUpload = ({ userId, avatarUrl, onAvatarUpdate, className }: AvatarUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -129,7 +130,7 @@ const AvatarUpload = ({ userId, avatarUrl, onAvatarUpdate }: AvatarUploadProps) 
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <Avatar className="w-24 h-24 border-2 border-gray-200">
+      <Avatar className={`w-24 h-24 border-2 border-gray-200 ${className || ''}`}>
         <AvatarImage src={avatarUrl || undefined} />
         <AvatarFallback className="text-xl">
           {userId.substring(0, 2).toUpperCase()}

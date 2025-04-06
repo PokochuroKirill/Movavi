@@ -8,7 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Project, Snippet } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 
-const RecommendationSystem = () => {
+interface RecommendationSystemProps {
+  userId?: string;
+}
+
+const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
   const [popularProjects, setPopularProjects] = useState<Project[]>([]);
   const [popularSnippets, setPopularSnippets] = useState<Snippet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +31,9 @@ const RecommendationSystem = () => {
             title, 
             description, 
             technologies,
+            content,
             created_at,
+            updated_at,
             user_id,
             image_url,
             profiles:user_id(username, full_name, avatar_url)
@@ -56,7 +62,7 @@ const RecommendationSystem = () => {
             likes: likesCount || 0,
             comments: commentsCount || 0,
             popularityScore: (likesCount || 0) * 2 + (commentsCount || 0) * 3 // Score formula
-          };
+          } as Project;
         }));
 
         // Sort projects by popularity score
@@ -74,8 +80,10 @@ const RecommendationSystem = () => {
             title, 
             description, 
             language,
+            code,
             tags,
             created_at,
+            updated_at,
             user_id,
             profiles:user_id(username, full_name, avatar_url)
           `);
@@ -103,7 +111,7 @@ const RecommendationSystem = () => {
             likes: likesCount || 0,
             comments: commentsCount || 0,
             popularityScore: (likesCount || 0) * 2 + (commentsCount || 0) * 3 // Score formula
-          };
+          } as Snippet;
         }));
 
         // Sort snippets by popularity score
@@ -154,7 +162,7 @@ const RecommendationSystem = () => {
                   id={project.id}
                   title={project.title}
                   description={project.description}
-                  author={project.author}
+                  author={project.author || ''}
                   authorAvatar={project.authorAvatar}
                   authorId={project.authorId}
                   authorUsername={project.authorUsername}

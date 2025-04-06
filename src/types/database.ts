@@ -9,7 +9,6 @@ export interface Profile {
   banner_url: string | null;
   created_at: string;
   updated_at: string;
-  birthdate?: string | null;
   telegram: string | null;
   discord: string | null;
   github: string | null;
@@ -32,9 +31,12 @@ export interface Project {
   created_at: string;
   updated_at: string;
   author?: string;
+  authorId?: string;
+  authorUsername?: string;
   authorAvatar?: string;
-  likes_count?: number;
-  comments_count?: number;
+  likes?: number;
+  comments?: number;
+  popularityScore?: number;
   profiles?: {
     username?: string;
     full_name?: string;
@@ -53,9 +55,12 @@ export interface Snippet {
   created_at: string;
   updated_at: string;
   author?: string;
+  authorId?: string;
+  authorUsername?: string;
   authorAvatar?: string;
-  likes_count?: number;
-  comments_count?: number;
+  likes?: number;
+  comments?: number;
+  popularityScore?: number;
   profiles?: {
     username?: string;
     full_name?: string;
