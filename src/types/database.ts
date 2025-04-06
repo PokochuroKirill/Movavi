@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -16,6 +17,7 @@ export interface Profile {
   linkedin: string | null;
   is_admin?: boolean;
   is_verified: boolean;
+  last_username_change?: string | null;
 }
 
 export interface Project {

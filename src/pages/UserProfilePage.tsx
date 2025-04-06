@@ -367,8 +367,8 @@ const UserProfilePage = () => {
                         author={project.author || ''}
                         authorAvatar={project.authorAvatar || ''}
                         imageUrl={project.image_url || undefined}
-                        likes={project.likes_count}
-                        comments={project.comments_count}
+                        likes={project.likes}
+                        comments={project.comments}
                       />
                     ))}
                   </div>

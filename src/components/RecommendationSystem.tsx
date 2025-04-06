@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import ProjectCard from './ProjectCard';
-import SnippetCard from './SnippetCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ProjectCard from '@/components/ProjectCard';
+import SnippetCard from '@/components/SnippetCard';
 import { Project, Snippet } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,13 +18,13 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
   const [popularSnippets, setPopularSnippets] = useState<Snippet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    const loadRecommendations = async () => {
+    const fetchRecommendations = async () => {
       setIsLoading(true);
-      
       try {
-        // Fetch popular projects with likes and comments count
+        // Fetch popular projects
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select(`
@@ -37,11 +38,12 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
             user_id,
             image_url,
             profiles:user_id(username, full_name, avatar_url)
-          `);
+          `)
+          .limit(4);
 
         if (projectsError) throw projectsError;
 
-        // Fetch projects' likes and comments count
+        // Add popularity metrics to projects
         const projectsWithMetrics = await Promise.all((projectsData || []).map(async (project) => {
           // Get likes count
           const { data: likesCount } = await supabase
@@ -52,12 +54,12 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
             .from('comments')
             .select('id', { count: 'exact', head: true })
             .eq('project_id', project.id);
-
+          
           return {
             ...project,
-            author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
+            author: project.profiles?.full_name || project.profiles?.username || 'Unnamed Author',
             authorId: project.user_id,
-            authorUsername: project.profiles?.username,
+            authorUsername: project.profiles?.username || '',
             authorAvatar: project.profiles?.avatar_url,
             likes: likesCount || 0,
             comments: commentsCount || 0,
@@ -66,13 +68,10 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
         }));
 
         // Sort projects by popularity score
-        const sortedProjects = projectsWithMetrics.sort((a, b) => 
-          (b.popularityScore || 0) - (a.popularityScore || 0)
-        ).slice(0, 5); // Get top 5
-        
-        setPopularProjects(sortedProjects);
+        projectsWithMetrics.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+        setPopularProjects(projectsWithMetrics);
 
-        // Fetch popular snippets with likes and comments count
+        // Fetch popular snippets
         const { data: snippetsData, error: snippetsError } = await supabase
           .from('snippets')
           .select(`
@@ -86,11 +85,12 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
             updated_at,
             user_id,
             profiles:user_id(username, full_name, avatar_url)
-          `);
+          `)
+          .limit(4);
 
         if (snippetsError) throw snippetsError;
 
-        // Fetch snippets' likes and comments count
+        // Add popularity metrics to snippets
         const snippetsWithMetrics = await Promise.all((snippetsData || []).map(async (snippet) => {
           // Get likes count
           const { data: likesCount } = await supabase
@@ -101,12 +101,12 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
             .from('snippet_comments')
             .select('id', { count: 'exact', head: true })
             .eq('snippet_id', snippet.id);
-
+          
           return {
             ...snippet,
-            author: snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный автор',
+            author: snippet.profiles?.full_name || snippet.profiles?.username || 'Unnamed Author',
             authorId: snippet.user_id,
-            authorUsername: snippet.profiles?.username,
+            authorUsername: snippet.profiles?.username || '',
             authorAvatar: snippet.profiles?.avatar_url,
             likes: likesCount || 0,
             comments: commentsCount || 0,
@@ -115,13 +115,10 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
         }));
 
         // Sort snippets by popularity score
-        const sortedSnippets = snippetsWithMetrics.sort((a, b) => 
-          (b.popularityScore || 0) - (a.popularityScore || 0)
-        ).slice(0, 5); // Get top 5
-
-        setPopularSnippets(sortedSnippets);
+        snippetsWithMetrics.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+        setPopularSnippets(snippetsWithMetrics);
       } catch (error) {
-        console.error('Ошибка при загрузке рекомендаций:', error);
+        console.error('Error fetching recommendations:', error);
         toast({
           title: 'Ошибка',
           description: 'Не удалось загрузить рекомендации',
@@ -132,82 +129,71 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
       }
     };
 
-    loadRecommendations();
-  }, [toast]);
+    fetchRecommendations();
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-40">
-        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
+      <div className="flex justify-center items-center p-12">
+        <Loader2 className="h-12 w-12 animate-spin text-devhub-purple" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
-      <h2 className="text-2xl font-bold mb-6">Рекомендации для вас</h2>
-      
-      <Tabs defaultValue="projects">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="projects">Популярные проекты</TabsTrigger>
-          <TabsTrigger value="snippets">Популярные сниппеты</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="projects">
-          {popularProjects.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {popularProjects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  id={project.id}
-                  title={project.title}
-                  description={project.description}
-                  author={project.author || ''}
-                  authorAvatar={project.authorAvatar}
-                  authorId={project.authorId}
-                  authorUsername={project.authorUsername}
-                  likes={project.likes}
-                  comments={project.comments}
-                  technologies={project.technologies}
-                  imageUrl={project.image_url}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              Нет доступных проектов для отображения
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="snippets">
-          {popularSnippets.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {popularSnippets.map((snippet) => (
-                <SnippetCard
-                  key={snippet.id}
-                  id={snippet.id}
-                  title={snippet.title}
-                  description={snippet.description}
-                  language={snippet.language}
-                  tags={snippet.tags || []}
-                  created_at={snippet.created_at}
-                  author={snippet.author}
-                  authorAvatar={snippet.authorAvatar}
-                  authorId={snippet.authorId}
-                  authorUsername={snippet.authorUsername}
-                  likes={snippet.likes}
-                  comments={snippet.comments}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              Нет доступных сниппетов для отображения
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+    <div className="space-y-12">
+      <div>
+        <h2 className="text-3xl font-bold text-center mb-8">Популярные проекты</h2>
+        {popularProjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {popularProjects.map(project => (
+              <ProjectCard
+                key={project.id}
+                id={project.id}
+                title={project.title}
+                description={project.description}
+                technologies={project.technologies || []}
+                author={project.author || ''}
+                authorAvatar={project.authorAvatar}
+                imageUrl={project.image_url}
+                likes={project.likes}
+                comments={project.comments}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-10 text-center text-gray-500">
+              Проекты пока не найдены. Станьте первым, кто добавит проект!
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-3xl font-bold text-center mb-8">Популярные сниппеты</h2>
+        {popularSnippets.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {popularSnippets.map(snippet => (
+              <SnippetCard
+                key={snippet.id}
+                id={snippet.id}
+                title={snippet.title}
+                description={snippet.description}
+                language={snippet.language}
+                tags={snippet.tags || []}
+                created_at={snippet.created_at}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-10 text-center text-gray-500">
+              Сниппеты пока не найдены. Станьте первым, кто добавит сниппет!
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

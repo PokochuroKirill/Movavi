@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Profile, UserFollow, Project, Snippet } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
@@ -67,8 +66,8 @@ export const fetchUserProjects = async (userId: string): Promise<Project[]> => {
         ...project,
         author: project.profiles?.full_name || project.profiles?.username || 'Unnamed Author',
         authorAvatar: project.profiles?.avatar_url,
-        likes_count: likesCount || 0,
-        comments_count: commentsCount || 0
+        likes: likesCount || 0,
+        comments: commentsCount || 0
       } as Project;
     }));
 
@@ -109,8 +108,8 @@ export const fetchUserSnippets = async (userId: string): Promise<Snippet[]> => {
         ...snippet,
         author: snippet.profiles?.full_name || snippet.profiles?.username || 'Unnamed Author',
         authorAvatar: snippet.profiles?.avatar_url,
-        likes_count: likesCount || 0,
-        comments_count: commentsCount || 0
+        likes: likesCount || 0,
+        comments: commentsCount || 0
       } as Snippet;
     }));
 
@@ -299,6 +298,84 @@ export const updateProfile = async (
   }
 };
 
+// Function to remove profile banner
+export const removeProfileBanner = async (userId: string): Promise<boolean> => {
+  try {
+    // Get current profile to check if banner exists
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('banner_url')
+      .eq('id', userId)
+      .single();
+      
+    if (profileError) throw profileError;
+    
+    if (profileData.banner_url) {
+      // Extract filename from URL
+      const filePath = profileData.banner_url.split('/').pop();
+      
+      if (filePath) {
+        // Remove file from storage
+        const { error: removeError } = await supabase.storage
+          .from('profiles')
+          .remove([`banners/${filePath}`]);
+          
+        if (removeError) {
+          console.warn("Error removing banner file:", removeError);
+          // Continue anyway to update the profile
+        }
+      }
+    }
+    
+    // Update profile to remove banner URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ banner_url: null })
+      .eq('id', userId);
+      
+    if (updateError) throw updateError;
+    
+    return true;
+  } catch (error) {
+    console.error("Error removing banner:", error);
+    return false;
+  }
+};
+
+// Check if username can be changed
+export const canChangeUsername = async (userId: string): Promise<{ canChange: boolean, daysRemaining: number }> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('last_username_change')
+      .eq('id', userId)
+      .single();
+      
+    if (error) throw error;
+    
+    if (!data.last_username_change) {
+      return { canChange: true, daysRemaining: 0 };
+    }
+    
+    const lastChange = new Date(data.last_username_change);
+    const now = new Date();
+    
+    // Calculate the difference in days
+    const diffTime = now.getTime() - lastChange.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Username can be changed once per 30 days
+    if (diffDays >= 30) {
+      return { canChange: true, daysRemaining: 0 };
+    } else {
+      return { canChange: false, daysRemaining: 30 - diffDays };
+    }
+  } catch (error) {
+    console.error("Error checking username change:", error);
+    return { canChange: false, daysRemaining: 30 };
+  }
+};
+
 // Functions to upload profile banner
 export const uploadProfileBanner = async (
   userId: string,
@@ -396,6 +473,23 @@ export const useProfileOperations = () => {
   
   const handleProfileUpdate = async (userId: string, data: Partial<Profile>) => {
     try {
+      // If username is being changed, check if it's allowed
+      if (data.username) {
+        const { canChange, daysRemaining } = await canChangeUsername(userId);
+        
+        if (!canChange) {
+          toast({
+            title: "Изменение имени пользователя ограничено",
+            description: `Вы сможете изменить имя пользователя через ${daysRemaining} дней`,
+            variant: "destructive"
+          });
+          return false;
+        }
+        
+        // Update the last_username_change field
+        data.last_username_change = new Date().toISOString();
+      }
+      
       const success = await updateProfile(userId, data);
       
       if (success) {

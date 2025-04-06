@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, MapPin, Globe, Calendar, Users, Upload } from 'lucide-react';
+import { Pencil, MapPin, Globe, Calendar, Users, Upload, Trash2 } from 'lucide-react';
 import { Profile } from '@/types/database';
 import { formatDateInRussian } from '@/utils/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,6 +102,52 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     }
   };
 
+  const handleRemoveBanner = async () => {
+    try {
+      setUploading(true);
+      
+      // If the profile has a banner, attempt to delete it from storage
+      if (profile.banner_url) {
+        // Extract filename from URL
+        const filePath = profile.banner_url.split('/').pop();
+        
+        if (filePath) {
+          // Remove file from storage
+          await supabase.storage
+            .from('profiles')
+            .remove([`banners/${filePath}`]);
+        }
+      }
+      
+      // Update profile to remove banner URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ banner_url: null })
+        .eq('id', profile.id);
+      
+      if (updateError) {
+        throw updateError;
+      }
+      
+      toast({
+        title: "Баннер удален",
+        description: "Баннер профиля был успешно удален"
+      });
+      
+      // Reload the page to show the updated profile
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Error removing banner:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить баннер",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Card className="mb-6 overflow-hidden">
       <div className="relative h-48 bg-gradient-to-r from-blue-500 to-devhub-purple">
@@ -113,7 +160,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         )}
         
         {isCurrentUser && (
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 flex gap-2">
             <label htmlFor="banner-upload" className="cursor-pointer">
               <div className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <Upload className="h-5 w-5 text-gray-600 dark:text-gray-300" />
@@ -127,6 +174,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 disabled={uploading}
               />
             </label>
+            
+            {profile.banner_url && (
+              <button 
+                onClick={handleRemoveBanner}
+                disabled={uploading}
+                className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Trash2 className="h-5 w-5 text-red-500" />
+              </button>
+            )}
           </div>
         )}
         

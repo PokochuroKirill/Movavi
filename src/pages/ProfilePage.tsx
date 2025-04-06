@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,13 +20,15 @@ const ProfilePage = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
-  const [savedProjects, setSavedProjects] = useState<Project[]>([]);
+  const [favoriteItems, setFavoriteItems] = useState<{projects: Project[], snippets: Snippet[]}>(
+    {projects: [], snippets: []}
+  );
   const [userSnippets, setUserSnippets] = useState<Snippet[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [snippetsLoading, setSnippetsLoading] = useState(true);
-  const [savedProjectsLoading, setSavedProjectsLoading] = useState(true);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,7 +36,7 @@ const ProfilePage = () => {
       fetchProfile();
       fetchUserProjects();
       fetchUserSnippets();
-      fetchSavedProjects();
+      fetchFavorites();
     }
   }, [user]);
 
@@ -91,8 +94,8 @@ const ProfilePage = () => {
           ...project,
           author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
           authorAvatar: project.profiles?.avatar_url,
-          likes_count: likesCount || 0,
-          comments_count: commentsCount || 0
+          likes: likesCount || 0,
+          comments: commentsCount || 0
         } as Project;
       }));
 
@@ -104,18 +107,31 @@ const ProfilePage = () => {
     }
   };
 
-  const fetchSavedProjects = async () => {
-    setSavedProjectsLoading(true);
+  const fetchFavorites = async () => {
+    setFavoritesLoading(true);
     try {
-      const { data: savedData, error: savedError } = await supabase
+      // Fetch favorite projects
+      const { data: savedProjectsData, error: savedProjectsError } = await supabase
         .from('saved_projects')
         .select('project_id')
         .eq('user_id', user!.id);
 
-      if (savedError) throw savedError;
+      if (savedProjectsError) throw savedProjectsError;
       
-      if (savedData && savedData.length > 0) {
-        const projectIds = savedData.map(item => item.project_id);
+      // Fetch favorite snippets
+      const { data: savedSnippetsData, error: savedSnippetsError } = await supabase
+        .from('saved_snippets')
+        .select('snippet_id')
+        .eq('user_id', user!.id);
+        
+      if (savedSnippetsError) throw savedSnippetsError;
+      
+      const favoriteProjects: Project[] = [];
+      const favoriteSnippets: Snippet[] = [];
+      
+      // Get project details
+      if (savedProjectsData && savedProjectsData.length > 0) {
+        const projectIds = savedProjectsData.map(item => item.project_id);
         
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
@@ -127,37 +143,74 @@ const ProfilePage = () => {
           
         if (projectsError) throw projectsError;
         
-        if (!projectsData) {
-          setSavedProjects([]);
-          return;
+        if (projectsData) {
+          const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
+            const { data: likesCount } = await supabase
+              .rpc('get_project_likes_count', { project_id: project.id });
+            
+            const { count: commentsCount } = await supabase
+              .from('comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('project_id', project.id);
+            
+            return {
+              ...project,
+              author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
+              authorAvatar: project.profiles?.avatar_url,
+              likes: likesCount || 0,
+              comments: commentsCount || 0
+            } as Project;
+          }));
+          
+          favoriteProjects.push(...projectsWithCounts);
         }
-        
-        const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
-          const { data: likesCount } = await supabase
-            .rpc('get_project_likes_count', { project_id: project.id });
-          
-          const { count: commentsCount } = await supabase
-            .from('comments')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id);
-          
-          return {
-            ...project,
-            author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
-            authorAvatar: project.profiles?.avatar_url,
-            likes_count: likesCount || 0,
-            comments_count: commentsCount || 0
-          } as Project;
-        }));
-
-        setSavedProjects(projectsWithCounts);
-      } else {
-        setSavedProjects([]);
       }
+      
+      // Get snippet details
+      if (savedSnippetsData && savedSnippetsData.length > 0) {
+        const snippetIds = savedSnippetsData.map(item => item.snippet_id);
+        
+        const { data: snippetsData, error: snippetsError } = await supabase
+          .from('snippets')
+          .select(`
+            *,
+            profiles:user_id(username, full_name, avatar_url)
+          `)
+          .in('id', snippetIds);
+          
+        if (snippetsError) throw snippetsError;
+        
+        if (snippetsData) {
+          const snippetsWithCounts = await Promise.all(snippetsData.map(async (snippet) => {
+            const { data: likesCount } = await supabase
+              .rpc('get_snippet_likes_count', { snippet_id: snippet.id });
+            
+            const { count: commentsCount } = await supabase
+              .from('snippet_comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('snippet_id', snippet.id);
+            
+            return {
+              ...snippet,
+              author: snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный автор',
+              authorAvatar: snippet.profiles?.avatar_url,
+              likes: likesCount || 0,
+              comments: commentsCount || 0
+            } as Snippet;
+          }));
+          
+          favoriteSnippets.push(...snippetsWithCounts);
+        }
+      }
+      
+      setFavoriteItems({
+        projects: favoriteProjects,
+        snippets: favoriteSnippets
+      });
     } catch (error: any) {
-      console.error('Error fetching saved projects:', error.message);
+      console.error('Error fetching favorites:', error.message);
     } finally {
-      setSavedProjectsLoading(false);
+      setFavoritesLoading(false);
     }
   };
 
@@ -166,12 +219,38 @@ const ProfilePage = () => {
     try {
       const { data, error } = await supabase
         .from('snippets')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id(username, full_name, avatar_url)
+        `)
         .eq('user_id', user!.id);
 
       if (error) throw error;
 
-      setUserSnippets(data || []);
+      if (!data) {
+        setUserSnippets([]);
+        return;
+      }
+      
+      const snippetsWithCounts = await Promise.all(data.map(async (snippet) => {
+        const { data: likesCount } = await supabase
+          .rpc('get_snippet_likes_count', { snippet_id: snippet.id });
+        
+        const { count: commentsCount } = await supabase
+          .from('snippet_comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('snippet_id', snippet.id);
+        
+        return {
+          ...snippet,
+          author: snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный автор',
+          authorAvatar: snippet.profiles?.avatar_url,
+          likes: likesCount || 0,
+          comments: commentsCount || 0
+        } as Snippet;
+      }));
+      
+      setUserSnippets(snippetsWithCounts);
     } catch (error: any) {
       console.error('Error fetching user snippets:', error.message);
     } finally {
@@ -223,11 +302,38 @@ const ProfilePage = () => {
       });
       
       fetchUserProjects();
+      fetchFavorites();
     } catch (error: any) {
       console.error('Error deleting project:', error.message);
       toast({
         title: 'Ошибка',
         description: 'Не удалось удалить проект',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  const handleDeleteSnippet = async (snippetId: string) => {
+    try {
+      const { error } = await supabase
+        .from('snippets')
+        .delete()
+        .eq('id', snippetId)
+        .eq('user_id', user!.id);
+      
+      if (error) throw error;
+      
+      toast({
+        description: 'Сниппет успешно удален'
+      });
+      
+      fetchUserSnippets();
+      fetchFavorites();
+    } catch (error: any) {
+      console.error('Error deleting snippet:', error.message);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить сниппет',
         variant: 'destructive'
       });
     }
@@ -281,7 +387,7 @@ const ProfilePage = () => {
             <Tabs defaultValue="projects" className="w-full">
               <TabsList className="mb-6">
                 <TabsTrigger value="projects">Мои проекты</TabsTrigger>
-                <TabsTrigger value="saved-projects">Сохраненные проекты</TabsTrigger>
+                <TabsTrigger value="favorites">Избранное</TabsTrigger>
                 <TabsTrigger value="snippets">Мои сниппеты</TabsTrigger>
               </TabsList>
               
@@ -305,11 +411,11 @@ const ProfilePage = () => {
                               title={project.title}
                               description={project.description}
                               technologies={project.technologies || []}
-                              author={project.author}
-                              authorAvatar={project.authorAvatar}
+                              author={project.author || ''}
+                              authorAvatar={project.authorAvatar || ''}
                               imageUrl={project.image_url || undefined}
-                              likes={project.likes_count}
-                              comments={project.comments_count}
+                              likes={project.likes}
+                              comments={project.comments}
                             />
                             <Button 
                               variant="destructive"
@@ -331,37 +437,63 @@ const ProfilePage = () => {
                 </Card>
               </TabsContent>
               
-              <TabsContent value="saved-projects">
+              <TabsContent value="favorites">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Сохраненные проекты</CardTitle>
+                    <CardTitle>Избранное</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {savedProjectsLoading ? (
+                    {favoritesLoading ? (
                       <p className="text-center py-10 text-gray-500">
                         <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                        Загрузка сохраненных проектов...
+                        Загрузка избранного...
                       </p>
-                    ) : savedProjects.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {savedProjects.map(project => (
-                          <ProjectCard
-                            key={project.id}
-                            id={project.id}
-                            title={project.title}
-                            description={project.description}
-                            technologies={project.technologies || []}
-                            author={project.author}
-                            authorAvatar={project.authorAvatar}
-                            imageUrl={project.image_url || undefined}
-                            likes={project.likes_count}
-                            comments={project.comments_count}
-                          />
-                        ))}
-                      </div>
+                    ) : (favoriteItems.projects.length > 0 || favoriteItems.snippets.length > 0) ? (
+                      <>
+                        {favoriteItems.projects.length > 0 && (
+                          <>
+                            <h3 className="text-lg font-semibold mb-4">Проекты</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                              {favoriteItems.projects.map(project => (
+                                <ProjectCard
+                                  key={project.id}
+                                  id={project.id}
+                                  title={project.title}
+                                  description={project.description}
+                                  technologies={project.technologies || []}
+                                  author={project.author || ''}
+                                  authorAvatar={project.authorAvatar || ''}
+                                  imageUrl={project.image_url || undefined}
+                                  likes={project.likes}
+                                  comments={project.comments}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        
+                        {favoriteItems.snippets.length > 0 && (
+                          <>
+                            <h3 className="text-lg font-semibold mb-4">Сниппеты</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {favoriteItems.snippets.map(snippet => (
+                                <SnippetCard
+                                  key={snippet.id}
+                                  id={snippet.id}
+                                  title={snippet.title}
+                                  description={snippet.description}
+                                  language={snippet.language}
+                                  tags={snippet.tags || []}
+                                  created_at={snippet.created_at}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
                     ) : (
                       <p className="text-center py-10 text-gray-500">
-                        У вас нет сохраненных проектов. Нажмите на иконку закладки на странице проекта, чтобы сохранить его.
+                        У вас нет избранных элементов. Нажмите на иконку закладки на странице проекта или сниппета, чтобы добавить их в избранное.
                       </p>
                     )}
                   </CardContent>
@@ -391,6 +523,14 @@ const ProfilePage = () => {
                               tags={snippet.tags || []}
                               created_at={snippet.created_at}
                             />
+                            <Button 
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={() => handleDeleteSnippet(snippet.id)}
+                            >
+                              Удалить
+                            </Button>
                           </div>
                         ))}
                       </div>
