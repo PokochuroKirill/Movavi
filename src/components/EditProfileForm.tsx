@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -276,7 +275,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
                   Имя пользователя
                 </Label>
                 {!canEditUsername && (
-                  <Alert variant="warning" className="mb-2">
+                  <Alert className="mb-2">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       Имя пользователя можно изменять только раз в 30 дней. Осталось дней: {daysRemaining}

@@ -43,6 +43,8 @@ export interface Project {
     full_name?: string;
     avatar_url?: string;
   };
+  likes_count?: number;
+  comments_count?: number;
 }
 
 export interface Snippet {

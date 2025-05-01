@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Profile, UserFollow, Project, Snippet } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,7 @@ export const fetchProfileById = async (userId: string): Promise<Profile | null> 
 
     if (error) throw error;
     
+    // Cast to Profile to ensure type safety
     return data as Profile;
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -31,6 +33,7 @@ export const fetchProfileByUsername = async (username: string): Promise<Profile 
 
     if (error) throw error;
     
+    // Cast to Profile to ensure type safety
     return data as Profile;
   } catch (error) {
     console.error("Error fetching profile by username:", error);
@@ -209,7 +212,8 @@ export const fetchFollowers = async (userId: string): Promise<Profile[]> => {
       
     if (profilesError) throw profilesError;
     
-    return profilesData as Profile[] || [];
+    // Explicitly cast to Profile[] to ensure type safety
+    return profilesData as Profile[];
   } catch (error) {
     console.error("Error fetching followers:", error);
     return [];
@@ -238,7 +242,8 @@ export const fetchFollowing = async (userId: string): Promise<Profile[]> => {
       
     if (profilesError) throw profilesError;
     
-    return profilesData as Profile[] || [];
+    // Explicitly cast to Profile[] to ensure type safety
+    return profilesData as Profile[];
   } catch (error) {
     console.error("Error fetching following:", error);
     return [];
@@ -351,7 +356,10 @@ export const canChangeUsername = async (userId: string): Promise<{ canChange: bo
       .eq('id', userId)
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error("Error checking username change:", error);
+      return { canChange: false, daysRemaining: 30 };
+    }
     
     if (!data.last_username_change) {
       return { canChange: true, daysRemaining: 0 };
