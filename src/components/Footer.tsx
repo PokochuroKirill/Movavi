@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Twitter } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-      <div className="container mx-auto px-6 py-10">
-        <div className="flex flex-col md:flex-row justify-between">
+    <footer className="bg-background dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-8 mt-auto">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="mb-6 md:mb-0">
             <Link to="/" className="flex items-center">
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-devhub-purple bg-clip-text text-transparent">DevHub</span>
@@ -49,6 +48,26 @@ const Footer = () => {
               </ul>
             </div>
           </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Правовая информация</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/terms-of-service" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  Правила и условия
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy-policy" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  Политика конфиденциальности
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="text-center text-gray-600 dark:text-gray-400 mt-8">
+          <p>© 2023 DevHub. Все права защищены.</p>
         </div>
       </div>
     </footer>

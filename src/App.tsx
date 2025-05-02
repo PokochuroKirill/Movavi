@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +24,8 @@ import CreateCommunityPage from "./pages/CreateCommunityPage";
 import CreateCommunityPostPage from "./pages/CreateCommunityPostPage";
 import CommunityPostDetailPage from "./pages/CommunityPostDetailPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,8 @@ const App = () => (
             <Route path="/communities/:id" element={<CommunityDetailPage />} />
             <Route path="/communities/:id/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
             <Route path="/communities/:id/post/:postId" element={<CommunityPostDetailPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
