@@ -85,7 +85,7 @@ const CommunityPostDetailPage = () => {
       setCommentCount(postData.comments_count || 0);
       setIsAuthor(user?.id === postData.user_id);
       
-      // Получаем имя сообщества
+      // Get community name
       const { data: communityData, error: communityError } = await supabase
         .from('communities')
         .select('name')
@@ -96,16 +96,20 @@ const CommunityPostDetailPage = () => {
         setCommunityName(communityData.name);
       }
       
-      // Проверяем, лайкнул ли пользователь этот пост
+      // Check if user liked this post
       if (user) {
-        const { data: likeData } = await supabase
-          .from('community_post_likes')
-          .select()
-          .eq('post_id', postId)
-          .eq('user_id', user.id)
-          .single();
-          
-        setIsLiked(!!likeData);
+        try {
+          const { count, error } = await supabase
+            .rpc('count_post_likes', { 
+              post_id_param: postId,
+              user_id_param: user.id 
+            });
+            
+          setIsLiked(count > 0);
+        } catch (error) {
+          console.error('Error checking like status:', error);
+          setIsLiked(false);
+        }
       }
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -207,9 +211,9 @@ const CommunityPostDetailPage = () => {
       setNewComment('');
       setCommentCount(prev => prev + 1);
       
-      // Обновляем счетчик комментариев публикации
+      // Update post comments counter
       await incrementCounter('community_posts', 'comments_count', postId as string);
-      
+    
     } catch (error) {
       console.error('Error submitting comment:', error);
       toast({
@@ -237,7 +241,7 @@ const CommunityPostDetailPage = () => {
       setComments(comments.filter(comment => comment.id !== commentId));
       setCommentCount(prev => Math.max(0, prev - 1));
       
-      // Обновляем счетчик комментариев публикации
+      // Update post comments counter
       await decrementCounter('community_posts', 'comments_count', postId as string);
       
       toast({
@@ -266,31 +270,28 @@ const CommunityPostDetailPage = () => {
     
     try {
       if (isLiked) {
-        // Убираем лайк
-        await supabase
-          .from('community_post_likes')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
+        // Remove like using RPC function
+        await supabase.rpc('remove_post_like', {
+          post_id_param: postId,
+          user_id_param: user.id
+        });
           
         setIsLiked(false);
         setLikesCount(prev => Math.max(0, prev - 1));
         
-        // Обновляем счетчик лайков публикации
+        // Update post likes counter
         await decrementCounter('community_posts', 'likes_count', postId as string);
       } else {
-        // Добавляем лайк
-        await supabase
-          .from('community_post_likes')
-          .insert({
-            post_id: postId,
-            user_id: user.id,
-          });
+        // Add like using RPC function
+        await supabase.rpc('add_post_like', {
+          post_id_param: postId,
+          user_id_param: user.id
+        });
           
         setIsLiked(true);
         setLikesCount(prev => prev + 1);
         
-        // Обновляем счетчик лайков публикации
+        // Update post likes counter
         await incrementCounter('community_posts', 'likes_count', postId as string);
       }
     } catch (error) {
@@ -313,7 +314,7 @@ const CommunityPostDetailPage = () => {
         
       if (error) throw error;
       
-      // Обновляем счетчик постов в сообществе
+      // Update community posts counter
       await decrementCounter('communities', 'posts_count', id as string);
       
       toast({
@@ -376,7 +377,7 @@ const CommunityPostDetailPage = () => {
       
       <div className="flex-grow container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto">
-          {/* Хлебные крошки и метаданные */}
+          {/* Breadcrumbs */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
             <div>
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
@@ -416,7 +417,7 @@ const CommunityPostDetailPage = () => {
             )}
           </div>
           
-          {/* Основная публикация */}
+          {/* Main post */}
           <div className="mb-10">
             <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
             
@@ -471,7 +472,7 @@ const CommunityPostDetailPage = () => {
             </div>
           </div>
           
-          {/* Форма для комментария */}
+          {/* Comment form */}
           <div id="comment-form" className="mb-10">
             <h2 className="text-xl font-semibold mb-4">Оставить комментарий</h2>
             
@@ -507,7 +508,7 @@ const CommunityPostDetailPage = () => {
             </form>
           </div>
           
-          {/* Список комментариев */}
+          {/* Comments list */}
           <div>
             <h2 className="text-xl font-semibold mb-4">
               Комментарии ({commentCount})
@@ -569,7 +570,7 @@ const CommunityPostDetailPage = () => {
       
       <Footer />
       
-      {/* Диалог подтверждения удаления */}
+      {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

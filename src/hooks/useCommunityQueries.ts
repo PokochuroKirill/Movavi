@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { useToast } from "./use-toast";
 import { Community, CommunityMember, CommunityPost, CommunityComment, CommunityPostLike } from "@/types/database";
 import { incrementCounter, decrementCounter } from "@/utils/dbFunctions";
 
-// Функция для получения списка всех сообществ
+// Function to fetch all communities
 export const fetchCommunities = async (): Promise<Community[]> => {
   const { data, error } = await supabase
     .from('communities')
@@ -20,7 +21,7 @@ export const fetchCommunities = async (): Promise<Community[]> => {
   return data as unknown as Community[];
 };
 
-// Функция для получения сообщества по ID
+// Function to fetch a community by ID
 export const fetchCommunityById = async (communityId: string): Promise<Community> => {
   const { data, error } = await supabase
     .from('communities')
@@ -35,7 +36,7 @@ export const fetchCommunityById = async (communityId: string): Promise<Community
   return data as unknown as Community;
 };
 
-// Функция для получения списка участников сообщества
+// Function to fetch community members
 export const fetchCommunityMembers = async (communityId: string): Promise<CommunityMember[]> => {
   const { data, error } = await supabase
     .from('community_members')
@@ -50,7 +51,7 @@ export const fetchCommunityMembers = async (communityId: string): Promise<Commun
   return data as unknown as CommunityMember[];
 };
 
-// Функция для получения списка публикаций сообщества
+// Function to fetch community posts
 export const fetchCommunityPosts = async (communityId: string): Promise<CommunityPost[]> => {
   const { data, error } = await supabase
     .from('community_posts')
@@ -65,7 +66,7 @@ export const fetchCommunityPosts = async (communityId: string): Promise<Communit
   return data as unknown as CommunityPost[];
 };
 
-// Функция для получения публикации по ID
+// Function to fetch a post by ID
 export const fetchPostById = async (postId: string): Promise<CommunityPost> => {
   const { data, error } = await supabase
     .from('community_posts')
@@ -80,7 +81,7 @@ export const fetchPostById = async (postId: string): Promise<CommunityPost> => {
   return data as unknown as CommunityPost;
 };
 
-// Функция для получения комментариев к публикации
+// Function to fetch post comments
 export const fetchPostComments = async (postId: string): Promise<CommunityComment[]> => {
   const { data, error } = await supabase
     .from('community_comments')
@@ -95,7 +96,7 @@ export const fetchPostComments = async (postId: string): Promise<CommunityCommen
   return data as unknown as CommunityComment[];
 };
 
-// Функция для создания комментария к публикации
+// Function to create a post comment
 export const createPostComment = async (
   postId: string,
   userId: string,
@@ -116,13 +117,13 @@ export const createPostComment = async (
 
   if (error) throw error;
   
-  // Обновляем счетчик комментариев публикации
+  // Update post comments counter
   await incrementCounter('community_posts', 'comments_count', postId);
 
   return data as unknown as CommunityComment;
 };
 
-// Функция для удаления комментария к публикации
+// Function to delete a post comment
 export const deletePostComment = async (commentId: string, userId: string, postId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('community_comments')
@@ -132,13 +133,13 @@ export const deletePostComment = async (commentId: string, userId: string, postI
 
   if (error) throw error;
   
-  // Обновляем счетчик комментариев публикации
+  // Update post comments counter
   await decrementCounter('community_posts', 'comments_count', postId);
   
   return true;
 };
 
-// Функция для проверки, является ли пользователь участником сообщества
+// Function to check if a user is a community member
 export const checkIfMember = async (communityId: string, userId: string): Promise<{ isMember: boolean, role?: string }> => {
   const { data, error } = await supabase
     .from('community_members')
@@ -154,7 +155,7 @@ export const checkIfMember = async (communityId: string, userId: string): Promis
   return { isMember: true, role: data.role };
 };
 
-// Функция для присоединения к сообществу
+// Function to join a community
 export const joinCommunity = async (communityId: string, userId: string): Promise<CommunityMember> => {
   const { data, error } = await supabase
     .from('community_members')
@@ -168,13 +169,13 @@ export const joinCommunity = async (communityId: string, userId: string): Promis
 
   if (error) throw error;
   
-  // Обновляем счетчик участников сообщества
+  // Update community members counter
   await incrementCounter('communities', 'members_count', communityId);
 
   return data as CommunityMember;
 };
 
-// Функция для выхода из сообщества
+// Function to leave a community
 export const leaveCommunity = async (communityId: string, userId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('community_members')
@@ -184,69 +185,71 @@ export const leaveCommunity = async (communityId: string, userId: string): Promi
 
   if (error) throw error;
   
-  // Обновляем счетчик участников сообщества
+  // Update community members counter
   await decrementCounter('communities', 'members_count', communityId);
 
   return true;
 };
 
-// Функция для проверки, лайкнул ли пользователь публикацию
+// Function to check if user liked a post
 export const checkIfLikedPost = async (postId: string, userId: string): Promise<boolean> => {
-  // Вручную создаем запрос, так как таблица может отсутствовать в типах
-  const { data, error } = await supabase
-    .from('community_post_likes')
-    .select()
-    .eq('post_id', postId)
-    .eq('user_id', userId)
-    .maybeSingle();
+  try {
+    // Use a direct SQL query to check if the user liked the post
+    const { count, error } = await supabase
+      .rpc('count_post_likes', { 
+        post_id_param: postId,
+        user_id_param: userId 
+      });
 
-  if (error) {
+    if (error) {
+      console.error('Error checking like:', error);
+      return false;
+    }
+    
+    return count > 0;
+  } catch (error) {
     console.error('Error checking like:', error);
     return false;
   }
-  
-  return !!data;
 };
 
-// Функция для лайка/дизлайка публикации
+// Function to toggle post like
 export const togglePostLike = async (
   postId: string, 
   userId: string, 
   isLiked: boolean
 ): Promise<boolean> => {
-  if (isLiked) {
-    // Убираем лайк
-    const { error } = await supabase
-      .from('community_post_likes')
-      .delete()
-      .eq('post_id', postId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    
-    // Обновляем счетчик лайков публикации
-    await decrementCounter('community_posts', 'likes_count', postId);
-      
-    return false;
-  } else {
-    // Добавляем лайк
-    const { error } = await supabase
-      .from('community_post_likes')
-      .insert({
-        post_id: postId,
-        user_id: userId
+  try {
+    if (isLiked) {
+      // Remove like using SQL function
+      await supabase.rpc('remove_post_like', {
+        post_id_param: postId,
+        user_id_param: userId
       });
-
-    if (error) throw error;
-    
-    // Обновляем счетчик лайков публикации
-    await incrementCounter('community_posts', 'likes_count', postId);
       
-    return true;
+      // Update post likes counter
+      await decrementCounter('community_posts', 'likes_count', postId);
+        
+      return false;
+    } else {
+      // Add like using SQL function
+      await supabase.rpc('add_post_like', {
+        post_id_param: postId,
+        user_id_param: userId
+      });
+      
+      // Update post likes counter
+      await incrementCounter('community_posts', 'likes_count', postId);
+        
+      return true;
+    }
+  } catch (error) {
+    console.error('Error toggling post like:', error);
+    throw error;
   }
 };
 
-// Хук для работы с сообществами
+// Community hook
 export const useCommunity = (communityId: string) => {
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<CommunityMember[]>([]);
@@ -259,19 +262,19 @@ export const useCommunity = (communityId: string) => {
   const loadCommunityData = async () => {
     setLoading(true);
     try {
-      // Загружаем данные сообщества
+      // Load community data
       const communityData = await fetchCommunityById(communityId);
       setCommunity(communityData);
       
-      // Загружаем участников сообщества
+      // Load community members
       const membersData = await fetchCommunityMembers(communityId);
       setMembers(membersData);
       
-      // Загружаем публикации сообщества
+      // Load community posts
       const postsData = await fetchCommunityPosts(communityId);
       setPosts(postsData);
       
-      // Проверяем членство пользователя
+      // Check user membership
       if (user) {
         const { isMember, role } = await checkIfMember(communityId, user.id);
         setMemberStatus({
@@ -305,7 +308,7 @@ export const useCommunity = (communityId: string) => {
       await joinCommunity(communityId, user.id);
       setMemberStatus({ ...memberStatus, isMember: true });
       
-      // Обновляем список участников
+      // Update members list
       const membersData = await fetchCommunityMembers(communityId);
       setMembers(membersData);
       
@@ -329,7 +332,7 @@ export const useCommunity = (communityId: string) => {
       await leaveCommunity(communityId, user.id);
       setMemberStatus({ isMember: false, isAdmin: false });
       
-      // Обновляем список участников
+      // Update members list
       const membersData = await fetchCommunityMembers(communityId);
       setMembers(membersData);
       
@@ -359,7 +362,7 @@ export const useCommunity = (communityId: string) => {
   };
 };
 
-// Хук для работы с публикациями сообщества
+// Community post hook
 export const useCommunityPost = (postId: string) => {
   const [post, setPost] = useState<CommunityPost | null>(null);
   const [comments, setComments] = useState<CommunityComment[]>([]);
@@ -371,15 +374,15 @@ export const useCommunityPost = (postId: string) => {
   const loadPostData = async () => {
     setLoading(true);
     try {
-      // Загружаем данные публикации
+      // Load post data
       const postData = await fetchPostById(postId);
       setPost(postData);
       
-      // Загружаем комментарии к публикации
+      // Load post comments
       const commentsData = await fetchPostComments(postId);
       setComments(commentsData);
       
-      // Проверяем, поставил ли пользователь лайк
+      // Check if user liked the post
       if (user) {
         const userLiked = await checkIfLikedPost(postId, user.id);
         setIsLiked(userLiked);
