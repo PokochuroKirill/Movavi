@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Copy, Pencil, Trash2, User, Calendar } from 'lucide-react';
+import { Loader2, Copy } from 'lucide-react';
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -146,6 +146,8 @@ const SnippetDetailPage = () => {
     );
   }
 
+  const isOwnSnippet = user && user.id === snippet.user_id;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -155,20 +157,19 @@ const SnippetDetailPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <h1 className="text-3xl font-bold mb-2 md:mb-0">{snippet.title}</h1>
             
-            {user && user.id === snippet.user_id && (
+            {/* Кнопки редактирования и удаления теперь отображаются только если пользователь владелец сниппета */}
+            {isOwnSnippet && (
               <div className="flex space-x-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate(`/snippets/edit/${snippet.id}`)}
+                  onClick={() => navigate(`/snippets/${snippet.id}/edit`)}
                 >
-                  <Pencil className="h-4 w-4 mr-2" />
                   Редактировать
                 </Button>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
                       Удалить
                     </Button>
                   </AlertDialogTrigger>
@@ -216,7 +217,6 @@ const SnippetDetailPage = () => {
             </div>
             
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
               <span className="text-sm text-gray-600 dark:text-gray-300">
                 {format(new Date(snippet.created_at), 'dd MMMM yyyy', { locale: ru })}
               </span>

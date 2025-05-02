@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, MapPin, Globe, Calendar, Users, Upload, Trash2 } from 'lucide-react';
 import { Profile } from '@/types/database';
-import { formatDateInRussian } from '@/utils/dateUtils';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +32,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
+
+  // Форматируем дату создания аккаунта в формат "месяц год" на русском языке
+  const formatCreationDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'LLLL yyyy', { locale: ru });
+    } catch (error) {
+      return 'Дата не указана';
+    }
+  };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
@@ -252,7 +261,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           
           <div className="flex items-center text-gray-600 dark:text-gray-400">
             <Calendar className="h-4 w-4 mr-2" />
-            <span>Присоединился {formatDateInRussian(profile.created_at)}</span>
+            <span>Регистрация: {formatCreationDate(profile.created_at)}</span>
           </div>
         </div>
         

@@ -157,3 +157,66 @@ export interface SavedSnippet {
   snippet_id: string;
   created_at: string;
 }
+
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  avatar_url?: string | null;
+  banner_url?: string | null;
+  created_at: string;
+  updated_at: string;
+  creator_id: string;
+  is_public: boolean;
+  members_count?: number;
+  posts_count?: number;
+  topics?: string[];
+  creator?: {
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+export interface CommunityMember {
+  id: string;
+  user_id: string;
+  community_id: string;
+  role: 'admin' | 'moderator' | 'member';
+  created_at: string;
+  profiles?: {
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+export interface CommunityPost {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  community_id: string;
+  created_at: string;
+  updated_at: string;
+  likes_count?: number;
+  comments_count?: number;
+  profiles?: {
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+export interface CommunityComment {
+  id: string;
+  content: string;
+  user_id: string;
+  post_id: string;
+  created_at: string;
+  profiles?: {
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+}

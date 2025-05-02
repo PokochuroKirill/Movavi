@@ -1,8 +1,8 @@
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Code, Home, Search, FolderGit2, Menu, X, User, LogOut } from 'lucide-react';
+import { Code, Home, Search, FolderGit2, Menu, X, User, LogOut, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
@@ -70,6 +70,10 @@ const Navbar = () => {
               <Code className="h-4 w-4" />
               <span>Сниппеты</span>
             </Link>
+            <Link to="/communities" className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+              <Users className="h-4 w-4" />
+              <span>Сообщества</span>
+            </Link>
             {user ? (
               <div className="flex items-center gap-4">
                 <Button 
@@ -127,6 +131,14 @@ const Navbar = () => {
               >
                 <Code className="h-5 w-5" />
                 <span>Сниппеты</span>
+              </Link>
+              <Link 
+                to="/communities" 
+                className="flex items-center gap-2 p-2 text-gray-700 dark:text-gray-300 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Users className="h-5 w-5" />
+                <span>Сообщества</span>
               </Link>
               {user ? (
                 <>
