@@ -19,7 +19,6 @@ import AboutPage from "./pages/AboutPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AdminPage from "./pages/AdminPage";
-import CommunitiesPage from "./pages/CommunitiesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -45,7 +44,6 @@ const App = () => (
             <Route path="/snippets/create" element={<ProtectedRoute><CreateSnippetPage /></ProtectedRoute>} />
             <Route path="/snippets/:id" element={<SnippetDetailPage />} />
             <Route path="/snippets/:id/edit" element={<ProtectedRoute><EditSnippetPage /></ProtectedRoute>} />
-            <Route path="/communities" element={<CommunitiesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

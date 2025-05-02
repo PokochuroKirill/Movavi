@@ -8,7 +8,18 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Copy, User, Calendar } from 'lucide-react';
+import { Loader2, Copy, Pencil, Trash2, User, Calendar } from 'lucide-react';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +32,7 @@ const SnippetDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [snippet, setSnippet] = useState<Snippet | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -72,6 +84,37 @@ const SnippetDetailPage = () => {
     });
   };
 
+  const handleDelete = async () => {
+    if (!snippet || !user) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      const { error } = await supabase
+        .from('snippets')
+        .delete()
+        .eq('id', snippet.id)
+        .eq('user_id', user.id);
+        
+      if (error) throw error;
+      
+      toast({
+        description: 'Фрагмент кода успешно удален'
+      });
+      
+      navigate('/snippets');
+    } catch (error: any) {
+      console.error('Error deleting snippet:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить фрагмент кода',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -112,7 +155,51 @@ const SnippetDetailPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <h1 className="text-3xl font-bold mb-2 md:mb-0">{snippet.title}</h1>
             
-            {/* Edit and Delete buttons removed from here */}
+            {user && user.id === snippet.user_id && (
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate(`/snippets/edit/${snippet.id}`)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Редактировать
+                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Удалить
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Удалить фрагмент кода?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Это действие нельзя отменить. Фрагмент кода будет безвозвратно удален.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Отмена</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDelete}
+                        className="bg-red-500 hover:bg-red-600"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Удаление...
+                          </>
+                        ) : (
+                          'Удалить'
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
           </div>
           
           <div className="flex flex-wrap items-center gap-4 mb-6">
