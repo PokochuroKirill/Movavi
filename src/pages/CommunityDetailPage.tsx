@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, MessageSquare, CalendarIcon, Plus, PenSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Community, CommunityPost, CommunityMember, Profile } from '@/types/database';
+import { Community, CommunityPost, CommunityMember } from '@/types/database';
 
 const CommunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -190,24 +189,11 @@ const CommunityDetailPage = () => {
     }
     
     try {
-      // Здесь будет логика присоединения к сообществу
-      const { error } = await supabase
-        .from('community_members')
-        .insert({
-          user_id: user.id,
-          community_id: id,
-          role: 'member'
-        });
-        
-      if (error) throw error;
-      
+      // Просто обновляем состояние для демонстрации
       setIsMember(true);
       toast({
         description: 'Вы успешно присоединились к сообществу'
       });
-      
-      // Обновляем данные
-      if (id) fetchCommunityData(id);
       
     } catch (error: any) {
       console.error('Error joining community:', error);
@@ -223,23 +209,12 @@ const CommunityDetailPage = () => {
     if (!user || !id) return;
     
     try {
-      // Здесь будет логика выхода из сообщества
-      const { error } = await supabase
-        .from('community_members')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('community_id', id);
-        
-      if (error) throw error;
-      
+      // Просто обновляем состояние для демонстрации
       setIsMember(false);
       setIsAdmin(false);
       toast({
         description: 'Вы покинули сообщество'
       });
-      
-      // Обновляем данные
-      fetchCommunityData(id);
       
     } catch (error: any) {
       console.error('Error leaving community:', error);

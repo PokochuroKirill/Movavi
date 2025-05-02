@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,19 +33,7 @@ const CommunitiesPage = () => {
     try {
       setLoading(true);
 
-      // Получаем все публичные сообщества
-      const { data: publicCommunities, error: publicError } = await supabase
-        .from('communities')
-        .select(`
-          *,
-          creator:creator_id(username, full_name, avatar_url)
-        `)
-        .eq('is_public', true)
-        .order('members_count', { ascending: false });
-
-      if (publicError) throw publicError;
-      
-      // Данные для демонстрации, в будущем будут приходить с сервера
+      // Демо-данные для примера
       const demoData: Community[] = [
         {
           id: '1',
@@ -117,19 +104,8 @@ const CommunitiesPage = () => {
       
       // Если пользователь авторизован, получаем сообщества где он состоит
       if (user) {
-        const { data: userCommunities, error: userError } = await supabase
-          .from('community_members')
-          .select(`
-            community_id
-          `)
-          .eq('user_id', user.id);
-          
-        if (!userError && userCommunities) {
-          const communityIds = userCommunities.map(item => item.community_id);
-          
-          // Для демонстрации используем первые два сообщества как "мои сообщества"
-          setMyCommunities(demoData.slice(0, 2));
-        }
+        // Для демонстрации используем первые два сообщества как "мои сообщества"
+        setMyCommunities(demoData.slice(0, 2));
       }
     } catch (error: any) {
       console.error('Error fetching communities:', error);

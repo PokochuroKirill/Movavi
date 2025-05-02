@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,25 +72,13 @@ const ProjectsPage = () => {
         return;
       }
       
-      const projectsWithCounts = await Promise.all(data.map(async (project) => {
-        const { data: likesCount } = await supabase
-          .rpc('get_project_likes_count', { project_id: project.id });
-        
-        const { count: commentsCount } = await supabase
-          .from('comments')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', project.id);
-        
-        return {
-          ...project,
-          author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
-          authorAvatar: project.profiles?.avatar_url,
-          likes_count: likesCount || 0,
-          comments_count: commentsCount || 0
-        } as Project;
+      const projectsWithData = data.map(project => ({
+        ...project,
+        author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
+        authorAvatar: project.profiles?.avatar_url,
       }));
       
-      setProjects(projectsWithCounts);
+      setProjects(projectsWithData);
     } catch (error: any) {
       console.error('Error fetching projects:', error.message);
       toast({
@@ -231,8 +220,8 @@ const ProjectsPage = () => {
                     author={project.author || ''}
                     authorAvatar={project.authorAvatar || ''}
                     imageUrl={project.image_url || undefined}
-                    likes={project.likes_count}
-                    comments={project.comments_count}
+                    likes={project.likes_count || 0}
+                    comments={project.comments_count || 0}
                   />
                 ))}
               </div>

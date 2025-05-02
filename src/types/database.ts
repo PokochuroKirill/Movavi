@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -37,6 +38,8 @@ export interface Project {
   authorAvatar?: string;
   likes?: number;
   comments?: number;
+  likes_count?: number;
+  comments_count?: number;
   popularityScore?: number;
   profiles?: {
     username?: string;

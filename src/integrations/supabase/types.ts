@@ -77,6 +77,188 @@ export type Database = {
           },
         ]
       }
+      communities: {
+        Row: {
+          avatar_url: string | null
+          banner_url: string | null
+          created_at: string
+          creator_id: string
+          description: string
+          id: string
+          is_public: boolean
+          members_count: number | null
+          name: string
+          posts_count: number | null
+          topics: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          creator_id: string
+          description: string
+          id?: string
+          is_public?: boolean
+          members_count?: number | null
+          name: string
+          posts_count?: number | null
+          topics?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string
+          id?: string
+          is_public?: boolean
+          members_count?: number | null
+          name?: string
+          posts_count?: number | null
+          topics?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communities_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          comments_count: number | null
+          community_id: string
+          content: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number | null
+          community_id: string
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments_count?: number | null
+          community_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -174,12 +356,14 @@ export type Database = {
       }
       projects: {
         Row: {
+          comments_count: number | null
           content: string
           created_at: string
           description: string
           github_url: string | null
           id: string
           image_url: string | null
+          likes_count: number | null
           live_url: string | null
           technologies: string[] | null
           title: string
@@ -187,12 +371,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          comments_count?: number | null
           content: string
           created_at?: string
           description: string
           github_url?: string | null
           id?: string
           image_url?: string | null
+          likes_count?: number | null
           live_url?: string | null
           technologies?: string[] | null
           title: string
@@ -200,12 +386,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          comments_count?: number | null
           content?: string
           created_at?: string
           description?: string
           github_url?: string | null
           id?: string
           image_url?: string | null
+          likes_count?: number | null
           live_url?: string | null
           technologies?: string[] | null
           title?: string
