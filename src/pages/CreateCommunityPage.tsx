@@ -7,251 +7,221 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, X } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 const CreateCommunityPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [topicInput, setTopicInput] = useState('');
-  const [topics, setTopics] = useState<string[]>([]);
+  const { user } = useAuth();
   
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    isPublic: true
-  });
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleSwitchChange = (checked: boolean) => {
-    setFormData(prev => ({ ...prev, isPublic: checked }));
-  };
-  
-  const handleTopicKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && topicInput.trim()) {
-      e.preventDefault();
-      addTopic();
-    }
-  };
-  
-  const addTopic = () => {
-    const trimmedTopic = topicInput.trim();
-    if (!trimmedTopic) return;
-    
-    if (!topics.includes(trimmedTopic)) {
-      setTopics([...topics, trimmedTopic]);
-    }
-    
-    setTopicInput('');
-  };
-  
-  const removeTopic = (topic: string) => {
-    setTopics(topics.filter(t => t !== topic));
-  };
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [topics, setTopics] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
       toast({
-        title: 'Ошибка',
-        description: 'Вы должны быть авторизованы для создания сообщества',
+        title: 'Требуется авторизация',
+        description: 'Для создания сообщества необходимо войти в систему',
         variant: 'destructive'
       });
+      navigate('/auth');
       return;
     }
     
-    if (!formData.name.trim() || !formData.description.trim()) {
-      toast({
-        title: 'Ошибка',
-        description: 'Заполните все обязательные поля',
-        variant: 'destructive'
-      });
+    if (!name.trim() || !description.trim()) {
+      setError('Пожалуйста, заполните обязательные поля');
       return;
     }
     
-    setIsSubmitting(true);
+    const topicsArray = topics
+      .split(',')
+      .map(topic => topic.trim())
+      .filter(topic => topic.length > 0);
+    
+    setLoading(true);
+    setError(null);
     
     try {
       // Создаем сообщество
-      const { data, error } = await supabase
+      const { data: communityData, error: communityError } = await supabase
         .from('communities')
         .insert({
-          name: formData.name.trim(),
-          description: formData.description.trim(),
+          name: name.trim(),
+          description: description.trim(),
           creator_id: user.id,
-          is_public: formData.isPublic,
-          topics: topics.length > 0 ? topics : null
+          avatar_url: avatarUrl.trim() || null,
+          banner_url: bannerUrl.trim() || null,
+          topics: topicsArray.length > 0 ? topicsArray : null,
+          is_public: isPublic,
+          members_count: 1, // Создатель сразу становится участником
         })
-        .select('id')
+        .select()
         .single();
+        
+      if (communityError) throw communityError;
       
-      if (error) throw error;
-      
-      if (!data) {
-        throw new Error('Не удалось создать сообщество');
-      }
-      
-      // Автоматически добавляем создателя как администратора сообщества
+      // Добавляем создателя как админа сообщества
       const { error: memberError } = await supabase
         .from('community_members')
         .insert({
+          community_id: communityData.id,
           user_id: user.id,
-          community_id: data.id,
           role: 'admin'
         });
-      
-      if (memberError) {
-        console.error('Ошибка при добавлении создателя как админа:', memberError);
-        // Не прерываем выполнение, так как сообщество всё равно создано
-      }
+        
+      if (memberError) throw memberError;
       
       toast({
-        title: 'Сообщество создано',
-        description: 'Ваше сообщество было успешно создано'
+        description: 'Сообщество успешно создано',
       });
       
-      navigate(`/communities/${data.id}`);
+      navigate(`/communities/${communityData.id}`);
+      
     } catch (error: any) {
       console.error('Error creating community:', error);
+      setError(error.message || 'Не удалось создать сообщество');
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось создать сообщество',
+        description: 'Не удалось создать сообщество',
         variant: 'destructive'
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
   
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-20">
-        <h1 className="text-3xl font-bold mb-8">Создание сообщества</h1>
-        
+      
+      <div className="flex-grow container mx-auto px-4 py-20">
         <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Создать сообщество</h1>
+          
           <Card>
-            <form onSubmit={handleSubmit}>
-              <CardHeader>
-                <CardTitle>Информация о сообществе</CardTitle>
-                <CardDescription>
-                  Создайте сообщество, чтобы объединить людей с общими интересами
-                </CardDescription>
-              </CardHeader>
+            <CardHeader>
+              <CardTitle>Новое сообщество</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               
-              <CardContent className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Название сообщества <span className="text-red-500">*</span></Label>
-                  <Input 
+                  <Label htmlFor="name">Название сообщества *</Label>
+                  <Input
                     id="name"
-                    name="name"
-                    placeholder="Название вашего сообщества"
-                    value={formData.name}
-                    onChange={handleInputChange}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Введите название сообщества"
                     required
+                    disabled={loading}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Описание <span className="text-red-500">*</span></Label>
-                  <Textarea 
+                  <Label htmlFor="description">Описание *</Label>
+                  <Textarea
                     id="description"
-                    name="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     placeholder="Расскажите о вашем сообществе"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={5}
+                    className="min-h-[120px]"
                     required
+                    disabled={loading}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="topics">Темы и технологии</Label>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      id="topics"
-                      placeholder="Добавьте темы и нажмите Enter"
-                      value={topicInput}
-                      onChange={(e) => setTopicInput(e.target.value)}
-                      onKeyDown={handleTopicKeyDown}
-                    />
-                    <Button type="button" onClick={addTopic} variant="outline">
-                      Добавить
-                    </Button>
-                  </div>
-                  
-                  {topics.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {topics.map((topic, index) => (
-                        <Badge key={index} variant="secondary" className="pl-3 pr-2 py-1.5">
-                          {topic}
-                          <button 
-                            type="button" 
-                            onClick={() => removeTopic(topic)} 
-                            className="ml-1 hover:text-red-500"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  <Label htmlFor="topics">Темы (разделите запятыми)</Label>
+                  <Input
+                    id="topics"
+                    value={topics}
+                    onChange={(e) => setTopics(e.target.value)}
+                    placeholder="Например: JavaScript, React, TypeScript"
+                    disabled={loading}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="avatarUrl">URL аватара сообщества</Label>
+                  <Input
+                    id="avatarUrl"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    disabled={loading}
+                  />
+                  <p className="text-sm text-gray-500">URL изображения для аватара сообщества</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bannerUrl">URL баннера сообщества</Label>
+                  <Input
+                    id="bannerUrl"
+                    value={bannerUrl}
+                    onChange={(e) => setBannerUrl(e.target.value)}
+                    placeholder="https://example.com/banner.jpg"
+                    disabled={loading}
+                  />
+                  <p className="text-sm text-gray-500">URL изображения для баннера сообщества</p>
                 </div>
                 
                 <div className="flex items-center space-x-2">
                   <Switch 
-                    id="isPublic" 
-                    checked={formData.isPublic} 
-                    onCheckedChange={handleSwitchChange}
+                    id="isPublic"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                    disabled={loading}
                   />
                   <Label htmlFor="isPublic">Публичное сообщество</Label>
                 </div>
-                <p className="text-sm text-gray-500">
-                  {formData.isPublic 
-                    ? "Публичное сообщество видно всем пользователям и доступно для поиска." 
-                    : "Приватное сообщество видно только его участникам и доступно по приглашению."}
-                </p>
-              </CardContent>
-              
-              <CardFooter className="flex justify-between">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate('/communities')}
-                >
-                  Отмена
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="gradient-bg text-white" 
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Создание...
-                    </>
-                  ) : (
-                    'Создать сообщество'
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
+                
+                <div className="flex justify-end gap-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => navigate('/communities')}
+                    disabled={loading}
+                  >
+                    Отмена
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="gradient-bg text-white"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Создание...
+                      </>
+                    ) : "Создать сообщество"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
           </Card>
         </div>
-      </main>
+      </div>
+      
       <Footer />
     </div>
   );

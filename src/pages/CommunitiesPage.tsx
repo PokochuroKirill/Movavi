@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,79 +34,53 @@ const CommunitiesPage = () => {
     try {
       setLoading(true);
 
-      // Демо-данные для примера
-      const demoData: Community[] = [
-        {
-          id: '1',
-          name: 'React разработчики',
-          description: 'Сообщество React разработчиков. Обсуждаем лучшие практики, инструменты и новости в мире React.',
-          avatar_url: 'https://i.imgur.com/3lGw7sv.png',
-          banner_url: 'https://i.imgur.com/T9OfDu6.jpg',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          creator_id: '1',
-          is_public: true,
-          members_count: 1235,
-          posts_count: 456,
-          topics: ['React', 'JavaScript', 'Frontend'],
-          creator: {
-            username: 'reactfan',
-            full_name: 'React Fan',
-            avatar_url: 'https://i.imgur.com/3lGw7sv.png'
-          }
-        },
-        {
-          id: '2',
-          name: 'Python энтузиасты',
-          description: 'Сообщество для любителей Python. Обсуждаем библиотеки, фреймворки и делимся опытом.',
-          avatar_url: 'https://i.imgur.com/jCEEAN5.png',
-          banner_url: 'https://i.imgur.com/mESGwOM.jpg',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          creator_id: '2',
-          is_public: true,
-          members_count: 2543,
-          posts_count: 876,
-          topics: ['Python', 'ML', 'Backend'],
-          creator: {
-            username: 'pythonista',
-            full_name: 'Python User',
-            avatar_url: 'https://i.imgur.com/jCEEAN5.png'
-          }
-        },
-        {
-          id: '3',
-          name: 'DevOps Практики',
-          description: 'Обсуждаем CI/CD, контейнеризацию, оркестрацию и другие DevOps практики.',
-          avatar_url: 'https://i.imgur.com/hfv8FEp.png',
-          banner_url: 'https://i.imgur.com/yY5BiKJ.jpg',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          creator_id: '3',
-          is_public: true,
-          members_count: 987,
-          posts_count: 345,
-          topics: ['DevOps', 'Docker', 'Kubernetes'],
-          creator: {
-            username: 'devopsmaster',
-            full_name: 'DevOps Master',
-            avatar_url: 'https://i.imgur.com/hfv8FEp.png'
-          }
-        }
-      ];
+      // Загрузка всех публичных сообществ
+      const { data: communitiesData, error: communitiesError } = await supabase
+        .from('communities')
+        .select(`
+          *,
+          profiles:creator_id (username, full_name, avatar_url)
+        `)
+        .eq('is_public', true)
+        .order('members_count', { ascending: false });
       
-      setCommunities(demoData);
+      if (communitiesError) throw communitiesError;
+      setCommunities(communitiesData as unknown as Community[]);
       
       // Популярные сообщества - сортируем по количеству участников
-      const popular = [...demoData].sort((a, b) => 
-        (b.members_count || 0) - (a.members_count || 0)
-      ).slice(0, 5);
+      const popular = [...(communitiesData as unknown as Community[])]
+        .sort((a, b) => (b.members_count || 0) - (a.members_count || 0))
+        .slice(0, 5);
       setPopularCommunities(popular);
       
-      // Если пользователь авторизован, получаем сообщества где он состоит
+      // Если пользователь авторизован, получаем сообщества, где он состоит
       if (user) {
-        // Для демонстрации используем первые два сообщества как "мои сообщества"
-        setMyCommunities(demoData.slice(0, 2));
+        const { data: userCommunitiesData, error: userCommunitiesError } = await supabase
+          .from('community_members')
+          .select(`
+            community_id
+          `)
+          .eq('user_id', user.id);
+
+        if (userCommunitiesError) throw userCommunitiesError;
+        
+        if (userCommunitiesData.length > 0) {
+          const communityIds = userCommunitiesData.map(item => item.community_id);
+          
+          const { data: myCommunitiesData, error: myCommunitiesError } = await supabase
+            .from('communities')
+            .select(`
+              *,
+              profiles:creator_id (username, full_name, avatar_url)
+            `)
+            .in('id', communityIds)
+            .order('created_at', { ascending: false });
+            
+          if (myCommunitiesError) throw myCommunitiesError;
+          setMyCommunities(myCommunitiesData as unknown as Community[]);
+        } else {
+          setMyCommunities([]);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching communities:', error);

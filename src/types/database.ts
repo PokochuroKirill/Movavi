@@ -223,3 +223,10 @@ export interface CommunityComment {
     avatar_url?: string | null;
   };
 }
+
+export interface CommunityPostLike {
+  id: string;
+  user_id: string;
+  post_id: string;
+  created_at: string;
+}

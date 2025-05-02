@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,10 +11,31 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, MessageSquare, CalendarIcon, Plus, PenSquare } from 'lucide-react';
+import {
+  Loader2,
+  Users,
+  MessageSquare,
+  CalendarIcon,
+  Plus,
+  PenSquare,
+  Heart,
+  Settings,
+  AlertCircle
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Community, CommunityPost, CommunityMember } from '@/types/database';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const CommunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,141 +49,75 @@ const CommunityDetailPage = () => {
   const [isMember, setIsMember] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
   
   useEffect(() => {
     if (id) {
-      fetchCommunityData(id);
+      fetchCommunityData();
     }
   }, [id, user]);
   
-  const fetchCommunityData = async (communityId: string) => {
+  const fetchCommunityData = async () => {
     try {
       setLoading(true);
       
-      // Демо-данные для примера
-      const demoCommunity: Community = {
-        id: communityId,
-        name: 'React разработчики',
-        description: 'Сообщество React разработчиков. Обсуждаем лучшие практики, инструменты и новости в мире React. Делимся опытом, кодом и помогаем друг другу решать проблемы в разработке приложений на React.',
-        avatar_url: 'https://i.imgur.com/3lGw7sv.png',
-        banner_url: 'https://i.imgur.com/T9OfDu6.jpg',
-        created_at: '2023-01-15T10:00:00Z',
-        updated_at: '2023-01-15T10:00:00Z',
-        creator_id: '1',
-        is_public: true,
-        members_count: 1235,
-        posts_count: 456,
-        topics: ['React', 'JavaScript', 'Frontend', 'Web Development', 'React Hooks', 'Redux'],
-        creator: {
-          username: 'reactfan',
-          full_name: 'React Enthusiast',
-          avatar_url: 'https://i.imgur.com/3lGw7sv.png'
-        }
-      };
+      // Загрузка данных сообщества
+      const { data: communityData, error: communityError } = await supabase
+        .from('communities')
+        .select(`
+          *,
+          profiles:creator_id (username, full_name, avatar_url)
+        `)
+        .eq('id', id)
+        .single();
+        
+      if (communityError) throw communityError;
       
-      // Демо-данные для постов
-      const demoPosts: CommunityPost[] = [
-        {
-          id: '1',
-          title: 'Как использовать React Hooks эффективно',
-          content: 'В этом посте я расскажу о лучших практиках использования React Hooks...',
-          user_id: '1',
-          community_id: communityId,
-          created_at: '2023-03-15T14:25:00Z',
-          updated_at: '2023-03-15T14:25:00Z',
-          likes_count: 42,
-          comments_count: 12,
-          profiles: {
-            username: 'reactfan',
-            full_name: 'React Enthusiast',
-            avatar_url: 'https://i.imgur.com/3lGw7sv.png'
-          }
-        },
-        {
-          id: '2',
-          title: 'Управление состоянием с Redux Toolkit',
-          content: 'Redux Toolkit значительно упрощает работу с Redux...',
-          user_id: '2',
-          community_id: communityId,
-          created_at: '2023-03-10T09:15:00Z',
-          updated_at: '2023-03-10T09:15:00Z',
-          likes_count: 38,
-          comments_count: 8,
-          profiles: {
-            username: 'reduxmaster',
-            full_name: 'Redux Master',
-            avatar_url: 'https://i.imgur.com/4AiXzf8.jpeg'
-          }
-        },
-        {
-          id: '3',
-          title: 'React Performance Optimization',
-          content: 'Советы по оптимизации производительности в React...',
-          user_id: '3',
-          community_id: communityId,
-          created_at: '2023-03-05T16:45:00Z',
-          updated_at: '2023-03-05T16:45:00Z',
-          likes_count: 56,
-          comments_count: 15,
-          profiles: {
-            username: 'performancedev',
-            full_name: 'Performance Developer',
-            avatar_url: 'https://i.imgur.com/9KYq7VG.jpeg'
-          }
-        }
-      ];
+      setCommunity(communityData as unknown as Community);
       
-      // Демо-данные для участников сообщества
-      const demoMembers: CommunityMember[] = [
-        {
-          id: '1',
-          user_id: '1',
-          community_id: communityId,
-          role: 'admin',
-          created_at: '2023-01-15T10:00:00Z',
-          profiles: {
-            username: 'reactfan',
-            full_name: 'React Enthusiast',
-            avatar_url: 'https://i.imgur.com/3lGw7sv.png'
-          }
-        },
-        {
-          id: '2',
-          user_id: '2',
-          community_id: communityId,
-          role: 'moderator',
-          created_at: '2023-01-16T11:30:00Z',
-          profiles: {
-            username: 'reduxmaster',
-            full_name: 'Redux Master',
-            avatar_url: 'https://i.imgur.com/4AiXzf8.jpeg'
-          }
-        },
-        {
-          id: '3',
-          user_id: '3',
-          community_id: communityId,
-          role: 'member',
-          created_at: '2023-01-20T14:15:00Z',
-          profiles: {
-            username: 'performancedev',
-            full_name: 'Performance Developer',
-            avatar_url: 'https://i.imgur.com/9KYq7VG.jpeg'
-          }
-        }
-      ];
+      // Загрузка публикаций сообщества
+      const { data: postsData, error: postsError } = await supabase
+        .from('community_posts')
+        .select(`
+          *,
+          profiles:user_id (username, full_name, avatar_url)
+        `)
+        .eq('community_id', id)
+        .order('created_at', { ascending: false });
+        
+      if (postsError) throw postsError;
       
-      setCommunity(demoCommunity);
-      setPosts(demoPosts);
-      setMembers(demoMembers);
+      setPosts(postsData as unknown as CommunityPost[]);
+      
+      // Загрузка участников сообщества
+      const { data: membersData, error: membersError } = await supabase
+        .from('community_members')
+        .select(`
+          *,
+          profiles:user_id (username, full_name, avatar_url)
+        `)
+        .eq('community_id', id)
+        .order('created_at', { ascending: false });
+        
+      if (membersError) throw membersError;
+      
+      setMembers(membersData as unknown as CommunityMember[]);
       
       // Проверяем, является ли текущий пользователь участником сообщества
       if (user) {
-        const memberRecord = demoMembers.find(member => member.user_id === user.id);
-        setIsMember(!!memberRecord);
-        
-        if (memberRecord) {
-          setIsAdmin(memberRecord.role === 'admin' || memberRecord.role === 'moderator');
+        const { data: memberData, error: memberError } = await supabase
+          .from('community_members')
+          .select('role')
+          .eq('community_id', id)
+          .eq('user_id', user.id)
+          .single();
+          
+        if (!memberError && memberData) {
+          setIsMember(true);
+          setIsAdmin(memberData.role === 'admin' || memberData.role === 'moderator');
+        } else {
+          setIsMember(false);
+          setIsAdmin(false);
         }
       }
       
@@ -189,11 +145,34 @@ const CommunityDetailPage = () => {
     }
     
     try {
-      // Просто обновляем состояние для демонстрации
+      // Добавляем пользователя в участники сообщества
+      const { data, error } = await supabase
+        .from('community_members')
+        .insert({
+          user_id: user.id,
+          community_id: id,
+          role: 'member'
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // Обновляем счетчик участников в сообществе
+      await supabase
+        .from('communities')
+        .update({ members_count: supabase.rpc('increment', { row_id: id, table_name: 'communities', column_name: 'members_count' }) })
+        .eq('id', id);
+      
       setIsMember(true);
+      setMembers([data as unknown as CommunityMember, ...members]);
+      
       toast({
         description: 'Вы успешно присоединились к сообществу'
       });
+      
+      // Обновляем данные сообщества
+      fetchCommunityData();
       
     } catch (error: any) {
       console.error('Error joining community:', error);
@@ -209,18 +188,94 @@ const CommunityDetailPage = () => {
     if (!user || !id) return;
     
     try {
-      // Просто обновляем состояние для демонстрации
+      // Удаляем пользователя из участников сообщества
+      const { error } = await supabase
+        .from('community_members')
+        .delete()
+        .eq('community_id', id)
+        .eq('user_id', user.id);
+        
+      if (error) throw error;
+      
+      // Обновляем счетчик участников в сообществе
+      await supabase
+        .from('communities')
+        .update({ members_count: supabase.rpc('decrement', { row_id: id, table_name: 'communities', column_name: 'members_count' }) })
+        .eq('id', id);
+      
       setIsMember(false);
       setIsAdmin(false);
+      setMembers(members.filter(member => member.user_id !== user.id));
+      
       toast({
         description: 'Вы покинули сообщество'
       });
+      
+      setConfirmLeaveOpen(false);
+      
+      // Обновляем данные сообщества
+      fetchCommunityData();
       
     } catch (error: any) {
       console.error('Error leaving community:', error);
       toast({
         title: 'Ошибка',
         description: 'Не удалось покинуть сообщество',
+        variant: 'destructive',
+      });
+      setConfirmLeaveOpen(false);
+    }
+  };
+  
+  const handleToggleLike = async (postId: string, isLiked: boolean) => {
+    if (!user) {
+      toast({
+        title: 'Требуется авторизация',
+        description: 'Для оценки публикации необходимо войти',
+        variant: 'destructive',
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    try {
+      if (isLiked) {
+        // Убираем лайк
+        await supabase
+          .from('community_post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+          
+        // Обновляем счетчик лайков публикации
+        await supabase
+          .from('community_posts')
+          .update({ likes_count: supabase.rpc('decrement', { row_id: postId, table_name: 'community_posts', column_name: 'likes_count' }) })
+          .eq('id', postId);
+      } else {
+        // Добавляем лайк
+        await supabase
+          .from('community_post_likes')
+          .insert({
+            post_id: postId,
+            user_id: user.id,
+          });
+          
+        // Обновляем счетчик лайков публикации
+        await supabase
+          .from('community_posts')
+          .update({ likes_count: supabase.rpc('increment', { row_id: postId, table_name: 'community_posts', column_name: 'likes_count' }) })
+          .eq('id', postId);
+      }
+      
+      // Обновляем данные публикаций
+      fetchCommunityData();
+      
+    } catch (error: any) {
+      console.error('Error toggling like:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить оценку',
         variant: 'destructive',
       });
     }
@@ -302,12 +357,13 @@ const CommunityDetailPage = () => {
                           variant="outline"
                           onClick={() => navigate(`/communities/${community.id}/manage`)}
                         >
+                          <Settings className="h-4 w-4 mr-2" />
                           Управление
                         </Button>
                       )}
                       <Button 
                         variant={isAdmin ? "outline" : "default"}
-                        onClick={handleLeaveCommunity}
+                        onClick={() => setConfirmLeaveOpen(true)}
                       >
                         {isAdmin ? "Выйти из сообщества" : "Покинуть сообщество"}
                       </Button>
@@ -356,7 +412,7 @@ const CommunityDetailPage = () => {
             </TabsList>
             
             {isMember && (
-              <Button onClick={() => navigate(`/communities/${community.id}/post/create`)}>
+              <Button onClick={() => navigate(`/communities/${community.id}/post/create`)} className="gradient-bg text-white">
                 <PenSquare className="h-4 w-4 mr-2" />
                 Создать публикацию
               </Button>
@@ -365,6 +421,15 @@ const CommunityDetailPage = () => {
           
           <TabsContent value="posts">
             <div className="space-y-6">
+              {!isMember && (
+                <Alert variant="warning" className="mb-4 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <AlertDescription className="ml-2">
+                    Присоединитесь к сообществу, чтобы создавать публикации и общаться с другими участниками.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {posts.length > 0 ? (
                 posts.map(post => (
                   <Card key={post.id} className="hover:shadow-md transition-shadow">
@@ -387,18 +452,22 @@ const CommunityDetailPage = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <Link to={`/communities/${community.id}/posts/${post.id}`}>
+                      <Link to={`/communities/${community.id}/post/${post.id}`}>
                         <h3 className="text-xl font-semibold mb-2 hover:text-devhub-purple">{post.title}</h3>
                       </Link>
                       <p className="text-gray-600 dark:text-gray-300 line-clamp-3">{post.content}</p>
                       <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                        <div className="flex items-center">
+                        <button 
+                          className="flex items-center hover:text-red-500 transition-colors focus:outline-none"
+                          onClick={() => handleToggleLike(post.id, false)}
+                        >
+                          <Heart className="h-4 w-4 mr-1" />
                           <span>{post.likes_count || 0} лайков</span>
-                        </div>
-                        <div className="flex items-center">
+                        </button>
+                        <Link to={`/communities/${community.id}/post/${post.id}`} className="flex items-center">
                           <MessageSquare className="h-4 w-4 mr-1" />
                           <span>{post.comments_count || 0} комментариев</span>
-                        </div>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>
@@ -407,7 +476,7 @@ const CommunityDetailPage = () => {
                 <div className="text-center py-10">
                   <p className="text-gray-500 dark:text-gray-400 mb-4">В этом сообществе пока нет публикаций</p>
                   {isMember && (
-                    <Button onClick={() => navigate(`/communities/${community.id}/post/create`)}>
+                    <Button onClick={() => navigate(`/communities/${community.id}/post/create`)} className="gradient-bg text-white">
                       <Plus className="h-4 w-4 mr-2" />
                       Создать первую публикацию
                     </Button>
@@ -419,35 +488,41 @@ const CommunityDetailPage = () => {
           
           <TabsContent value="members">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {members.map(member => (
-                <Card key={member.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={member.profiles?.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {(member.profiles?.username || 'U').charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-grow">
-                        <div className="flex items-center justify-between">
-                          <Link to={`/user/${member.profiles?.username}`}>
-                            <p className="font-semibold hover:text-devhub-purple">
-                              {member.profiles?.full_name || member.profiles?.username || 'Пользователь'}
-                            </p>
-                          </Link>
-                          <Badge variant={member.role === 'admin' ? "default" : "outline"}>
-                            {member.role === 'admin' ? 'Админ' : member.role === 'moderator' ? 'Модератор' : 'Участник'}
-                          </Badge>
+              {members.length > 0 ? (
+                members.map(member => (
+                  <Card key={member.id}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={member.profiles?.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {(member.profiles?.username || 'U').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-grow">
+                          <div className="flex items-center justify-between">
+                            <Link to={`/user/${member.profiles?.username}`}>
+                              <p className="font-semibold hover:text-devhub-purple">
+                                {member.profiles?.full_name || member.profiles?.username || 'Пользователь'}
+                              </p>
+                            </Link>
+                            <Badge variant={member.role === 'admin' ? "default" : "outline"}>
+                              {member.role === 'admin' ? 'Админ' : member.role === 'moderator' ? 'Модератор' : 'Участник'}
+                            </Badge>
+                          </div>
+                          {member.profiles?.username && (
+                            <p className="text-sm text-gray-500">@{member.profiles.username}</p>
+                          )}
                         </div>
-                        {member.profiles?.username && (
-                          <p className="text-sm text-gray-500">@{member.profiles.username}</p>
-                        )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10">
+                  <p className="text-gray-500 dark:text-gray-400">В этом сообществе пока нет участников</p>
+                </div>
+              )}
             </div>
           </TabsContent>
           
@@ -498,6 +573,24 @@ const CommunityDetailPage = () => {
       </div>
       
       <Footer />
+      
+      {/* Диалог подтверждения выхода из сообщества */}
+      <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Покинуть сообщество?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите покинуть это сообщество? Вы всегда можете присоединиться снова позже.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLeaveCommunity}>
+              Покинуть сообщество
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

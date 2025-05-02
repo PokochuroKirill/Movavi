@@ -22,6 +22,8 @@ import AdminPage from "./pages/AdminPage";
 import CommunitiesPage from "./pages/CommunitiesPage";
 import CommunityDetailPage from "./pages/CommunityDetailPage";
 import CreateCommunityPage from "./pages/CreateCommunityPage";
+import CreateCommunityPostPage from "./pages/CreateCommunityPostPage";
+import CommunityPostDetailPage from "./pages/CommunityPostDetailPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,8 @@ const App = () => (
             <Route path="/communities" element={<CommunitiesPage />} />
             <Route path="/communities/create" element={<ProtectedRoute><CreateCommunityPage /></ProtectedRoute>} />
             <Route path="/communities/:id" element={<CommunityDetailPage />} />
+            <Route path="/communities/:id/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
+            <Route path="/communities/:id/post/:postId" element={<CommunityPostDetailPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
