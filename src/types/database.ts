@@ -1,4 +1,3 @@
-
 export interface Profile {
   id: string;
   username: string | null;
@@ -222,6 +221,27 @@ export interface CommunityComment {
     full_name?: string | null;
     avatar_url?: string | null;
   };
+}
+
+export interface CommunityPostLike {
+  id: string;
+  user_id: string;
+  post_id: string;
+  created_at: string;
+}
+
+export interface CommunityPostLike {
+  id: string;
+  user_id: string;
+  post_id: string;
+  created_at: string;
+}
+
+export interface CommunityPostLike {
+  id: string;
+  user_id: string;
+  post_id: string;
+  created_at: string;
 }
 
 export interface CommunityPostLike {

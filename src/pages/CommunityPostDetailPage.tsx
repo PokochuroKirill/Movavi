@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { incrementCounter, decrementCounter } from '@/utils/dbFunctions';
 
 const CommunityPostDetailPage = () => {
   const { id, postId } = useParams<{ id: string; postId: string }>();
@@ -208,10 +208,7 @@ const CommunityPostDetailPage = () => {
       setCommentCount(prev => prev + 1);
       
       // Обновляем счетчик комментариев публикации
-      await supabase
-        .from('community_posts')
-        .update({ comments_count: supabase.rpc('increment', { row_id: postId, table_name: 'community_posts', column_name: 'comments_count' }) })
-        .eq('id', postId);
+      await incrementCounter('community_posts', 'comments_count', postId as string);
       
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -241,10 +238,7 @@ const CommunityPostDetailPage = () => {
       setCommentCount(prev => Math.max(0, prev - 1));
       
       // Обновляем счетчик комментариев публикации
-      await supabase
-        .from('community_posts')
-        .update({ comments_count: supabase.rpc('decrement', { row_id: postId, table_name: 'community_posts', column_name: 'comments_count' }) })
-        .eq('id', postId);
+      await decrementCounter('community_posts', 'comments_count', postId as string);
       
       toast({
         description: 'Комментарий успешно удален',
@@ -283,10 +277,7 @@ const CommunityPostDetailPage = () => {
         setLikesCount(prev => Math.max(0, prev - 1));
         
         // Обновляем счетчик лайков публикации
-        await supabase
-          .from('community_posts')
-          .update({ likes_count: supabase.rpc('decrement', { row_id: postId, table_name: 'community_posts', column_name: 'likes_count' }) })
-          .eq('id', postId);
+        await decrementCounter('community_posts', 'likes_count', postId as string);
       } else {
         // Добавляем лайк
         await supabase
@@ -300,10 +291,7 @@ const CommunityPostDetailPage = () => {
         setLikesCount(prev => prev + 1);
         
         // Обновляем счетчик лайков публикации
-        await supabase
-          .from('community_posts')
-          .update({ likes_count: supabase.rpc('increment', { row_id: postId, table_name: 'community_posts', column_name: 'likes_count' }) })
-          .eq('id', postId);
+        await incrementCounter('community_posts', 'likes_count', postId as string);
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -326,10 +314,7 @@ const CommunityPostDetailPage = () => {
       if (error) throw error;
       
       // Обновляем счетчик постов в сообществе
-      await supabase
-        .from('communities')
-        .update({ posts_count: supabase.rpc('decrement', { row_id: id, table_name: 'communities', column_name: 'posts_count' }) })
-        .eq('id', id);
+      await decrementCounter('communities', 'posts_count', id as string);
       
       toast({
         description: 'Публикация успешно удалена',

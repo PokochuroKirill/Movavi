@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./use-toast";
-import { Community, CommunityMember, CommunityPost, CommunityComment } from "@/types/database";
+import { Community, CommunityMember, CommunityPost, CommunityComment, CommunityPostLike } from "@/types/database";
+import { incrementCounter, decrementCounter } from "@/utils/dbFunctions";
 
 // Функция для получения списка всех сообществ
 export const fetchCommunities = async (): Promise<Community[]> => {
@@ -117,10 +117,7 @@ export const createPostComment = async (
   if (error) throw error;
   
   // Обновляем счетчик комментариев публикации
-  await supabase
-    .from('community_posts')
-    .update({ comments_count: supabase.rpc('increment', { row_id: postId, table_name: 'community_posts', column_name: 'comments_count' }) })
-    .eq('id', postId);
+  await incrementCounter('community_posts', 'comments_count', postId);
 
   return data as unknown as CommunityComment;
 };
@@ -136,10 +133,7 @@ export const deletePostComment = async (commentId: string, userId: string, postI
   if (error) throw error;
   
   // Обновляем счетчик комментариев публикации
-  await supabase
-    .from('community_posts')
-    .update({ comments_count: supabase.rpc('decrement', { row_id: postId, table_name: 'community_posts', column_name: 'comments_count' }) })
-    .eq('id', postId);
+  await decrementCounter('community_posts', 'comments_count', postId);
   
   return true;
 };
@@ -175,10 +169,7 @@ export const joinCommunity = async (communityId: string, userId: string): Promis
   if (error) throw error;
   
   // Обновляем счетчик участников сообщества
-  await supabase
-    .from('communities')
-    .update({ members_count: supabase.rpc('increment', { row_id: communityId, table_name: 'communities', column_name: 'members_count' }) })
-    .eq('id', communityId);
+  await incrementCounter('communities', 'members_count', communityId);
 
   return data as CommunityMember;
 };
@@ -194,28 +185,27 @@ export const leaveCommunity = async (communityId: string, userId: string): Promi
   if (error) throw error;
   
   // Обновляем счетчик участников сообщества
-  await supabase
-    .from('communities')
-    .update({ members_count: supabase.rpc('decrement', { row_id: communityId, table_name: 'communities', column_name: 'members_count' }) })
-    .eq('id', communityId);
+  await decrementCounter('communities', 'members_count', communityId);
 
   return true;
 };
 
 // Функция для проверки, лайкнул ли пользователь публикацию
 export const checkIfLikedPost = async (postId: string, userId: string): Promise<boolean> => {
+  // Вручную создаем запрос, так как таблица может отсутствовать в типах
   const { data, error } = await supabase
     .from('community_post_likes')
     .select()
     .eq('post_id', postId)
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (error) {
+    console.error('Error checking like:', error);
     return false;
   }
   
-  return true;
+  return !!data;
 };
 
 // Функция для лайка/дизлайка публикации
@@ -235,10 +225,7 @@ export const togglePostLike = async (
     if (error) throw error;
     
     // Обновляем счетчик лайков публикации
-    await supabase
-      .from('community_posts')
-      .update({ likes_count: supabase.rpc('decrement', { row_id: postId, table_name: 'community_posts', column_name: 'likes_count' }) })
-      .eq('id', postId);
+    await decrementCounter('community_posts', 'likes_count', postId);
       
     return false;
   } else {
@@ -253,10 +240,7 @@ export const togglePostLike = async (
     if (error) throw error;
     
     // Обновляем счетчик лайков публикации
-    await supabase
-      .from('community_posts')
-      .update({ likes_count: supabase.rpc('increment', { row_id: postId, table_name: 'community_posts', column_name: 'likes_count' }) })
-      .eq('id', postId);
+    await incrementCounter('community_posts', 'likes_count', postId);
       
     return true;
   }

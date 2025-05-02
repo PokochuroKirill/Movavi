@@ -8,14 +8,27 @@ export const incrementCounter = async (
   rowId: string
 ): Promise<number> => {
   try {
-    const { data, error } = await supabase.rpc('increment', {
-      table_name: tableName,
-      column_name: columnName,
-      row_id: rowId
-    });
-
-    if (error) throw error;
-    return data;
+    // Получаем текущее значение
+    const { data: current, error: fetchError } = await supabase
+      .from(tableName)
+      .select(columnName)
+      .eq('id', rowId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    const currentValue = current[columnName] || 0;
+    const newValue = currentValue + 1;
+    
+    // Обновляем значение
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update({ [columnName]: newValue })
+      .eq('id', rowId);
+      
+    if (updateError) throw updateError;
+    
+    return newValue;
   } catch (error) {
     console.error('Error incrementing counter:', error);
     throw error;
@@ -29,14 +42,27 @@ export const decrementCounter = async (
   rowId: string
 ): Promise<number> => {
   try {
-    const { data, error } = await supabase.rpc('decrement', {
-      table_name: tableName,
-      column_name: columnName,
-      row_id: rowId
-    });
-
-    if (error) throw error;
-    return data;
+    // Получаем текущее значение
+    const { data: current, error: fetchError } = await supabase
+      .from(tableName)
+      .select(columnName)
+      .eq('id', rowId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    const currentValue = current[columnName] || 0;
+    const newValue = Math.max(0, currentValue - 1); // Не позволяем опуститься ниже 0
+    
+    // Обновляем значение
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update({ [columnName]: newValue })
+      .eq('id', rowId);
+      
+    if (updateError) throw updateError;
+    
+    return newValue;
   } catch (error) {
     console.error('Error decrementing counter:', error);
     throw error;

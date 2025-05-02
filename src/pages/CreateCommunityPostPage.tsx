@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { incrementCounter } from '@/utils/dbFunctions';
 
 const CreateCommunityPostPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,10 +83,7 @@ const CreateCommunityPostPage = () => {
       }
       
       // Обновляем счетчик постов в сообществе
-      await supabase
-        .from('communities')
-        .update({ posts_count: supabase.rpc('increment', { row_id: id, table_name: 'communities', column_name: 'posts_count' }) })
-        .eq('id', id);
+      await incrementCounter('communities', 'posts_count', id as string);
       
       toast({
         description: "Публикация успешно создана",
