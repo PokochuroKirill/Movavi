@@ -93,7 +93,22 @@ export const useSubscription = () => {
       if (receiptFile) {
         const fileExt = receiptFile.name.split('.').pop();
         const fileName = `${userId}-${Date.now()}.${fileExt}`;
-        const filePath = `receipts/${fileName}`;
+        const filePath = `${fileName}`;
+        
+        // Check if bucket exists first
+        const { data: buckets, error: bucketError } = await supabase.storage
+          .listBuckets();
+        
+        if (bucketError) {
+          console.error("Error checking buckets:", bucketError);
+          throw new Error("Could not check storage buckets");
+        }
+        
+        const subscriptionsBucketExists = buckets.some(bucket => bucket.name === 'subscriptions');
+        
+        if (!subscriptionsBucketExists) {
+          throw new Error("Subscriptions storage bucket not found. Please contact administrator.");
+        }
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('subscriptions')

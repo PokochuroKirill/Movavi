@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { BanknoteIcon, CreditCard, Loader2, Upload, Wallet } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import useSubscription from '@/hooks/useSubscriptionQueries';
 
 interface SubscriptionFormProps {
   planId: string;
@@ -17,9 +17,9 @@ interface SubscriptionFormProps {
 const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { submitSubscriptionRequest, loading } = useSubscription();
   const [paymentMethod, setPaymentMethod] = useState('bank_card');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -48,82 +48,17 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
       return;
     }
 
-    setSubmitting(true);
+    const result = await submitSubscriptionRequest(
+      user.id,
+      planId,
+      price,
+      paymentMethod,
+      receiptFile
+    );
     
-    try {
-      let receiptUrl = null;
-      
-      // Upload receipt if provided
-      if (receiptFile) {
-        const fileExt = receiptFile.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const filePath = `receipts/${fileName}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('subscriptions')
-          .upload(filePath, receiptFile);
-          
-        if (uploadError) throw uploadError;
-        
-        // Get the public URL
-        const { data: urlData } = supabase.storage
-          .from('subscriptions')
-          .getPublicUrl(filePath);
-          
-        receiptUrl = urlData.publicUrl;
-      }
-      
-      // Calculate end date (30 days from now)
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30);
-      
-      // Create payment record
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('subscription_payments')
-        .insert({
-          user_id: user.id,
-          plan_id: planId,
-          amount: price,
-          payment_method: paymentMethod,
-          receipt_url: receiptUrl,
-          status: 'pending'
-        })
-        .select()
-        .single();
-      
-      if (paymentError) throw paymentError;
-      
-      // Create subscription (will be activated when payment is approved)
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_id: planId,
-          payment_id: paymentData.id,
-          status: 'pending',
-          end_date: endDate.toISOString()
-        });
-      
-      if (subscriptionError) throw subscriptionError;
-      
-      toast({
-        title: "Запрос отправлен",
-        description: "Ваш запрос на подписку PRO отправлен и будет обработан администратором",
-        variant: "success"
-      });
-      
+    if (result) {
       // Reset form
       setReceiptFile(null);
-      
-    } catch (error: any) {
-      console.error('Error submitting subscription:', error);
-      toast({
-        title: "Ошибка",
-        description: error.message || "Не удалось отправить запрос на подписку",
-        variant: "destructive"
-      });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -253,9 +188,9 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
       <Button
         type="submit"
         className="w-full bg-gradient-to-r from-blue-500 to-devhub-purple hover:opacity-90 transition-opacity h-12 text-base"
-        disabled={submitting}
+        disabled={loading}
       >
-        {submitting ? (
+        {loading ? (
           <>
             <Loader2 className="animate-spin mr-2 h-4 w-4" />
             Обработка...
