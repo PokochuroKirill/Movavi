@@ -67,7 +67,7 @@ const Footer = () => {
         </div>
         
         <div className="text-center text-gray-600 dark:text-gray-400 mt-8">
-          <p>© 2023 DevHub. Все права защищены.</p>
+          <p>© 2025 DevHub. Все права защищены.</p>
         </div>
       </div>
     </footer>
