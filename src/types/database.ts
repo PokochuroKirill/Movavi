@@ -1,4 +1,3 @@
-
 export interface Profile {
   id: string;
   username: string | null;
@@ -184,14 +183,14 @@ export interface Community {
 
 export interface CommunityMember {
   id: string;
-  user_id: string;
+  user_id: string; 
   community_id: string;
-  role: 'admin' | 'moderator' | 'member';
   created_at: string;
-  profiles?: {
-    username?: string | null;
-    full_name?: string | null;
-    avatar_url?: string | null;
+  role: "admin" | "moderator" | "member";
+  profiles: {
+    username: string;
+    full_name: string;
+    avatar_url: string;
   };
 }
 
@@ -230,4 +229,39 @@ export interface CommunityPostLike {
   user_id: string;
   post_id: string;
   created_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  start_date: string;
+  end_date: string;
+  payment_id: string;
+  created_at: string;
+  updated_at: string;
+  status: 'active' | 'pending' | 'expired';
+  subscription_plans?: SubscriptionPlan;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  features: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+  payment_method: string;
+  receipt_url?: string;
+  admin_notes?: string;
+  status: 'pending' | 'approved' | 'rejected';
 }

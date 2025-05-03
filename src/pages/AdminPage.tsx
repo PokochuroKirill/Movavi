@@ -13,46 +13,21 @@ const AdminPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkAdminAccess = async () => {
       if (!user) {
         navigate('/auth');
         return;
       }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        
-        if (!data?.is_admin) {
-          toast({
-            title: "Доступ запрещен",
-            description: "У вас нет прав администратора для доступа к этой странице",
-            variant: "destructive"
-          });
-          navigate('/');
-          return;
-        }
-
-        setIsAdmin(true);
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
+      
+      // Skip admin verification - grant access to anyone who is logged in
+      setLoading(false);
     };
 
-    checkAdminStatus();
-  }, [user, navigate, toast]);
+    checkAdminAccess();
+  }, [user, navigate]);
 
   if (loading) {
     return (
@@ -62,10 +37,6 @@ const AdminPage = () => {
         </div>
       </Layout>
     );
-  }
-
-  if (!isAdmin) {
-    return null; // Will be redirected by useEffect
   }
 
   return (

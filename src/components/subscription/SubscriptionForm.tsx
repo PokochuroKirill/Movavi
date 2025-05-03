@@ -1,16 +1,13 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload } from 'lucide-react';
+import { BanknoteIcon, CreditCard, Loader2, Upload, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 
 interface SubscriptionFormProps {
   planId: string;
@@ -111,7 +108,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
       
       toast({
         title: "Запрос отправлен",
-        description: "Ваш запрос на подписку PRO отправлен и будет обработан администратором"
+        description: "Ваш запрос на подписку PRO отправлен и будет обработан администратором",
+        variant: "success"
       });
       
       // Reset form
@@ -129,103 +127,144 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
     }
   };
 
+  const paymentMethods = [
+    {
+      id: 'bank_card',
+      name: 'Банковская карта',
+      icon: <CreditCard className="h-4 w-4" />,
+      details: {
+        title: "Реквизиты для оплаты банковской картой:",
+        fields: [
+          { label: "Номер карты", value: "1234 5678 9012 3456" },
+          { label: "Получатель", value: "ООО \"DevHub\"" },
+          { label: "Сумма", value: `${price} ₽` },
+          { label: "Примечание", value: `PRO подписка для ${user?.email}` }
+        ]
+      }
+    },
+    {
+      id: 'bank_transfer',
+      name: 'Банковский перевод',
+      icon: <BanknoteIcon className="h-4 w-4" />,
+      details: {
+        title: "Реквизиты для банковского перевода:",
+        fields: [
+          { label: "ИНН/КПП", value: "1234567890/123456789" },
+          { label: "Р/С", value: "12345678901234567890" },
+          { label: "Банк", value: "АО \"Банк\"" },
+          { label: "БИК", value: "123456789" },
+          { label: "К/С", value: "12345678901234567890" },
+          { label: "Сумма", value: `${price} ₽` },
+          { label: "Назначение", value: `PRO подписка для ${user?.email}` }
+        ]
+      }
+    },
+    {
+      id: 'qiwi',
+      name: 'QIWI',
+      icon: <Wallet className="h-4 w-4" />,
+      details: {
+        title: "Реквизиты для оплаты через QIWI:",
+        fields: [
+          { label: "Кошелек", value: "+7 (123) 456-78-90" },
+          { label: "Получатель", value: "DevHub" },
+          { label: "Сумма", value: `${price} ₽` },
+          { label: "Комментарий", value: `PRO подписка для ${user?.email}` }
+        ]
+      }
+    }
+  ];
+
+  const selectedMethod = paymentMethods.find(method => method.id === paymentMethod);
+
   return (
-    <Card className="shadow-md">
-      <CardHeader>
-        <CardTitle>Оформление подписки PRO</CardTitle>
-      </CardHeader>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="text-center mb-6">
+        <p className="text-2xl font-bold">{price} ₽</p>
+        <p className="text-sm text-gray-500">за 30 дней подписки PRO</p>
+      </div>
       
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Способ оплаты</Label>
-            <select
-              id="paymentMethod"
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800"
-            >
-              <option value="bank_card">Банковская карта</option>
-              <option value="bank_transfer">Банковский перевод</option>
-              <option value="qiwi">QIWI</option>
-              <option value="yoomoney">ЮMoney</option>
-            </select>
-          </div>
-          
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-            <h3 className="font-semibold mb-2">Реквизиты для оплаты:</h3>
-            {paymentMethod === 'bank_card' && (
-              <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">Номер карты:</span> 1234 5678 9012 3456</p>
-                <p><span className="font-semibold">Получатель:</span> ООО "DevHub"</p>
-                <p><span className="font-semibold">Сумма:</span> {price} ₽</p>
-                <p><span className="font-semibold">Примечание:</span> PRO подписка для {user?.email}</p>
-              </div>
-            )}
-            {paymentMethod === 'bank_transfer' && (
-              <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">ИНН/КПП:</span> 1234567890/123456789</p>
-                <p><span className="font-semibold">Р/С:</span> 12345678901234567890</p>
-                <p><span className="font-semibold">Банк:</span> АО "Банк"</p>
-                <p><span className="font-semibold">БИК:</span> 123456789</p>
-                <p><span className="font-semibold">К/С:</span> 12345678901234567890</p>
-                <p><span className="font-semibold">Сумма:</span> {price} ₽</p>
-                <p><span className="font-semibold">Назначение:</span> PRO подписка для {user?.email}</p>
-              </div>
-            )}
-            {paymentMethod === 'qiwi' && (
-              <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">Кошелек:</span> +7 (123) 456-78-90</p>
-                <p><span className="font-semibold">Получатель:</span> DevHub</p>
-                <p><span className="font-semibold">Сумма:</span> {price} ₽</p>
-                <p><span className="font-semibold">Комментарий:</span> PRO подписка для {user?.email}</p>
-              </div>
-            )}
-            {paymentMethod === 'yoomoney' && (
-              <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">Номер кошелька:</span> 1234567890123456</p>
-                <p><span className="font-semibold">Получатель:</span> DevHub</p>
-                <p><span className="font-semibold">Сумма:</span> {price} ₽</p>
-                <p><span className="font-semibold">Комментарий:</span> PRO подписка для {user?.email}</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="receipt">Квитанция об оплате</Label>
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Input
-                id="receipt"
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
-              <p className="text-xs text-gray-500">
-                Загрузите скриншот или скан подтверждения платежа
-              </p>
+      <div className="space-y-4">
+        <div>
+          <Label className="text-base font-medium">Выберите способ оплаты</Label>
+          <RadioGroup 
+            value={paymentMethod}
+            onValueChange={setPaymentMethod}
+            className="grid grid-cols-1 gap-2 mt-3"
+          >
+            {paymentMethods.map(method => (
+              <label
+                key={method.id}
+                className={`flex items-center space-x-3 p-4 rounded-md cursor-pointer border transition-all ${
+                  method.id === paymentMethod 
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                    : 'border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                <RadioGroupItem value={method.id} id={method.id} className="text-blue-600" />
+                <div className="flex items-center text-gray-700 dark:text-gray-300">
+                  <span className="mr-2">{method.icon}</span>
+                  <span>{method.name}</span>
+                </div>
+              </label>
+            ))}
+          </RadioGroup>
+        </div>
+        
+        {selectedMethod && (
+          <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="font-medium mb-3 text-gray-700 dark:text-gray-300">{selectedMethod.details.title}</h3>
+            <div className="space-y-2 text-sm">
+              {selectedMethod.details.fields.map((field, idx) => (
+                <div key={idx} className="grid grid-cols-2 gap-2">
+                  <span className="font-medium text-gray-600 dark:text-gray-400">{field.label}:</span>
+                  <span className="text-gray-800 dark:text-gray-200">{field.value}</span>
+                </div>
+              ))}
             </div>
           </div>
-        </CardContent>
+        )}
         
-        <CardFooter>
-          <Button
-            type="submit"
-            className="w-full gradient-bg text-white"
-            disabled={submitting}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                Обработка...
-              </>
-            ) : (
-              'Отправить запрос'
-            )}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+        <div className="space-y-2">
+          <Label htmlFor="receipt" className="text-base font-medium">Квитанция об оплате</Label>
+          <div className="mt-2">
+            <div className="flex items-center justify-center w-full">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-8 h-8 mb-3 text-gray-500" />
+                  <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                    {receiptFile ? receiptFile.name : "Нажмите или перетащите файл"}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG или PDF до 10MB</p>
+                </div>
+                <Input 
+                  id="receipt" 
+                  type="file" 
+                  className="hidden" 
+                  onChange={handleFileChange} 
+                  accept="image/*,application/pdf" 
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <Button
+        type="submit"
+        className="w-full bg-gradient-to-r from-blue-500 to-devhub-purple hover:opacity-90 transition-opacity h-12 text-base"
+        disabled={submitting}
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+            Обработка...
+          </>
+        ) : (
+          'Отправить запрос'
+        )}
+      </Button>
+    </form>
   );
 };
 
