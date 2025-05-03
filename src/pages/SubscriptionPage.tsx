@@ -141,32 +141,6 @@ const SubscriptionPage = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border border-gray-100 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center">
-                    <Zap className="h-5 w-5 mr-2 text-amber-500" /> Возможности PRO
-                  </h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Верифицированный профиль</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Расширенная персонализация профиля</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Доступ к закрытым сообществам</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Приоритетная техническая поддержка</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
 
             <div>
               <Card className={`shadow-lg border-2 ${isProMember ? "border-green-400 dark:border-green-700" : "border-gray-200 dark:border-gray-700"}`}>
