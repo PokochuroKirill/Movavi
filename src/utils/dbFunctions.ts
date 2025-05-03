@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Function to increment a numeric column in a table by 1
 export const incrementCounter = async (
-  tableName: string,
+  tableName: 'projects' | 'profiles' | 'community_posts' | 'communities' | 'snippets' | 'subscription_plans' | 'subscription_payments',
   columnName: string,
   rowId: string
 ): Promise<number> => {
@@ -37,7 +37,7 @@ export const incrementCounter = async (
 
 // Function to decrement a numeric column in a table by 1
 export const decrementCounter = async (
-  tableName: string,
+  tableName: 'projects' | 'profiles' | 'community_posts' | 'communities' | 'snippets' | 'subscription_plans' | 'subscription_payments',
   columnName: string,
   rowId: string
 ): Promise<number> => {
