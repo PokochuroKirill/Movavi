@@ -39,7 +39,14 @@ export const fetchCommunityMembers = async (communityId: string): Promise<Commun
       .order('role', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    // Ensure the role field is properly typed to match CommunityMember interface
+    const typedData: CommunityMember[] = data ? data.map(member => ({
+      ...member,
+      role: member.role as "admin" | "moderator" | "member"
+    })) : [];
+    
+    return typedData;
   } catch (error) {
     console.error('Error fetching community members:', error);
     return [];
