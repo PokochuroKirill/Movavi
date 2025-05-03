@@ -208,6 +208,35 @@ export type Database = {
           },
         ]
       }
+      community_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_posts: {
         Row: {
           comments_count: number | null
@@ -271,6 +300,7 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_pro: boolean | null
           is_verified: boolean
           last_username_change: string | null
           linkedin: string | null
@@ -292,6 +322,7 @@ export type Database = {
           github?: string | null
           id: string
           is_admin?: boolean | null
+          is_pro?: boolean | null
           is_verified?: boolean
           last_username_change?: string | null
           linkedin?: string | null
@@ -313,6 +344,7 @@ export type Database = {
           github?: string | null
           id?: string
           is_admin?: boolean | null
+          is_pro?: boolean | null
           is_verified?: boolean
           last_username_change?: string | null
           linkedin?: string | null
@@ -573,6 +605,131 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          id: string
+          payment_method: string
+          plan_id: string
+          receipt_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          payment_method: string
+          plan_id: string
+          receipt_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_method?: string
+          plan_id?: string
+          receipt_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          features: string[]
+          id: string
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          features: string[]
+          id?: string
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          features?: string[]
+          id?: string
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          payment_id: string | null
+          plan_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          payment_id?: string | null
+          plan_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          payment_id?: string | null
+          plan_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_requests: {
         Row: {
           created_at: string
@@ -661,6 +818,7 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_pro: boolean | null
           is_verified: boolean
           last_username_change: string | null
           linkedin: string | null
@@ -685,6 +843,7 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_pro: boolean | null
           is_verified: boolean
           last_username_change: string | null
           linkedin: string | null
@@ -703,6 +862,10 @@ export type Database = {
       get_snippet_likes_count: {
         Args: { snippet_id: string }
         Returns: number
+      }
+      has_pro_access: {
+        Args: { user_id: string }
+        Returns: boolean
       }
       has_user_liked_project: {
         Args: { project_id: string; user_id: string }

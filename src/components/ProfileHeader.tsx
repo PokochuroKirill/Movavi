@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, MapPin, Globe, Calendar, Users, Upload, Trash2 } from 'lucide-react';
+import { Pencil, MapPin, Globe, Calendar, Users, Upload, Trash2, Award } from 'lucide-react';
 import { Profile } from '@/types/database';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -209,28 +209,55 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <CardContent className="pt-20 pb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-2xl font-bold flex items-center flex-wrap">
               {profile.full_name || profile.username || 'Пользователь'}
-              {profile.is_verified && (
-                <Badge className="ml-2 bg-blue-500 text-white">Проверено</Badge>
-              )}
+              
+              <span className="inline-flex gap-2 ml-2">
+                {profile.is_verified && (
+                  <Badge className="bg-blue-500 text-white">Проверено</Badge>
+                )}
+                {profile.is_pro && (
+                  <Badge className="bg-gradient-to-r from-blue-500 to-devhub-purple text-white flex items-center">
+                    <Award className="h-3 w-3 mr-1" />
+                    PRO
+                  </Badge>
+                )}
+              </span>
             </h2>
             {profile.username && (
               <p className="text-gray-500 dark:text-gray-400">@{profile.username}</p>
             )}
           </div>
           
-          {isCurrentUser && onEditClick && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2 md:mt-0"
-              onClick={onEditClick}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Редактировать профиль
-            </Button>
-          )}
+          <div className="flex items-center gap-2 mt-2 md:mt-0">
+            {isCurrentUser && (
+              <>
+                {!profile.is_pro && (
+                  <Button 
+                    variant="default"
+                    size="sm"
+                    className="gradient-bg text-white"
+                    asChild
+                  >
+                    <Link to="/subscription">
+                      <Award className="h-4 w-4 mr-1" />
+                      Получить PRO
+                    </Link>
+                  </Button>
+                )}
+                {onEditClick && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={onEditClick}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Редактировать профиль
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
         
         {profile.bio && (

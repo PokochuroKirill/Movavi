@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -246,6 +245,110 @@ export const togglePostLike = async (
   } catch (error) {
     console.error('Error toggling post like:', error);
     throw error;
+  }
+};
+
+// Function to check if a user has liked a post
+export const hasUserLikedPost = async (postId: string, userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('community_post_likes')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error checking post like:", error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error("Error checking if user liked post:", error);
+    return false;
+  }
+};
+
+// Function to get like count for a post
+export const getPostLikesCount = async (postId: string): Promise<number> => {
+  try {
+    const { count, error } = await supabase
+      .from('community_post_likes')
+      .select('id', { count: 'exact', head: true })
+      .eq('post_id', postId);
+      
+    if (error) {
+      console.error("Error counting post likes:", error);
+      return 0;
+    }
+    
+    return count || 0;
+  } catch (error) {
+    console.error("Error counting post likes:", error);
+    return 0;
+  }
+};
+
+// Function to remove a post like
+export const removePostLike = async (postId: string, userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('community_post_likes')
+      .delete()
+      .eq('post_id', postId)
+      .eq('user_id', userId);
+      
+    if (error) throw error;
+    
+    // Update the post likes count
+    const { error: updateError } = await supabase
+      .from('community_posts')
+      .update({ 
+        likes_count: await getPostLikesCount(postId) 
+      })
+      .eq('id', postId);
+      
+    if (updateError) {
+      console.error("Error updating post likes count:", updateError);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error removing post like:", error);
+    return false;
+  }
+};
+
+// Function to add a post like
+export const addPostLike = async (postId: string, userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('community_post_likes')
+      .insert({ 
+        post_id: postId, 
+        user_id: userId 
+      });
+      
+    // If error is not unique violation, throw it
+    if (error && error.code !== '23505') throw error;
+    
+    // Update the post likes count
+    const { error: updateError } = await supabase
+      .from('community_posts')
+      .update({ 
+        likes_count: await getPostLikesCount(postId) 
+      })
+      .eq('id', postId);
+      
+    if (updateError) {
+      console.error("Error updating post likes count:", updateError);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error adding post like:", error);
+    return false;
   }
 };
 

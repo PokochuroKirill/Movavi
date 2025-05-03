@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Twitter } from 'lucide-react';
@@ -43,6 +44,11 @@ const Footer = () => {
                 <li>
                   <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
                     О нас
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/subscription" className="text-gray-600 dark:text-gray-400 hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors">
+                    DevHub PRO
                   </Link>
                 </li>
               </ul>
