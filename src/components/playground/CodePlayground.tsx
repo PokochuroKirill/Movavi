@@ -40,19 +40,31 @@ interface Output {
   content: string;
 }
 
-const CodePlayground: React.FC = () => {
+interface CodePlaygroundProps {
+  initialCode?: string;
+  initialLanguage?: string;
+}
+
+const CodePlayground: React.FC<CodePlaygroundProps> = ({ 
+  initialCode,
+  initialLanguage
+}) => {
   const { toast } = useToast();
-  const [language, setLanguage] = useState<string>('javascript');
-  const [code, setCode] = useState<string>(DEFAULT_CODE.javascript || '// Start coding here');
+  const [language, setLanguage] = useState<string>(initialLanguage || 'javascript');
+  const [code, setCode] = useState<string>(
+    initialCode || DEFAULT_CODE[language as keyof typeof DEFAULT_CODE] || '// Start coding here'
+  );
   const [output, setOutput] = useState<Output[]>([]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const outputRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    // Reset code when language changes
-    setCode(DEFAULT_CODE[language as keyof typeof DEFAULT_CODE] || '// Start coding here');
-  }, [language]);
+    // Reset code when language changes, but only if the code wasn't explicitly set initially
+    if (!initialCode) {
+      setCode(DEFAULT_CODE[language as keyof typeof DEFAULT_CODE] || '// Start coding here');
+    }
+  }, [language, initialCode]);
 
   const runCode = () => {
     setIsRunning(true);
@@ -70,8 +82,7 @@ const CodePlayground: React.FC = () => {
         document.body.appendChild(sandbox);
         
         if (sandbox.contentWindow) {
-          // Override console methods
-          sandbox.contentWindow.console = {
+          const sandboxConsole = {
             log: (...args: any[]) => {
               const message = args.map(arg => 
                 typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
@@ -93,6 +104,14 @@ const CodePlayground: React.FC = () => {
               originalConsole.info(...args);
             }
           };
+          
+          // Assign the console object to the contentWindow
+          Object.defineProperty(sandbox.contentWindow, 'console', {
+            value: sandboxConsole,
+            writable: true,
+            enumerable: true,
+            configurable: true
+          });
           
           try {
             // Execute the code
@@ -120,7 +139,7 @@ const CodePlayground: React.FC = () => {
         // For HTML, render in the iframe
         if (iframeRef.current) {
           const iframe = iframeRef.current;
-          const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+          const iframeDocument = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
 
           if (iframeDocument) {
             iframeDocument.open();
