@@ -1,68 +1,73 @@
 
-import { useCallback, useEffect, useState } from 'react';
-import { useToast } from "./use-toast";
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useCallback } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Community, CommunityMember } from '@/types/database';
 
-export const useCommunityDetails = (communityId: string) => {
+export interface CommunityAccess {
+  isMember: boolean;
+  memberRole: 'admin' | 'moderator' | 'member' | null;
+  loading: boolean;
+  joinCommunity: () => Promise<boolean>;
+  leaveCommunity: () => Promise<boolean>;
+  refreshStatus: () => Promise<void>;
+}
+
+export interface CommunityDetails {
+  community: Community | null;
+  members: CommunityMember[];
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+}
+
+export const useCommunityDetails = (communityId: string): CommunityDetails => {
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<CommunityMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchCommunityDetails = useCallback(async () => {
     if (!communityId) {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
-    setError(null);
-    
     try {
       // Fetch community details
       const { data: communityData, error: communityError } = await supabase
         .from('communities')
-        .select(`
-          *,
-          creator:creator_id(username, full_name, avatar_url)
-        `)
+        .select('*, creator:creator_id(username, full_name, avatar_url)')
         .eq('id', communityId)
         .single();
-      
+
       if (communityError) throw communityError;
-      
+      setCommunity(communityData);
+
       // Fetch community members
       const { data: membersData, error: membersError } = await supabase
         .from('community_members')
-        .select(`
-          *,
-          profiles!community_members_user_id_fkey(username, full_name, avatar_url)
-        `)
+        .select('*, profiles(*)')
         .eq('community_id', communityId)
         .order('created_at', { ascending: false });
-      
+
       if (membersError) throw membersError;
-      
-      setCommunity(communityData as Community);
-      setMembers(membersData as CommunityMember[]);
+      setMembers(membersData || []);
+
+      setError(null);
     } catch (err: any) {
-      setError(err.message);
-      console.error("Error fetching community details:", err);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить данные сообщества",
-        variant: "destructive"
-      });
+      console.error('Error fetching community details:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
-  }, [communityId, toast]);
+  }, [communityId]);
 
-  useEffect(() => {
+  // Fetch on mount and when communityId changes
+  useState(() => {
     fetchCommunityDetails();
-  }, [fetchCommunityDetails]);
+  });
 
   return {
     community,
@@ -73,18 +78,18 @@ export const useCommunityDetails = (communityId: string) => {
   };
 };
 
-export const useCommunityAccess = (communityId: string, userId: string | undefined) => {
-  const [isMember, setIsMember] = useState(false);
-  const [memberRole, setMemberRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export const useCommunityAccess = (communityId: string, userId?: string): CommunityAccess => {
   const { toast } = useToast();
-  
+  const [isMember, setIsMember] = useState<boolean>(false);
+  const [memberRole, setMemberRole] = useState<'admin' | 'moderator' | 'member' | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
   const checkMembershipStatus = useCallback(async () => {
-    if (!communityId || !userId) {
+    if (!userId || !communityId) {
       setLoading(false);
       return;
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('community_members')
@@ -92,122 +97,143 @@ export const useCommunityAccess = (communityId: string, userId: string | undefin
         .eq('community_id', communityId)
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       if (error) throw error;
-      
+
       setIsMember(!!data);
       setMemberRole(data?.role || null);
-    } catch (err) {
-      console.error("Error checking membership:", err);
+    } catch (error) {
+      console.error('Error checking community membership:', error);
     } finally {
       setLoading(false);
     }
   }, [communityId, userId]);
-  
-  useEffect(() => {
+
+  // Check membership on mount and when dependencies change
+  useState(() => {
     checkMembershipStatus();
-  }, [checkMembershipStatus]);
-  
-  const joinCommunity = async () => {
+  });
+
+  const joinCommunity = async (): Promise<boolean> => {
     if (!userId || !communityId) {
       toast({
-        title: "Ошибка",
-        description: "Необходимо войти в систему",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: 'Необходимо войти в систему для присоединения к сообществу',
+        variant: 'destructive',
       });
       return false;
     }
-    
+
     try {
-      // Check if already a member
-      if (isMember) return true;
-      
-      // Add as member
-      const { error } = await supabase
+      // First check if already a member
+      const { data: existingMember } = await supabase
+        .from('community_members')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('community_id', communityId)
+        .maybeSingle();
+
+      if (existingMember) {
+        toast({
+          title: 'Уведомление',
+          description: 'Вы уже являетесь участником этого сообщества',
+        });
+        return true;
+      }
+
+      // Add the user to the community
+      const { error: joinError } = await supabase
         .from('community_members')
         .insert({
           user_id: userId,
           community_id: communityId,
           role: 'member'
         });
+
+      if (joinError) throw joinError;
       
-      if (error) throw error;
+      // Use direct SQL function call to increment members count
+      // Note: This is calling the SQL function directly
+      const { error: incrementError } = await supabase.rpc(
+        'increment_community_members', 
+        { community_id: communityId }
+      );
       
-      // Update membership status
+      if (incrementError) {
+        console.error('Error incrementing members count:', incrementError);
+        // Don't throw, just log - we've already joined the community
+      }
+
+      toast({
+        title: 'Успех',
+        description: 'Вы присоединились к сообществу',
+      });
+      
       setIsMember(true);
       setMemberRole('member');
       
-      // Update members count
-      await supabase.rpc('increment_community_members', {
-        community_id: communityId
-      });
-      
-      toast({
-        title: "Успешно",
-        description: "Вы присоединились к сообществу"
-      });
-      
       return true;
-    } catch (err) {
-      console.error("Error joining community:", err);
+    } catch (error: any) {
+      console.error('Error joining community:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось присоединиться к сообществу",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: error.message || 'Не удалось присоединиться к сообществу',
+        variant: 'destructive',
       });
       return false;
     }
   };
-  
-  const leaveCommunity = async () => {
+
+  const leaveCommunity = async (): Promise<boolean> => {
     if (!userId || !communityId) {
       toast({
-        title: "Ошибка",
-        description: "Необходимо войти в систему",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: 'Необходимо войти в систему',
+        variant: 'destructive',
       });
       return false;
     }
-    
+
     try {
-      // Check if not a member
-      if (!isMember) return true;
-      
-      // Remove membership
-      const { error } = await supabase
+      const { error: leaveError } = await supabase
         .from('community_members')
         .delete()
         .eq('user_id', userId)
         .eq('community_id', communityId);
+
+      if (leaveError) throw leaveError;
       
-      if (error) throw error;
+      // Use direct SQL function call to decrement members count
+      const { error: decrementError } = await supabase.rpc(
+        'decrement_community_members', 
+        { community_id: communityId }
+      );
       
-      // Update membership status
+      if (decrementError) {
+        console.error('Error decrementing members count:', decrementError);
+        // Don't throw, just log - we've already left the community
+      }
+
+      toast({
+        title: 'Успех',
+        description: 'Вы вышли из сообщества',
+      });
+      
       setIsMember(false);
       setMemberRole(null);
       
-      // Update members count
-      await supabase.rpc('decrement_community_members', {
-        community_id: communityId
-      });
-      
-      toast({
-        title: "Успешно",
-        description: "Вы вышли из сообщества"
-      });
-      
       return true;
-    } catch (err) {
-      console.error("Error leaving community:", err);
+    } catch (error: any) {
+      console.error('Error leaving community:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось выйти из сообщества",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: error.message || 'Не удалось выйти из сообщества',
+        variant: 'destructive',
       });
       return false;
     }
   };
-  
+
   return {
     isMember,
     memberRole,

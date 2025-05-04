@@ -3,9 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { BanknoteIcon, CreditCard, Loader2, Upload } from 'lucide-react';
+import { CreditCard, Loader2, Upload } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import useSubscription from '@/hooks/useSubscriptionQueries';
 
@@ -62,7 +61,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
     }
   };
 
-  const paymentMethod = {
+  // Renamed to paymentDetails to avoid conflict with the state variable
+  const paymentDetails = {
     id: 'bank_card',
     name: 'Банковская карта',
     icon: <CreditCard className="h-4 w-4" />,
@@ -90,17 +90,17 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
           <div className="mt-3">
             <div className="flex items-center space-x-3 p-4 rounded-md border border-blue-500 bg-blue-50 dark:bg-blue-900/20">
               <div className="flex items-center text-gray-700 dark:text-gray-300">
-                <span className="mr-2">{paymentMethod.icon}</span>
-                <span>{paymentMethod.name}</span>
+                <span className="mr-2">{paymentDetails.icon}</span>
+                <span>{paymentDetails.name}</span>
               </div>
             </div>
           </div>
         </div>
         
         <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h3 className="font-medium mb-3 text-gray-700 dark:text-gray-300">{paymentMethod.details.title}</h3>
+          <h3 className="font-medium mb-3 text-gray-700 dark:text-gray-300">{paymentDetails.details.title}</h3>
           <div className="space-y-2 text-sm">
-            {paymentMethod.details.fields.map((field, idx) => (
+            {paymentDetails.details.fields.map((field, idx) => (
               <div key={idx} className="grid grid-cols-2 gap-2">
                 <span className="font-medium text-gray-600 dark:text-gray-400">{field.label}:</span>
                 <span className="text-gray-800 dark:text-gray-200">{field.value}</span>

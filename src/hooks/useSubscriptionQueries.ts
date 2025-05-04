@@ -105,7 +105,7 @@ export const useSubscription = () => {
           toast({
             title: "Предупреждение",
             description: "Не удалось загрузить квитанцию, но заявка будет отправлена",
-            variant: "warning"
+            variant: "destructive" // Changed from "warning" to "destructive" to match allowed variants
           });
         } else {
           try {
@@ -128,7 +128,7 @@ export const useSubscription = () => {
             toast({
               title: "Предупреждение",
               description: "Не удалось загрузить квитанцию, но заявка будет отправлена",
-              variant: "warning"
+              variant: "destructive" // Changed from "warning" to "destructive" to match allowed variants
             });
           }
         }
