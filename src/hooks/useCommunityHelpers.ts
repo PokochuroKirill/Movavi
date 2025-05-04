@@ -53,7 +53,14 @@ export const useCommunityDetails = (communityId: string): CommunityDetails => {
         .order('created_at', { ascending: false });
 
       if (membersError) throw membersError;
-      setMembers(membersData || []);
+      
+      // Ensure proper typing for community members
+      const typedMembers = membersData?.map(member => ({
+        ...member,
+        role: member.role as 'admin' | 'moderator' | 'member'
+      })) || [];
+      
+      setMembers(typedMembers);
 
       setError(null);
     } catch (err: any) {
@@ -101,7 +108,13 @@ export const useCommunityAccess = (communityId: string, userId?: string): Commun
       if (error) throw error;
 
       setIsMember(!!data);
-      setMemberRole(data?.role || null);
+      
+      if (data && typeof data.role === 'string') {
+        const role = data.role as 'admin' | 'moderator' | 'member';
+        setMemberRole(role);
+      } else {
+        setMemberRole(null);
+      }
     } catch (error) {
       console.error('Error checking community membership:', error);
     } finally {
@@ -152,16 +165,14 @@ export const useCommunityAccess = (communityId: string, userId?: string): Commun
 
       if (joinError) throw joinError;
       
-      // Use direct SQL function call to increment members count
-      // Note: This is calling the SQL function directly
-      const { error: incrementError } = await supabase.rpc(
-        'increment_community_members', 
-        { community_id: communityId }
-      );
+      // Use a direct SQL update to increment members count
+      const { error: updateError } = await supabase
+        .from('communities')
+        .update({ members_count: supabase.rpc('get_members_count', { community_id: communityId }) + 1 })
+        .eq('id', communityId);
       
-      if (incrementError) {
-        console.error('Error incrementing members count:', incrementError);
-        // Don't throw, just log - we've already joined the community
+      if (updateError) {
+        console.error('Error incrementing members count:', updateError);
       }
 
       toast({
@@ -203,15 +214,16 @@ export const useCommunityAccess = (communityId: string, userId?: string): Commun
 
       if (leaveError) throw leaveError;
       
-      // Use direct SQL function call to decrement members count
-      const { error: decrementError } = await supabase.rpc(
-        'decrement_community_members', 
-        { community_id: communityId }
-      );
+      // Use a direct SQL update to decrement members count
+      const { error: updateError } = await supabase
+        .from('communities')
+        .update({ 
+          members_count: supabase.rpc('get_members_count', { community_id: communityId }) - 1 
+        })
+        .eq('id', communityId);
       
-      if (decrementError) {
-        console.error('Error decrementing members count:', decrementError);
-        // Don't throw, just log - we've already left the community
+      if (updateError) {
+        console.error('Error decrementing members count:', updateError);
       }
 
       toast({

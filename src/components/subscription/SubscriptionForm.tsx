@@ -61,7 +61,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
     }
   };
 
-  // Renamed to paymentDetails to avoid conflict with the state variable
+  // Payment details object
   const paymentDetails = {
     id: 'bank_card',
     name: 'Банковская карта',

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -11,7 +12,6 @@ import {
   MessageSquare, 
   ThumbsUp, 
   Share2, 
-  Flag, 
   Clock, 
   ArrowLeft,
   Loader2
@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import * as CommunityQueries from '@/hooks/useCommunityQueries';
+import CommunityPostActions from '@/components/community/CommunityPostActions';
 
 const CommunityPostDetailPage = () => {
   const { id, postId } = useParams<{ id: string; postId: string }>();
@@ -30,6 +31,8 @@ const CommunityPostDetailPage = () => {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isMember, setIsMember] = useState(false);
+  const [isPostAuthor, setIsPostAuthor] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -55,6 +58,9 @@ const CommunityPostDetailPage = () => {
         }
         setPost(postData);
         
+        // Check if user is post author
+        setIsPostAuthor(user?.id === postData.user_id);
+        
         // Fetch community
         const communityData = await CommunityQueries.fetchCommunityById(id);
         setCommunity(communityData);
@@ -63,10 +69,17 @@ const CommunityPostDetailPage = () => {
         const commentsData = await CommunityQueries.fetchPostComments(postId);
         setComments(commentsData);
         
-        // Check if user is a member
+        // Check if user is a member and their role
         if (user) {
-          const memberStatus = await CommunityQueries.isUserMember(id, user.id);
-          setIsMember(memberStatus);
+          const { data: memberData } = await supabase
+            .from('community_members')
+            .select('role')
+            .eq('community_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          setIsMember(!!memberData);
+          setIsModerator(memberData?.role === 'admin' || memberData?.role === 'moderator');
         }
         
         // Load likes
@@ -177,6 +190,10 @@ const CommunityPostDetailPage = () => {
     await toggleLike();
   };
   
+  const handlePostDeleted = () => {
+    navigate(`/communities/${id}`);
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -197,14 +214,14 @@ const CommunityPostDetailPage = () => {
         <div className="flex-grow container mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-20">
             <Card className="max-w-md w-full">
-              <CardContent className="text-center">
+              <CardContent className="text-center p-6">
                 <h2 className="text-2xl font-bold mb-4">Пост не найден</h2>
-                <p className="text-gray-500">
+                <p className="text-gray-500 mb-4">
                   Возможно, пост был удален или не существует.
                 </p>
                 <Button
                   asChild
-                  className="mt-4 gradient-bg text-white"
+                  className="gradient-bg text-white"
                 >
                   <Link to={`/communities/${id}`}>
                     Вернуться в сообщество
@@ -233,19 +250,30 @@ const CommunityPostDetailPage = () => {
           <div className="lg:col-span-2">
             <Card className="mb-6">
               <CardContent className="p-6">
-                <div className="flex items-center mb-4">
-                  <Avatar className="w-8 h-8 mr-3">
-                    <AvatarImage src={post.profiles?.avatar_url || undefined} alt={post.profiles?.username || 'User'} />
-                    <AvatarFallback>{post.profiles?.username ? post.profiles?.username[0].toUpperCase() : 'U'}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <Link to={`/user/${post.profiles?.username}`} className="font-semibold hover:underline">
-                      {post.profiles?.full_name || post.profiles?.username || 'User'}
-                    </Link>
-                    <p className="text-gray-500 text-sm">
-                      {formatDate(post.created_at)}
-                    </p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Avatar className="w-8 h-8 mr-3">
+                      <AvatarImage src={post.profiles?.avatar_url || undefined} alt={post.profiles?.username || 'User'} />
+                      <AvatarFallback>{post.profiles?.username ? post.profiles?.username[0].toUpperCase() : 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <Link to={`/user/${post.profiles?.username}`} className="font-semibold hover:underline">
+                        {post.profiles?.full_name || post.profiles?.username || 'User'}
+                      </Link>
+                      <p className="text-gray-500 text-sm">
+                        {formatDate(post.created_at)}
+                      </p>
+                    </div>
                   </div>
+                  
+                  {/* Post actions */}
+                  <CommunityPostActions 
+                    postId={post.id}
+                    communityId={community.id}
+                    isAuthor={isPostAuthor}
+                    isModerator={isModerator}
+                    onPostDeleted={handlePostDeleted}
+                  />
                 </div>
                 
                 <h1 className="text-2xl font-bold mb-4">{post.title}</h1>
@@ -271,10 +299,6 @@ const CommunityPostDetailPage = () => {
                       <span>Поделиться</span>
                     </button>
                   </div>
-                  <button className="flex items-center text-gray-500 hover:text-red-500 focus:outline-none">
-                    <Flag className="h-5 w-5 mr-1" />
-                    <span>Пожаловаться</span>
-                  </button>
                 </div>
               </CardContent>
             </Card>

@@ -1,538 +1,304 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CircleCheck, CircleX, ExternalLink, FileText, Loader2, MoreVertical } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistance } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import { Check, X, Loader2, FileText, ExternalLink } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface PaymentRequest {
+  id: string;
+  user_id: string;
+  amount: number;
+  created_at: string;
+  payment_method: string;
+  receipt_url: string | null;
+  status: string;
+  profiles?: {
+    username: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  subscription_plans?: {
+    name: string;
+    features: string[];
+    price: number;
+  };
+}
 
 const SubscriptionManagement = () => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
-  const [activeSubscriptions, setActiveSubscriptions] = useState<any[]>([]);
-  const [selectedPayment, setSelectedPayment] = useState<any>(null);
-  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [adminNote, setAdminNote] = useState('');
-  const [processing, setProcessing] = useState(false);
-  
+  const [subscriptionRequests, setSubscriptionRequests] = useState<PaymentRequest[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
   useEffect(() => {
-    fetchSubscriptionData();
-  }, []);
-  
-  const fetchSubscriptionData = async () => {
+    fetchSubscriptionRequests();
+  }, [statusFilter]);
+
+  const fetchSubscriptionRequests = async () => {
     setLoading(true);
     try {
-      // Fetch pending payments
-      const { data: pendingData, error: pendingError } = await supabase
+      const { data, error } = await supabase
         .from('subscription_payments')
         .select(`
           *,
-          profiles:user_id(username, full_name, avatar_url)
+          profiles:user_id(*),
+          subscription_plans:plan_id(*)
         `)
-        .eq('status', 'pending')
+        .eq('status', statusFilter)
         .order('created_at', { ascending: false });
-      
-      if (pendingError) throw pendingError;
-      setPendingPayments(pendingData || []);
-      
-      // Fetch active subscriptions
-      const { data: activeData, error: activeError } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          profiles:user_id(username, full_name, avatar_url),
-          subscription_plans(name, price),
-          subscription_payments:payment_id(*)
-        `)
-        .eq('status', 'active')
-        .order('end_date', { ascending: true });
-      
-      if (activeError) throw activeError;
-      setActiveSubscriptions(activeData || []);
-      
-    } catch (error: any) {
-      console.error('Error fetching subscription data:', error);
+
+      if (error) throw error;
+      setSubscriptionRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching subscription requests:', error);
       toast({
-        title: "Ошибка загрузки",
-        description: "Не удалось загрузить данные о подписках",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: 'Не удалось загрузить запросы на подписку',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
-  
-  const handleApprovePayment = async () => {
-    setProcessing(true);
+
+  const handleRequestAction = async (
+    requestId: string,
+    action: 'approve' | 'reject',
+    subscriptionId?: string
+  ) => {
+    setProcessingId(requestId);
     try {
-      // Get subscription related to this payment
-      const { data: subData, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('payment_id', selectedPayment.id)
-        .maybeSingle();
-      
-      if (subError) throw subError;
-      
-      if (!subData) {
-        throw new Error('Не найдена связанная подписка');
-      }
-      
       // Update payment status
       const { error: paymentError } = await supabase
         .from('subscription_payments')
-        .update({ 
-          status: 'approved',
-          admin_notes: adminNote,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedPayment.id);
-      
+        .update({ status: action === 'approve' ? 'approved' : 'rejected' })
+        .eq('id', requestId);
+
       if (paymentError) throw paymentError;
-      
-      // Update subscription status
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', subData.id);
-      
-      if (subscriptionError) throw subscriptionError;
-      
-      toast({
-        title: "Подписка активирована",
-        description: "Подписка успешно активирована для пользователя"
-      });
-      
-      // Refresh data
-      await fetchSubscriptionData();
-      
-    } catch (error: any) {
-      console.error('Error approving payment:', error);
-      toast({
-        title: "Ошибка",
-        description: error.message || "Не удалось активировать подписку",
-        variant: "destructive"
-      });
-    } finally {
-      setProcessing(false);
-      setApproveDialogOpen(false);
-      setAdminNote('');
-    }
-  };
-  
-  const handleRejectPayment = async () => {
-    setProcessing(true);
-    try {
-      // Get subscription related to this payment
-      const { data: subData, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('payment_id', selectedPayment.id)
-        .maybeSingle();
-      
-      if (subError) throw subError;
-      
-      if (!subData) {
-        throw new Error('Не найдена связанная подписка');
+
+      if (action === 'approve' && subscriptionId) {
+        // Activate subscription
+        const { error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .update({ status: 'active' })
+          .eq('payment_id', requestId);
+
+        if (subscriptionError) throw subscriptionError;
       }
-      
-      // Update payment status
-      const { error: paymentError } = await supabase
-        .from('subscription_payments')
-        .update({ 
-          status: 'rejected',
-          admin_notes: adminNote,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedPayment.id);
-      
-      if (paymentError) throw paymentError;
-      
-      // Update subscription status
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .update({ 
-          status: 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', subData.id);
-      
-      if (subscriptionError) throw subscriptionError;
-      
+
       toast({
-        title: "Запрос отклонен",
-        description: "Запрос на подписку был отклонен"
+        title: action === 'approve' ? 'Заявка одобрена' : 'Заявка отклонена',
+        description: action === 'approve'
+          ? 'Пользователю предоставлен доступ к PRO-функциям'
+          : 'Доступ к PRO-функциям не предоставлен',
       });
-      
-      // Refresh data
-      await fetchSubscriptionData();
-      
+
+      // Refresh the list
+      fetchSubscriptionRequests();
     } catch (error: any) {
-      console.error('Error rejecting payment:', error);
+      console.error('Error processing subscription request:', error);
       toast({
-        title: "Ошибка",
-        description: error.message || "Не удалось отклонить подписку",
-        variant: "destructive"
+        title: 'Ошибка',
+        description: `Не удалось ${action === 'approve' ? 'одобрить' : 'отклонить'} заявку: ${error.message}`,
+        variant: 'destructive',
       });
     } finally {
-      setProcessing(false);
-      setRejectDialogOpen(false);
-      setAdminNote('');
+      setProcessingId(null);
     }
   };
-  
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return 'Недоступно';
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Ожидает проверки</Badge>;
+      case 'approved':
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Одобрена</Badge>;
+      case 'rejected':
+        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Отклонена</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
-  const renderPaymentMethod = (method: string) => {
+
+  const formatPaymentMethod = (method: string) => {
     switch (method) {
-      case 'bank_card': return 'Банковская карта';
-      case 'bank_transfer': return 'Банковский перевод';
-      case 'qiwi': return 'QIWI';
-      case 'yoomoney': return 'ЮMoney';
-      default: return method;
+      case 'bank_card':
+        return 'Банковская карта';
+      case 'bank_transfer':
+        return 'Банковский перевод';
+      default:
+        return method;
     }
   };
-  
+
+  const getRelativeTimeString = (dateString: string) => {
+    try {
+      return formatDistance(new Date(dateString), new Date(), { 
+        addSuffix: true,
+        locale: ru 
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>Управление подписками</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="pending">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="pending">
-              Ожидающие проверки {pendingPayments.length > 0 && `(${pendingPayments.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="active">
-              Активные подписки {activeSubscriptions.length > 0 && `(${activeSubscriptions.length})`}
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="pending">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              </div>
-            ) : pendingPayments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                На данный момент нет запросов, ожидающих проверки
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {pendingPayments.map(payment => (
-                  <div key={payment.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="mr-3">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                            {payment.profiles?.avatar_url ? (
-                              <img 
-                                src={payment.profiles.avatar_url} 
-                                alt="Avatar" 
-                                className="h-10 w-10 rounded-full"
-                              />
-                            ) : (
-                              <span className="text-lg font-medium">
-                                {payment.profiles?.username?.charAt(0) || '?'}
-                              </span>
-                            )}
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Управление подписками</h2>
+          <p className="text-muted-foreground">Здесь вы можете управлять запросами на PRO подписку.</p>
+        </div>
+        
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Статус" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Ожидающие</SelectItem>
+            <SelectItem value="approved">Одобренные</SelectItem>
+            <SelectItem value="rejected">Отклоненные</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Заявки на подписку</CardTitle>
+          <CardDescription>
+            {statusFilter === 'pending' 
+              ? 'Список ожидающих проверки заявок на подписку' 
+              : statusFilter === 'approved' 
+                ? 'Список одобренных заявок на подписку' 
+                : 'Список отклоненных заявок на подписку'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : subscriptionRequests.length === 0 ? (
+            <div className="text-center p-6">
+              <p className="text-muted-foreground">Нет заявок со статусом "{statusFilter === 'pending' ? 'ожидает проверки' : statusFilter === 'approved' ? 'одобрена' : 'отклонена'}"</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Пользователь</TableHead>
+                    <TableHead>План</TableHead>
+                    <TableHead>Сумма</TableHead>
+                    <TableHead>Способ оплаты</TableHead>
+                    <TableHead>Квитанция</TableHead>
+                    <TableHead>Дата</TableHead>
+                    <TableHead>Статус</TableHead>
+                    {statusFilter === 'pending' && <TableHead>Действия</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={request.profiles?.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {(request.profiles?.username || 'U')[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">
+                              {request.profiles?.full_name || request.profiles?.username || 'Пользователь'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {request.profiles?.username}
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <div className="font-medium">
-                            {payment.profiles?.full_name || payment.profiles?.username || 'Пользователь'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Запрос создан: {formatDate(payment.created_at)}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedPayment(payment);
-                              setApproveDialogOpen(true);
-                            }}
-                            className="text-green-600 dark:text-green-500"
+                      </TableCell>
+                      <TableCell>
+                        {request.subscription_plans?.name || 'PRO'}
+                      </TableCell>
+                      <TableCell>
+                        {request.amount} ₽
+                      </TableCell>
+                      <TableCell>
+                        {formatPaymentMethod(request.payment_method)}
+                      </TableCell>
+                      <TableCell>
+                        {request.receipt_url ? (
+                          <a 
+                            href={request.receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
                           >
-                            <CircleCheck className="h-4 w-4 mr-2" />
-                            Одобрить
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedPayment(payment);
-                              setRejectDialogOpen(true);
-                            }}
-                            className="text-red-600 dark:text-red-500"
-                          >
-                            <CircleX className="h-4 w-4 mr-2" />
-                            Отклонить
-                          </DropdownMenuItem>
-                          {payment.receipt_url && (
-                            <DropdownMenuItem
-                              onClick={() => window.open(payment.receipt_url, '_blank')}
+                            <FileText className="h-4 w-4" />
+                            <span>Просмотр</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">Нет квитанции</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span title={new Date(request.created_at).toLocaleString()}>
+                          {getRelativeTimeString(request.created_at)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(request.status)}
+                      </TableCell>
+                      {statusFilter === 'pending' && (
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRequestAction(request.id, 'approve')}
+                              disabled={processingId === request.id}
+                              className="text-green-600 hover:text-green-800 hover:bg-green-100"
+                              title="Одобрить заявку"
                             >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Посмотреть квитанцию
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-3">
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">ID платежа:</span>{' '}
-                        {payment.id.substring(0, 8)}...
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Сумма:</span>{' '}
-                        {payment.amount} ₽
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Способ оплаты:</span>{' '}
-                        {renderPaymentMethod(payment.payment_method)}
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Статус:</span>{' '}
-                        <span className="text-yellow-500">Ожидает проверки</span>
-                      </div>
-                    </div>
-                    
-                    {payment.receipt_url && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-2"
-                        onClick={() => window.open(payment.receipt_url, '_blank')}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Посмотреть квитанцию
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="active">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              </div>
-            ) : activeSubscriptions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                На данный момент нет активных подписок
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {activeSubscriptions.map(subscription => (
-                  <div key={subscription.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="mr-3">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                            {subscription.profiles?.avatar_url ? (
-                              <img 
-                                src={subscription.profiles.avatar_url} 
-                                alt="Avatar" 
-                                className="h-10 w-10 rounded-full"
-                              />
-                            ) : (
-                              <span className="text-lg font-medium">
-                                {subscription.profiles?.username?.charAt(0) || '?'}
-                              </span>
-                            )}
+                              {processingId === request.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRequestAction(request.id, 'reject')}
+                              disabled={processingId === request.id}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                              title="Отклонить заявку"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {subscription.profiles?.full_name || subscription.profiles?.username || 'Пользователь'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            План: {subscription.subscription_plans?.name} ({subscription.subscription_plans?.price} ₽)
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Начало подписки:</span>{' '}
-                        {formatDate(subscription.start_date)}
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Окончание подписки:</span>{' '}
-                        {formatDate(subscription.end_date)}
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">ID подписки:</span>{' '}
-                        {subscription.id.substring(0, 8)}...
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Статус:</span>{' '}
-                        <span className="text-green-500">Активна</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      
-      {/* Approve Dialog */}
-      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Одобрить подписку</DialogTitle>
-            <DialogDescription>
-              Вы собираетесь одобрить запрос на подписку PRO. Пользователь получит доступ к премиум функциям на 30 дней.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="notes" className="text-sm font-medium">
-                Заметка администратора (необязательно)
-              </label>
-              <Textarea
-                id="notes"
-                placeholder="Оставьте заметку о платеже..."
-                value={adminNote}
-                onChange={(e) => setAdminNote(e.target.value)}
-              />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline" 
-              onClick={() => setApproveDialogOpen(false)}
-              disabled={processing}
-            >
-              Отмена
-            </Button>
-            <Button 
-              variant="default"
-              onClick={handleApprovePayment}
-              disabled={processing}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Обработка...
-                </>
-              ) : (
-                <>
-                  <CircleCheck className="mr-2 h-4 w-4" />
-                  Одобрить
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Reject Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Отклонить подписку</DialogTitle>
-            <DialogDescription>
-              Вы собираетесь отклонить запрос на подписку PRO. Пожалуйста, укажите причину отклонения.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="notes" className="text-sm font-medium">
-                Заметка администратора (причина отклонения)
-              </label>
-              <Textarea
-                id="notes"
-                placeholder="Укажите причину отклонения запроса..."
-                value={adminNote}
-                onChange={(e) => setAdminNote(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline" 
-              onClick={() => setRejectDialogOpen(false)}
-              disabled={processing}
-            >
-              Отмена
-            </Button>
-            <Button 
-              variant="destructive"
-              onClick={handleRejectPayment}
-              disabled={processing}
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Обработка...
-                </>
-              ) : (
-                <>
-                  <CircleX className="mr-2 h-4 w-4" />
-                  Отклонить
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
