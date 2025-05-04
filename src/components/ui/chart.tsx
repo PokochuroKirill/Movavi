@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Line, Bar, Pie, Area, LineChart, BarChart, PieChart, AreaChart } from "recharts";
+import { Line, Bar, Pie, Area, LineChart, BarChart, PieChart, AreaChart, Cell } from "recharts";
 import { CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 // Recharts already exports these components, so we just create an export wrapper
@@ -18,7 +18,8 @@ export {
   YAxis,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 };
 
 // Create an AxisLeft component for convenience

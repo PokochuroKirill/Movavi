@@ -142,23 +142,14 @@ export function useCommunityHelpers() {
     if (!communityId) return 0;
     
     try {
-      const { data, error } = await supabase
-        .rpc('get_members_count', { 
-          community_id: communityId 
-        });
-      
-      if (error) {
-        console.error('Error calling RPC:', error);
-        // Fallback to manual count if RPC fails
-        const { count, countError } = await supabase
-          .from('community_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('community_id', communityId);
-          
-        if (countError) throw countError;
-        return count || 0;
-      }
-      return data || 0;
+      // Using a direct count query instead of RPC
+      const { count, error } = await supabase
+        .from('community_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('community_id', communityId);
+        
+      if (error) throw error;
+      return count || 0;
     } catch (error) {
       console.error('Error getting members count:', error);
       return 0;
@@ -232,11 +223,35 @@ export function useCommunityHelpers() {
 }
 
 // Now let's add the missing hooks that were being imported in CommunityDetailPage.tsx
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  avatar_url?: string;
+  banner_url?: string;
+  created_at: string;
+  updated_at: string;
+  creator_id: string;
+  creator?: any;
+  is_public: boolean;
+  members_count?: number;
+  posts_count?: number;
+  topics?: string[];
+}
+
+export interface CommunityMember {
+  id: string;
+  user_id: string;
+  community_id: string;
+  role: string;
+  created_at: string;
+  profiles?: any;
+}
 
 // Hook to get community details
 export function useCommunityDetails(communityId: string) {
-  const [community, setCommunity] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
+  const [community, setCommunity] = useState<Community | null>(null);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

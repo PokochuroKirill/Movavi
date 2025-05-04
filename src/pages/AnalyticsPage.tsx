@@ -8,14 +8,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChartLine, ChartBar, PieChart as PieChartIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+// Define the data type for analytics
+interface AnalyticsData {
+  date: string;
+  count: number;
+}
+
+// Define the data type for pie chart
+interface PieChartData {
+  name: string;
+  value: number;
+}
 
 const AnalyticsPage = () => {
   const { user } = useAuth();
-  const [userCounts, setUserCounts] = useState<{ date: string; count: number }[]>([]);
-  const [snippetCounts, setSnippetCounts] = useState<{ date: string; count: number }[]>([]);
-  const [communityCounts, setCommunityCounts] = useState<{ date: string; count: number }[]>([]);
+  const [userCounts, setUserCounts] = useState<AnalyticsData[]>([]);
+  const [snippetCounts, setSnippetCounts] = useState<AnalyticsData[]>([]);
+  const [communityCounts, setCommunityCounts] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,14 +37,23 @@ const AnalyticsPage = () => {
       setError(null);
 
       try {
-        // Fetch new user counts
+        // Fetch new user counts - check if the table exists first
         const { data: usersData, error: usersError } = await supabase
           .from('user_counts')
           .select('*')
           .order('date', { ascending: true });
 
-        if (usersError) throw new Error(usersError.message);
-        setUserCounts(usersData || []);
+        if (usersError) {
+          console.warn('Error fetching user counts:', usersError);
+          // If there's an error, set empty array instead of failing
+          setUserCounts([]);
+        } else {
+          // Make sure we transform the data to the right format
+          setUserCounts(usersData?.map((item: any) => ({
+            date: item.date,
+            count: item.count
+          })) || []);
+        }
 
         // Fetch new snippet counts
         const { data: snippetsData, error: snippetsError } = await supabase
@@ -40,8 +61,15 @@ const AnalyticsPage = () => {
           .select('*')
           .order('date', { ascending: true });
 
-        if (snippetsError) throw new Error(snippetsError.message);
-        setSnippetCounts(snippetsData || []);
+        if (snippetsError) {
+          console.warn('Error fetching snippet counts:', snippetsError);
+          setSnippetCounts([]);
+        } else {
+          setSnippetCounts(snippetsData?.map((item: any) => ({
+            date: item.date,
+            count: item.count
+          })) || []);
+        }
         
         // Fetch new community counts
         const { data: communitiesData, error: communitiesError } = await supabase
@@ -49,8 +77,15 @@ const AnalyticsPage = () => {
           .select('*')
           .order('date', { ascending: true });
 
-        if (communitiesError) throw new Error(communitiesError.message);
-        setCommunityCounts(communitiesData || []);
+        if (communitiesError) {
+          console.warn('Error fetching community counts:', communitiesError);
+          setCommunityCounts([]);
+        } else {
+          setCommunityCounts(communitiesData?.map((item: any) => ({
+            date: item.date,
+            count: item.count
+          })) || []);
+        }
 
       } catch (err: any) {
         console.error('Error fetching analytics data:', err);
@@ -63,7 +98,7 @@ const AnalyticsPage = () => {
     fetchAnalyticsData();
   }, [user]);
 
-  const renderChart = (data: { date: string; count: number }[], dataKey: string, color: string, title: string) => (
+  const renderChart = (data: AnalyticsData[], dataKey: string, color: string, title: string) => (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
@@ -106,7 +141,7 @@ const AnalyticsPage = () => {
     </Card>
   );
   
-  const renderBarChart = (data: { date: string; count: number }[], dataKey: string, color: string, title: string) => (
+  const renderBarChart = (data: AnalyticsData[], dataKey: string, color: string, title: string) => (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
@@ -149,7 +184,7 @@ const AnalyticsPage = () => {
     </Card>
   );
   
-  const renderPieChart = (data: { name: string; value: number }[], title: string) => {
+  const renderPieChart = (data: PieChartData[], title: string) => {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
   
     return (

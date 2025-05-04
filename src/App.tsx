@@ -77,7 +77,7 @@ function App() {
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/support" element={<SupportPage />} />
               <Route path="/user/:username" element={<UserProfilePage />} />
-              <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminPage /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/communities" element={<CommunitiesPage />} />
               <Route path="/communities/:id" element={<CommunityDetailPage />} />
