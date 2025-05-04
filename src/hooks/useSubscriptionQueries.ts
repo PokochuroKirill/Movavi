@@ -95,33 +95,43 @@ export const useSubscription = () => {
         const fileName = `${userId}-${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
         
-        // Check if bucket exists first
+        // Check if bucket exists
         const { data: buckets, error: bucketError } = await supabase.storage
-          .listBuckets();
+          .getBucket('subscriptions');
         
         if (bucketError) {
-          console.error("Error checking buckets:", bucketError);
-          throw new Error("Could not check storage buckets");
+          console.error("Error checking bucket:", bucketError);
+          // Instead of throwing an error, continue without the receipt
+          toast({
+            title: "Предупреждение",
+            description: "Не удалось загрузить квитанцию, но заявка будет отправлена",
+            variant: "warning"
+          });
+        } else {
+          try {
+            // Upload file
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('subscriptions')
+              .upload(filePath, receiptFile);
+              
+            if (uploadError) throw uploadError;
+            
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from('subscriptions')
+              .getPublicUrl(filePath);
+              
+            receiptUrl = urlData.publicUrl;
+          } catch (uploadError: any) {
+            console.error("Error uploading receipt:", uploadError);
+            // Continue without the receipt
+            toast({
+              title: "Предупреждение",
+              description: "Не удалось загрузить квитанцию, но заявка будет отправлена",
+              variant: "warning"
+            });
+          }
         }
-        
-        const subscriptionsBucketExists = buckets.some(bucket => bucket.name === 'subscriptions');
-        
-        if (!subscriptionsBucketExists) {
-          throw new Error("Subscriptions storage bucket not found. Please contact administrator.");
-        }
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('subscriptions')
-          .upload(filePath, receiptFile);
-          
-        if (uploadError) throw uploadError;
-        
-        // Get the public URL
-        const { data: urlData } = supabase.storage
-          .from('subscriptions')
-          .getPublicUrl(filePath);
-          
-        receiptUrl = urlData.publicUrl;
       }
       
       // Calculate end date (30 days from now)

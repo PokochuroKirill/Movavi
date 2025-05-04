@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { BanknoteIcon, CreditCard, Loader2, Upload, Wallet } from 'lucide-react';
+import { BanknoteIcon, CreditCard, Loader2, Upload } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import useSubscription from '@/hooks/useSubscriptionQueries';
 
@@ -62,55 +62,20 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
     }
   };
 
-  const paymentMethods = [
-    {
-      id: 'bank_card',
-      name: 'Банковская карта',
-      icon: <CreditCard className="h-4 w-4" />,
-      details: {
-        title: "Реквизиты для оплаты банковской картой:",
-        fields: [
-          { label: "Номер карты", value: "1234 5678 9012 3456" },
-          { label: "Получатель", value: "ООО \"DevHub\"" },
-          { label: "Сумма", value: `${price} ₽` },
-          { label: "Примечание", value: `PRO подписка для ${user?.email}` }
-        ]
-      }
-    },
-    {
-      id: 'bank_transfer',
-      name: 'Банковский перевод',
-      icon: <BanknoteIcon className="h-4 w-4" />,
-      details: {
-        title: "Реквизиты для банковского перевода:",
-        fields: [
-          { label: "ИНН/КПП", value: "1234567890/123456789" },
-          { label: "Р/С", value: "12345678901234567890" },
-          { label: "Банк", value: "АО \"Банк\"" },
-          { label: "БИК", value: "123456789" },
-          { label: "К/С", value: "12345678901234567890" },
-          { label: "Сумма", value: `${price} ₽` },
-          { label: "Назначение", value: `PRO подписка для ${user?.email}` }
-        ]
-      }
-    },
-    {
-      id: 'qiwi',
-      name: 'QIWI',
-      icon: <Wallet className="h-4 w-4" />,
-      details: {
-        title: "Реквизиты для оплаты через QIWI:",
-        fields: [
-          { label: "Кошелек", value: "+7 (123) 456-78-90" },
-          { label: "Получатель", value: "DevHub" },
-          { label: "Сумма", value: `${price} ₽` },
-          { label: "Комментарий", value: `PRO подписка для ${user?.email}` }
-        ]
-      }
+  const paymentMethod = {
+    id: 'bank_card',
+    name: 'Банковская карта',
+    icon: <CreditCard className="h-4 w-4" />,
+    details: {
+      title: "Реквизиты для оплаты банковской картой:",
+      fields: [
+        { label: "Номер карты", value: "1234 5678 9012 3456" },
+        { label: "Получатель", value: "ООО \"DevHub\"" },
+        { label: "Сумма", value: `${price} ₽` },
+        { label: "Примечание", value: `PRO подписка для ${user?.email}` }
+      ]
     }
-  ];
-
-  const selectedMethod = paymentMethods.find(method => method.id === paymentMethod);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -121,44 +86,28 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ planId, price }) =>
       
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-medium">Выберите способ оплаты</Label>
-          <RadioGroup 
-            value={paymentMethod}
-            onValueChange={setPaymentMethod}
-            className="grid grid-cols-1 gap-2 mt-3"
-          >
-            {paymentMethods.map(method => (
-              <label
-                key={method.id}
-                className={`flex items-center space-x-3 p-4 rounded-md cursor-pointer border transition-all ${
-                  method.id === paymentMethod 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                    : 'border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <RadioGroupItem value={method.id} id={method.id} className="text-blue-600" />
-                <div className="flex items-center text-gray-700 dark:text-gray-300">
-                  <span className="mr-2">{method.icon}</span>
-                  <span>{method.name}</span>
-                </div>
-              </label>
-            ))}
-          </RadioGroup>
-        </div>
-        
-        {selectedMethod && (
-          <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="font-medium mb-3 text-gray-700 dark:text-gray-300">{selectedMethod.details.title}</h3>
-            <div className="space-y-2 text-sm">
-              {selectedMethod.details.fields.map((field, idx) => (
-                <div key={idx} className="grid grid-cols-2 gap-2">
-                  <span className="font-medium text-gray-600 dark:text-gray-400">{field.label}:</span>
-                  <span className="text-gray-800 dark:text-gray-200">{field.value}</span>
-                </div>
-              ))}
+          <Label className="text-base font-medium">Способ оплаты</Label>
+          <div className="mt-3">
+            <div className="flex items-center space-x-3 p-4 rounded-md border border-blue-500 bg-blue-50 dark:bg-blue-900/20">
+              <div className="flex items-center text-gray-700 dark:text-gray-300">
+                <span className="mr-2">{paymentMethod.icon}</span>
+                <span>{paymentMethod.name}</span>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+        
+        <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium mb-3 text-gray-700 dark:text-gray-300">{paymentMethod.details.title}</h3>
+          <div className="space-y-2 text-sm">
+            {paymentMethod.details.fields.map((field, idx) => (
+              <div key={idx} className="grid grid-cols-2 gap-2">
+                <span className="font-medium text-gray-600 dark:text-gray-400">{field.label}:</span>
+                <span className="text-gray-800 dark:text-gray-200">{field.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
         
         <div className="space-y-2">
           <Label htmlFor="receipt" className="text-base font-medium">Квитанция об оплате</Label>

@@ -28,6 +28,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import SubscriptionPage from "./pages/SubscriptionPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import PlaygroundPage from "./pages/PlaygroundPage";
 
 const queryClient = new QueryClient();
 
@@ -52,12 +54,14 @@ const App = () => (
             <Route path="/snippets/create" element={<ProtectedRoute><CreateSnippetPage /></ProtectedRoute>} />
             <Route path="/snippets/:id" element={<SnippetDetailPage />} />
             <Route path="/snippets/:id/edit" element={<ProtectedRoute><EditSnippetPage /></ProtectedRoute>} />
+            <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/communities" element={<CommunitiesPage />} />
             <Route path="/communities/create" element={<ProtectedRoute><CreateCommunityPage /></ProtectedRoute>} />
             <Route path="/communities/:id" element={<CommunityDetailPage />} />
             <Route path="/communities/:id/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
             <Route path="/communities/:id/post/:postId" element={<CommunityPostDetailPage />} />
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             <Route path="*" element={<NotFound />} />
