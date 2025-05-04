@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Community, CommunityMember } from '@/types/database';
 
 export function useCommunityHelpers() {
   const { toast } = useToast();
@@ -222,32 +223,6 @@ export function useCommunityHelpers() {
   };
 }
 
-// Now let's add the missing hooks that were being imported in CommunityDetailPage.tsx
-export interface Community {
-  id: string;
-  name: string;
-  description: string;
-  avatar_url?: string;
-  banner_url?: string;
-  created_at: string;
-  updated_at: string;
-  creator_id: string;
-  creator?: any;
-  is_public: boolean;
-  members_count?: number;
-  posts_count?: number;
-  topics?: string[];
-}
-
-export interface CommunityMember {
-  id: string;
-  user_id: string;
-  community_id: string;
-  role: string;
-  created_at: string;
-  profiles?: any;
-}
-
 // Hook to get community details
 export function useCommunityDetails(communityId: string) {
   const [community, setCommunity] = useState<Community | null>(null);
@@ -256,6 +231,11 @@ export function useCommunityDetails(communityId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchCommunityData = async () => {
+    if (!communityId) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -271,7 +251,7 @@ export function useCommunityDetails(communityId: string) {
       
       if (communityError) throw communityError;
       
-      // Fetch community members
+      // Fetch community members with proper type handling
       const { data: membersData, error: membersError } = await supabase
         .from('community_members')
         .select(`
@@ -283,8 +263,14 @@ export function useCommunityDetails(communityId: string) {
         
       if (membersError) throw membersError;
 
-      setCommunity(communityData);
-      setMembers(membersData || []);
+      // Ensure the role field is properly cast to the correct type
+      const typedMembers: CommunityMember[] = membersData ? membersData.map((member: any) => ({
+        ...member,
+        role: member.role as "admin" | "moderator" | "member"
+      })) : [];
+
+      setCommunity(communityData as Community);
+      setMembers(typedMembers);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching community details:', err);

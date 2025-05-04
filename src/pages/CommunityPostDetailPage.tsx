@@ -1,3 +1,4 @@
+
 // We need to update the imports to include supabase
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -7,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCommunityQueries } from '@/hooks/useCommunityQueries';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import CommunityPostActions from '@/components/community/CommunityPostActions';
 import { supabase } from '@/integrations/supabase/client';
+
+// Import hooks and types
+import { usePostLikes } from '@/hooks/useCommunityQueries';
 
 const CommunityPostDetailPage = () => {
   const { id: communityId, postId } = useParams<{ id: string; postId: string }>();
@@ -117,8 +120,9 @@ const CommunityPostDetailPage = () => {
                   <CommunityPostActions 
                     communityId={communityId!}
                     postId={postId!}
-                    post={post}
-                    setPost={setPost}
+                    isAuthor={post.user_id === user.id}
+                    isModerator={false}
+                    onPostDeleted={() => navigate(`/communities/${communityId}`)}
                   />
                 )}
               </>
