@@ -1,11 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCommunityDetails, useCommunityAccess } from '@/hooks/useCommunityHelpers';
 import CommunityDetailView from '@/components/community/CommunityDetailView';
-import { Loader2 } from 'lucide-react';
 
 const CommunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
