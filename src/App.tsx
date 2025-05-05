@@ -1,8 +1,7 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // Pages
-import Index from '@/pages/Index';
 import HomePage from '@/pages/HomePage';
 import NotFound from '@/pages/NotFound';
 import AuthPage from '@/pages/AuthPage';
@@ -56,8 +55,8 @@ function App() {
           <Router>
             <Toaster />
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/home" element={<HomePage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/snippets" element={<SnippetsPage />} />
