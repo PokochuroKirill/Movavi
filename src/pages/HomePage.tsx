@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,19 +6,16 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import RecommendationSystem from '@/components/RecommendationSystem';
-
 const HomePage = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
-
   if (!mounted) return null;
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Navbar />
       
       {/* Hero Section */}
@@ -97,15 +93,9 @@ const HomePage = () => {
       </section>
       
       {/* Recommendations Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          {user ? <RecommendationSystem userId={user.id} /> : <RecommendationSystem />}
-        </div>
-      </section>
+      
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default HomePage;
