@@ -122,10 +122,16 @@ export function useRecommendations(userId?: string) {
             .eq('id', project.user_id)
             .single();
             
+          // Add the missing properties required by the Project type
           return {
             ...project,
             author: profileData?.full_name || profileData?.username || 'Неизвестный автор',
             authorAvatar: profileData?.avatar_url,
+            // Add these missing properties to satisfy the Project type
+            content: '', // Default empty content
+            updated_at: project.created_at, // Use created_at as fallback for updated_at
+            likes: 0,
+            comments: 0
           } as Project;
         }));
 
@@ -145,10 +151,16 @@ export function useRecommendations(userId?: string) {
             .eq('id', snippet.user_id)
             .single();
             
+          // Add the missing properties required by the Snippet type
           return {
             ...snippet,
             author: profileData?.full_name || profileData?.username || 'Неизвестный автор',
             authorAvatar: profileData?.avatar_url,
+            // Add these missing properties to satisfy the Snippet type
+            code: '', // Default empty code
+            updated_at: snippet.created_at, // Use created_at as fallback for updated_at
+            likes: 0,
+            comments: 0
           } as Snippet;
         }));
 
