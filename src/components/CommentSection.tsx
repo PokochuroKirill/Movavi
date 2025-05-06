@@ -46,19 +46,26 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
           created_at,
           project_id,
           user_id,
-          profiles:user_id (username, full_name, avatar_url)
+          profiles(username, full_name, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Create a properly shaped array of comments with appropriate profile data
+      // Обработка данных и их форматирование
       const formattedComments: Comment[] = (data || []).map(item => {
-        // Check if profiles is an error and provide default values if needed
-        const profileData = typeof item.profiles === 'object' && item.profiles !== null 
-          ? item.profiles 
-          : { username: null, full_name: null, avatar_url: null };
+        let profileData = null;
+        
+        // Проверяем, содержит ли profiles массив объектов или одиночный объект
+        if (Array.isArray(item.profiles)) {
+          profileData = item.profiles[0]; // Берем первый профиль, если это массив
+        } else if (item.profiles) {
+          profileData = item.profiles; // Используем объект напрямую
+        }
+        
+        // Устанавливаем значения по умолчанию, если профиль не найден
+        profileData = profileData || { username: null, full_name: null, avatar_url: null };
         
         return {
           id: item.id,
@@ -71,7 +78,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       });
       
       setComments(formattedComments);
-      console.log("Loaded comments:", formattedComments);
+      console.log("Loaded project comments:", formattedComments);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
@@ -90,6 +97,26 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
 
   useEffect(() => {
     loadComments();
+    
+    // Настраиваем realtime подписку на комментарии
+    const channel = supabase
+      .channel('public:comments')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'comments',
+          filter: `project_id=eq.${projectId}`
+        }, 
+        () => {
+          loadComments();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [projectId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -129,7 +156,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
           created_at,
           project_id,
           user_id,
-          profiles:user_id (username, full_name, avatar_url)
+          profiles(username, full_name, avatar_url)
         `)
         .single();
         
@@ -142,7 +169,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
         description: 'Комментарий успешно добавлен'
       });
       
-      // Reload comments to get the latest
+      // Перезагружаем комментарии, чтобы получить свежие данные
       loadComments();
     } catch (error) {
       console.error('Error adding comment:', error);

@@ -46,19 +46,26 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
           created_at,
           snippet_id,
           user_id,
-          profiles:user_id (username, full_name, avatar_url)
+          profiles(username, full_name, avatar_url)
         `)
         .eq('snippet_id', snippetId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Create a properly shaped array of comments with appropriate profile data
+      // Обработка данных и их форматирование
       const formattedComments: Comment[] = (data || []).map(item => {
-        // Check if profiles is an error and provide default values if needed
-        const profileData = typeof item.profiles === 'object' && item.profiles !== null 
-          ? item.profiles 
-          : { username: null, full_name: null, avatar_url: null };
+        let profileData = null;
+        
+        // Проверяем, содержит ли profiles массив объектов или одиночный объект
+        if (Array.isArray(item.profiles)) {
+          profileData = item.profiles[0]; // Берем первый профиль, если это массив
+        } else if (item.profiles) {
+          profileData = item.profiles; // Используем объект напрямую
+        }
+        
+        // Устанавливаем значения по умолчанию, если профиль не найден
+        profileData = profileData || { username: null, full_name: null, avatar_url: null };
         
         return {
           id: item.id,
@@ -71,11 +78,12 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       });
       
       setComments(formattedComments);
+      console.log("Loaded snippet comments:", formattedComments);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading comments:', error);
       toast({
         title: 'Ошибка',
@@ -151,7 +159,7 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       toast({
         description: 'Комментарий успешно добавлен'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding comment:', error);
       toast({
         title: 'Ошибка',
@@ -185,7 +193,7 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       if (onCommentsChange) {
         onCommentsChange(comments.length - 1);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting comment:', error);
       toast({
         title: 'Ошибка',
