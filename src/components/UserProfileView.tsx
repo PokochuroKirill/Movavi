@@ -3,11 +3,13 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, MapPin, UserCheck, UserX } from 'lucide-react';
+import { Check, MapPin, UserCheck, UserX, Mail, Calendar, Globe, Briefcase } from 'lucide-react';
 import { Profile } from '@/types/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import SocialMediaLinks from './SocialMediaLinks';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface UserProfileViewProps {
   profile: Profile;
@@ -32,8 +34,17 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
 }) => {
   const { user } = useAuth();
   
+  const formatDate = (date: string | Date | null) => {
+    if (!date) return '';
+    try {
+      return format(new Date(date), 'dd MMMM yyyy', { locale: ru });
+    } catch (e) {
+      return '';
+    }
+  };
+  
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <div 
         className="h-48 bg-gradient-to-r from-blue-500 to-devhub-purple overflow-hidden relative"
       >
@@ -47,10 +58,10 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       </div>
       
       <CardHeader className="flex flex-col md:flex-row gap-4 md:items-end relative">
-        <div className="absolute -top-16 left-6 rounded-full bg-white p-1.5 dark:bg-gray-900 shadow-lg">
+        <div className="absolute -top-16 left-6 rounded-full bg-white dark:bg-gray-900 p-1.5 shadow-lg">
           <Avatar className="h-24 w-24">
             <AvatarImage src={profile?.avatar_url || ''} alt={profile?.username || 'User'} />
-            <AvatarFallback className="text-4xl">
+            <AvatarFallback className="text-4xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
               {(profile?.username?.[0] || 'U').toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -98,7 +109,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
             </Button>
           ) : (
             <Button
-              className="whitespace-nowrap"
+              className="whitespace-nowrap bg-gradient-to-r from-blue-600 to-devhub-purple hover:opacity-90"
               onClick={onFollow}
               disabled={isLoading}
             >
@@ -119,33 +130,54 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       </CardHeader>
       
       <CardContent>
-        <div className="flex flex-wrap gap-6 mb-4">
-          <div>
+        <div className="flex flex-wrap gap-6 mb-6 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="text-center px-4 py-2">
             <div className="text-sm text-gray-500 dark:text-gray-400">Подписчики</div>
             <div className="text-xl font-bold">{followersCount}</div>
           </div>
-          <div>
+          <div className="text-center px-4 py-2">
             <div className="text-sm text-gray-500 dark:text-gray-400">Подписки</div>
             <div className="text-xl font-bold">{followingCount}</div>
           </div>
         </div>
         
         {profile?.bio && (
-          <div className="mb-4">
+          <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium mb-2">О пользователе</h3>
             <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{profile.bio}</p>
           </div>
         )}
         
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {profile?.website && (
+            <div className="flex items-center">
+              <Globe className="h-5 w-5 text-gray-500 mr-2" />
+              <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                {profile.website.replace(/^https?:\/\/(www\.)?/, '')}
+              </a>
+            </div>
+          )}
+          
+          {profile?.location && (
+            <div className="flex items-center">
+              <MapPin className="h-5 w-5 text-gray-500 mr-2" />
+              <span>{profile.location}</span>
+            </div>
+          )}
+        </div>
+        
         {/* Social media links with icons */}
-        <SocialMediaLinks
-          github={profile?.github}
-          twitter={profile?.twitter}
-          linkedin={profile?.linkedin}
-          telegram={profile?.telegram}
-          discord={profile?.discord}
-          website={profile?.website}
-          className="mt-4"
-        />
+        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium mb-4">Социальные сети</h3>
+          <SocialMediaLinks
+            github={profile?.github}
+            twitter={profile?.twitter}
+            linkedin={profile?.linkedin}
+            telegram={profile?.telegram}
+            discord={profile?.discord}
+            website={profile?.website}
+          />
+        </div>
       </CardContent>
     </Card>
   );

@@ -47,7 +47,7 @@ const CommunityDetailPage = () => {
 
   return (
     <Layout>
-      <div className="container max-w-5xl py-8">
+      <div className="container max-w-5xl py-24 mt-8">
         <CommunityDetailView
           community={community}
           members={members}

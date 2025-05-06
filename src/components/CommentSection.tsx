@@ -71,6 +71,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       });
       
       setComments(formattedComments);
+      console.log("Loaded comments:", formattedComments);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
@@ -89,26 +90,6 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
 
   useEffect(() => {
     loadComments();
-    
-    // Set up real-time subscription for new comments
-    const channel = supabase
-      .channel('public:comments')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'comments',
-          filter: `project_id=eq.${projectId}`
-        }, 
-        () => {
-          loadComments();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [projectId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -135,22 +116,34 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('comments')
         .insert({
           content: newComment,
           project_id: projectId,
           user_id: user.id
-        });
+        })
+        .select(`
+          id,
+          content,
+          created_at,
+          project_id,
+          user_id,
+          profiles:user_id (username, full_name, avatar_url)
+        `)
+        .single();
         
       if (error) throw error;
       
       setNewComment('');
-      loadComments();
+      console.log("Successfully added comment:", data);
       
       toast({
         description: 'Комментарий успешно добавлен'
       });
+      
+      // Reload comments to get the latest
+      loadComments();
     } catch (error) {
       console.error('Error adding comment:', error);
       toast({
@@ -223,7 +216,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
         )}
         <Button 
           type="submit" 
-          className="gradient-bg text-white"
+          className="bg-gradient-to-r from-blue-500 to-devhub-purple text-white"
           disabled={isSubmitting || !user || !newComment.trim()}
         >
           {isSubmitting ? (
