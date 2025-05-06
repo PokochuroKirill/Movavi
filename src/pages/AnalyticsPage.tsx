@@ -1,94 +1,26 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from '@/components/ui/chart';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from '@/components/ui/chart';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, ChartLine, ChartBar, PieChart as PieChartIcon } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-// Define the data type for analytics
-interface AnalyticsData {
-  date: string;
-  count: number;
-}
-
-// Define the data type for pie chart
-interface PieChartData {
-  name: string;
-  value: number;
-}
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const AnalyticsPage = () => {
-  const { user } = useAuth();
-  const [userCounts, setUserCounts] = useState<AnalyticsData[]>([]);
-  const [snippetCounts, setSnippetCounts] = useState<AnalyticsData[]>([]);
-  const [communityCounts, setCommunityCounts] = useState<AnalyticsData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { userCounts, snippetCounts, communityCounts, isLoading, error } = useAnalytics();
 
-  useEffect(() => {
-    const fetchAnalyticsData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Since the tables don't exist, let's generate mock data for demonstration
-        // In a real app, you would use RPC or stored procedures here
-        
-        // Generate mock data for users
-        const mockUserData: AnalyticsData[] = generateMockTimeSeriesData(30);
-        setUserCounts(mockUserData);
-        
-        // Generate mock data for snippets
-        const mockSnippetData: AnalyticsData[] = generateMockTimeSeriesData(30);
-        setSnippetCounts(mockSnippetData);
-        
-        // Generate mock data for communities
-        const mockCommunityData: AnalyticsData[] = generateMockTimeSeriesData(30);
-        setCommunityCounts(mockCommunityData);
-
-      } catch (err: any) {
-        console.error('Error fetching analytics data:', err);
-        setError(err.message || 'Failed to fetch analytics data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAnalyticsData();
-  }, [user]);
-
-  // Helper function to generate mock time series data
-  const generateMockTimeSeriesData = (days: number): AnalyticsData[] => {
-    const data: AnalyticsData[] = [];
-    const endDate = new Date();
-    
-    for (let i = days; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(endDate.getDate() - i);
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        count: Math.floor(Math.random() * 10) + 1
-      });
-    }
-    
-    return data;
-  };
-
-  const renderChart = (data: AnalyticsData[], dataKey: string, color: string, title: string) => (
+  const renderChart = (data: Array<{date: string, count: number}>, dataKey: string, color: string, title: string) => (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
           {data.length > 0 ? (
-            `Показаны данные с ${format(new Date(data[0].date), 'dd.MM.yyyy')} по ${format(new Date(data[data.length - 1].date), 'dd.MM.yyyy')}`
+            `Показаны данные с ${format(new Date(data[data.length-1].date), 'dd.MM.yyyy')} по ${format(new Date(data[0].date), 'dd.MM.yyyy')}`
           ) : (
             'Нет данных для отображения'
           )}
@@ -125,13 +57,13 @@ const AnalyticsPage = () => {
     </Card>
   );
   
-  const renderBarChart = (data: AnalyticsData[], dataKey: string, color: string, title: string) => (
+  const renderBarChart = (data: Array<{date: string, count: number}>, dataKey: string, color: string, title: string) => (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
           {data.length > 0 ? (
-            `Показаны данные с ${format(new Date(data[0].date), 'dd.MM.yyyy')} по ${format(new Date(data[data.length - 1].date), 'dd.MM.yyyy')}`
+            `Показаны данные с ${format(new Date(data[data.length-1].date), 'dd.MM.yyyy')} по ${format(new Date(data[0].date), 'dd.MM.yyyy')}`
           ) : (
             'Нет данных для отображения'
           )}
@@ -167,63 +99,6 @@ const AnalyticsPage = () => {
       </CardContent>
     </Card>
   );
-  
-  const renderPieChart = (data: PieChartData[], title: string) => {
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-  
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>
-            {data.length > 0 ? (
-              `Показаны данные по соотношению`
-            ) : (
-              'Нет данных для отображения'
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center">
-              <Skeleton className="w-full h-64" />
-            </div>
-          ) : error ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Ошибка</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : data.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  dataKey="value"
-                  isAnimationActive={false}
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  label
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="text-center py-4">
-              <Badge variant="secondary">Нет данных</Badge>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
 
   return (
     <Layout>

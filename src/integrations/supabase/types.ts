@@ -786,7 +786,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      community_counts: {
+        Row: {
+          date: string | null
+          new_communities: number | null
+        }
+        Relationships: []
+      }
+      snippet_counts: {
+        Row: {
+          date: string | null
+          new_snippets: number | null
+        }
+        Relationships: []
+      }
+      user_counts: {
+        Row: {
+          date: string | null
+          new_users: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_if_following: {
@@ -858,6 +878,32 @@ export type Database = {
       get_project_likes_count: {
         Args: { project_id: string }
         Returns: number
+      }
+      get_recommended_projects: {
+        Args: { p_user_id: string }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          image_url: string
+          user_id: string
+          created_at: string
+          technologies: string[]
+          relevance_score: number
+        }[]
+      }
+      get_recommended_snippets: {
+        Args: { p_user_id: string }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          language: string
+          user_id: string
+          created_at: string
+          tags: string[]
+          relevance_score: number
+        }[]
       }
       get_snippet_likes_count: {
         Args: { snippet_id: string }
