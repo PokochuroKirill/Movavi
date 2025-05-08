@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Twitter } from 'lucide-react';
+import { Twitter, Discord } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -13,11 +12,14 @@ const Footer = () => {
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-devhub-purple bg-clip-text text-transparent">DevHub</span>
             </Link>
             <p className="text-gray-600 dark:text-gray-400 max-w-sm mt-4">
-              Платформа для разработчиков, где вы можете делиться проектами, находить вдохновение и общаться с сообществом.
+              Платформа для разработчиков, где вы можете делиться проектами, находить вдохновение и общаться с соо�[...]
             </p>
             <div className="flex space-x-4 mt-6">
               <a href="https://twitter.com/DevHubOfficial" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="Twitter">
                 <Twitter size={20} />
+              </a>
+              <a href="https://discord.gg/ваш_дискорд_ссылку" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-devhub-purple transition-colors" aria-label="Discord">
+                <Discord size={20} />
               </a>
             </div>
           </div>
