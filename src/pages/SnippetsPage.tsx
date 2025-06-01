@@ -6,7 +6,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import SnippetCard from '@/components/SnippetCard';
 import { Loader2, Plus, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,40 +21,63 @@ const SnippetsPage = () => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [languageFilter, setLanguageFilter] = useState<string>('');
   const [tagFilter, setTagFilter] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
 
   useEffect(() => {
     fetchSnippets();
-  }, []);
-
-  useEffect(() => {
-    filterSnippets();
-  }, [searchTerm, languageFilter, tagFilter, snippets]);
+  }, [search, sortBy, languageFilter, selectedTags]);
 
   const fetchSnippets = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('snippets')
         .select(`
           *,
           profiles:user_id(username, full_name, avatar_url)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,code.ilike.%${search}%`);
+      }
+
+      if (languageFilter) {
+        query = query.eq('language', languageFilter);
+      }
+
+      if (selectedTags.length > 0) {
+        query = query.contains('tags', selectedTags);
+      }
+
+      switch (sortBy) {
+        case 'newest':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'most-liked':
+          query = query.order('likes_count', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
       const snippetsWithMetadata = await Promise.all((data || []).map(async (snippet) => {
-        // Get likes count for each snippet
         const { data: likesCount } = await supabase
           .rpc('get_snippet_likes_count', { snippet_id: snippet.id });
         
-        // Get comments count for each snippet
         const { count: commentsCount } = await supabase
           .from('snippet_comments')
           .select('id', { count: 'exact', head: true })
@@ -68,12 +93,11 @@ const SnippetsPage = () => {
       }));
 
       setSnippets(snippetsWithMetadata);
+      setFilteredSnippets(snippetsWithMetadata);
 
-      // Extract available languages
       const languages = [...new Set(snippetsWithMetadata.map(s => s.language))].filter(Boolean);
       setAvailableLanguages(languages);
 
-      // Extract available tags
       const allTags = snippetsWithMetadata.reduce((acc: string[], snippet) => {
         if (snippet.tags && Array.isArray(snippet.tags)) {
           snippet.tags.forEach((tag) => {
@@ -93,51 +117,24 @@ const SnippetsPage = () => {
     }
   };
 
-  const filterSnippets = () => {
-    let filtered = [...snippets];
-
-    // Filter by search term
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (snippet) =>
-          snippet.title.toLowerCase().includes(lowerSearchTerm) ||
-          snippet.description.toLowerCase().includes(lowerSearchTerm) ||
-          snippet.code.toLowerCase().includes(lowerSearchTerm)
-      );
-    }
-
-    // Filter by language
-    if (languageFilter) {
-      filtered = filtered.filter(snippet => snippet.language === languageFilter);
-    }
-
-    // Filter by tag
-    if (tagFilter) {
-      filtered = filtered.filter(snippet => 
-        snippet.tags && snippet.tags.includes(tagFilter)
-      );
-    }
-
-    setFilteredSnippets(filtered);
+  const applyFilters = () => {
+    fetchSnippets();
   };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleLanguageChange = (value: string) => {
-    setLanguageFilter(value);
-  };
-
-  const handleTagChange = (value: string) => {
-    setTagFilter(value);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm('');
+  
+  const resetFilters = () => {
+    setSearch('');
+    setSortBy('newest');
     setLanguageFilter('');
-    setTagFilter('');
+    setSelectedTags([]);
+    fetchSnippets();
+  };
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
   };
 
   const handleSnippetClick = (id: string) => {
@@ -149,100 +146,111 @@ const SnippetsPage = () => {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-20">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Фрагменты кода</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-4 md:mb-0">
-              Откройте полезные фрагменты кода, которыми делится сообщество
-            </p>
-          </div>
-          
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Сниппеты</h1>
           {user && (
             <Link to="/snippets/create">
               <Button className="gradient-bg text-white">
-                <Plus className="mr-2 h-4 w-4" /> Новый сниппет
+                <Plus className="h-4 w-4 mr-2" /> Создать сниппет
               </Button>
             </Link>
           )}
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6">
-              <div className="mb-4">
-                <Input
-                  placeholder="Поиск сниппетов..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Язык программирования</label>
-                <Select value={languageFilter} onValueChange={handleLanguageChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Все языки" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все языки</SelectItem>
-                    {availableLanguages.map(language => (
-                      <SelectItem key={language} value={language}>{language}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Тег</label>
-                <Select value={tagFilter} onValueChange={handleTagChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Все теги" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все теги</SelectItem>
-                    {availableTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {(searchTerm || languageFilter || tagFilter) && (
-                <Button variant="outline" onClick={clearFilters} className="w-full">
-                  Сбросить фильтры
-                </Button>
-              )}
-              
-              <div className="mt-6">
-                <h3 className="text-sm font-medium mb-2 flex items-center">
-                  <Tag className="h-4 w-4 mr-1" /> Популярные теги
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {availableTags.slice(0, 10).map(tag => (
-                    <Badge 
-                      key={tag} 
-                      className={`cursor-pointer ${tagFilter === tag ? 'gradient-bg text-white' : ''}`}
-                      variant={tagFilter === tag ? "default" : "secondary"}
-                      onClick={() => setTagFilter(tagFilter === tag ? '' : tag)}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-64 shrink-0">
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle>Фильтры</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="sort">Сортировка</Label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger id="sort">
+                      <SelectValue placeholder="Выберите сортировку" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="newest">Сначала новые</SelectItem>
+                        <SelectItem value="oldest">Сначала старые</SelectItem>
+                        <SelectItem value="most-liked">Популярные</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Язык программирования</Label>
+                  <Select value={languageFilter} onValueChange={setLanguageFilter}>
+                    <SelectTrigger id="language">
+                      <SelectValue placeholder="Все языки" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="">Все языки</SelectItem>
+                        {availableLanguages.map(language => (
+                          <SelectItem key={language} value={language}>{language}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Теги</Label>
+                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                    {availableTags.map(tag => (
+                      <Badge 
+                        key={tag} 
+                        className={`cursor-pointer ${selectedTags.includes(tag) ? 'gradient-bg text-white' : ''}`}
+                        variant={selectedTags.includes(tag) ? "default" : "secondary"}
+                        onClick={() => handleTagToggle(tag)}
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={applyFilters} 
+                  className="w-full gradient-bg text-white"
+                >
+                  Применить фильтры
+                </Button>
+                <Button 
+                  onClick={resetFilters} 
+                  variant="outline" 
+                  className="w-full"
+                >
+                  Сбросить
+                </Button>
+              </CardContent>
+            </Card>
           </div>
           
-          {/* Snippets Grid */}
-          <div className="lg:col-span-3">
+          <div className="w-full">
+            <div className="mb-8 flex items-center justify-between">
+              <Input
+                type="search"
+                placeholder="Поиск сниппетов..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+            
             {loading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loader2 className="h-10 w-10 animate-spin text-devhub-purple mr-2" />
-                <p className="text-lg">Загрузка сниппетов...</p>
+              <div className="flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
               </div>
-            ) : filteredSnippets.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            ) : filteredSnippets.length === 0 ? (
+              <p className="text-gray-500 text-center py-12">
+                Нет сниппетов для отображения.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredSnippets.map((snippet) => (
                   <SnippetCard
                     key={snippet.id}
@@ -255,20 +263,6 @@ const SnippetsPage = () => {
                     onClick={() => handleSnippetClick(snippet.id)}
                   />
                 ))}
-              </div>
-            ) : (
-              <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-xl mb-4">Сниппеты не найдены</p>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {searchTerm || languageFilter || tagFilter
-                    ? "Попробуйте изменить фильтры или поисковый запрос"
-                    : "Будьте первым, кто поделится сниппетом с сообществом!"}
-                </p>
-                {(searchTerm || languageFilter || tagFilter) && (
-                  <Button variant="outline" onClick={clearFilters}>
-                    Сбросить фильтры
-                  </Button>
-                )}
               </div>
             )}
           </div>
