@@ -23,7 +23,7 @@ const SnippetsPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-  const [languageFilter, setLanguageFilter] = useState<string>('');
+  const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
@@ -48,7 +48,7 @@ const SnippetsPage = () => {
         query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,code.ilike.%${search}%`);
       }
 
-      if (languageFilter) {
+      if (languageFilter && languageFilter !== 'all') {
         query = query.eq('language', languageFilter);
       }
 
@@ -124,7 +124,7 @@ const SnippetsPage = () => {
   const resetFilters = () => {
     setSearch('');
     setSortBy('newest');
-    setLanguageFilter('');
+    setLanguageFilter('all');
     setSelectedTags([]);
     fetchSnippets();
   };
@@ -188,7 +188,7 @@ const SnippetsPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="">Все языки</SelectItem>
+                        <SelectItem value="all">Все языки</SelectItem>
                         {availableLanguages.map(language => (
                           <SelectItem key={language} value={language}>{language}</SelectItem>
                         ))}
