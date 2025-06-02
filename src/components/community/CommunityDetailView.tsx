@@ -5,7 +5,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
@@ -18,7 +17,8 @@ import {
   UserPlus, 
   UserMinus, 
   Shield, 
-  Lock 
+  Lock,
+  Trash2 
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,12 +28,15 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import CommunityManagementActions from './CommunityManagementActions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CommunityDetailViewProps {
   community: Community | null;
   members: CommunityMember[];
   isMember: boolean;
   memberRole: string | null;
+  isCreator: boolean;
   isLoading: boolean;
   onJoin: () => void;
   onLeave: () => void;
@@ -44,10 +47,13 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   members,
   isMember,
   memberRole,
+  isCreator,
   isLoading,
   onJoin,
   onLeave
 }) => {
+  const { user } = useAuth();
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -81,9 +87,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     );
   }
 
-  const creatorMember = members.find(member => member.user_id === community.creator_id);
-  const displayMembers = members.slice(0, 5);
-  const remainingMembers = members.length - 5;
+  const canManage = memberRole === 'admin' || memberRole === 'moderator' || isCreator;
 
   return (
     <div className="space-y-6">
@@ -156,10 +160,20 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                   Создать пост
                 </Button>
               </Link>
-              <Button variant="outline" onClick={onLeave}>
-                <UserMinus className="h-4 w-4 mr-1" />
-                Покинуть
-              </Button>
+              {isCreator ? (
+                <CommunityManagementActions
+                  communityId={community.id}
+                  userId={user?.id || ''}
+                  username="Сообщество"
+                  isCreator={true}
+                  canManage={true}
+                />
+              ) : (
+                <Button variant="outline" onClick={onLeave}>
+                  <UserMinus className="h-4 w-4 mr-1" />
+                  Покинуть
+                </Button>
+              )}
             </>
           ) : (
             <Button onClick={onJoin}>
@@ -245,9 +259,20 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                         </div>
                       </div>
                     </div>
-                    {member.user_id === community.creator_id && (
-                      <Badge variant="outline" className="border-purple-500 text-purple-500">Создатель</Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {member.user_id === community.creator_id && (
+                        <Badge variant="outline" className="border-purple-500 text-purple-500">Создатель</Badge>
+                      )}
+                      {canManage && member.user_id !== community.creator_id && member.user_id !== user?.id && (
+                        <CommunityManagementActions
+                          communityId={community.id}
+                          userId={member.user_id}
+                          username={member.profiles?.username || 'Пользователь'}
+                          isCreator={false}
+                          canManage={true}
+                        />
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

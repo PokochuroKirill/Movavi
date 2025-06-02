@@ -148,22 +148,40 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       setUploading(false);
     }
   };
-  return <Card className="mb-6 overflow-hidden">
+  return (
+    <Card className="mb-6 overflow-hidden">
       <div className="relative h-48 bg-gradient-to-r from-blue-500 to-devhub-purple">
-        {profile.banner_url && <img src={profile.banner_url} alt="Profile banner" className="w-full h-full object-cover" />}
+        {profile.banner_url && (
+          <img src={profile.banner_url} alt="Profile banner" className="w-full h-full object-cover" />
+        )}
         
-        {isCurrentUser && <div className="absolute top-4 right-4 flex gap-2">
+        {isCurrentUser && (
+          <div className="absolute top-4 right-4 flex gap-2">
             <label htmlFor="banner-upload" className="cursor-pointer">
               <div className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <Upload className="h-5 w-5 text-gray-600 dark:text-gray-300" />
               </div>
-              <input id="banner-upload" type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} disabled={uploading} />
+              <input
+                id="banner-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleBannerUpload}
+                disabled={uploading}
+              />
             </label>
             
-            {profile.banner_url && <button onClick={handleRemoveBanner} disabled={uploading} className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            {profile.banner_url && (
+              <button
+                onClick={handleRemoveBanner}
+                disabled={uploading}
+                className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
                 <Trash2 className="h-5 w-5 text-red-500" />
-              </button>}
-          </div>}
+              </button>
+            )}
+          </div>
+        )}
         
         <div className="absolute -bottom-16 left-8">
           <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
@@ -176,32 +194,44 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       </div>
       
       <CardContent className="pt-20 pb-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <div>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+          <div className="flex-1">
             <h2 className="text-2xl font-bold flex items-center flex-wrap">
               {profile.full_name || profile.username || 'Пользователь'}
               
               <span className="inline-flex gap-2 ml-2">
-                {profile.is_verified && <Badge className="bg-blue-500 text-white">Проверено</Badge>}
-                {profile.is_pro && <Badge className="bg-gradient-to-r from-blue-500 to-devhub-purple text-white flex items-center">
+                {profile.is_verified && (
+                  <Badge className="bg-blue-500 text-white">Проверено</Badge>
+                )}
+                {profile.is_pro && (
+                  <Badge className="bg-gradient-to-r from-blue-500 to-devhub-purple text-white flex items-center">
                     <Award className="h-3 w-3 mr-1" />
                     PRO
-                  </Badge>}
+                  </Badge>
+                )}
               </span>
             </h2>
-            {profile.username && <p className="text-gray-500 dark:text-gray-400">@{profile.username}</p>}
+            {profile.username && (
+              <p className="text-gray-500 dark:text-gray-400">@{profile.username}</p>
+            )}
           </div>
           
-          <div className="flex items-center gap-2 mt-2 md:mt-0">
-            {isCurrentUser && <>
-                {!profile.is_pro && <Button variant="default" size="sm" className="gradient-bg text-white" asChild>
-                    
-                  </Button>}
-                {onEditClick && <Button variant="outline" size="sm" onClick={onEditClick}>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isCurrentUser && (
+              <>
+                {!profile.is_pro && (
+                  <Button variant="default" size="sm" className="gradient-bg text-white" asChild>
+                    {/* PRO button content if needed */}
+                  </Button>
+                )}
+                {onEditClick && (
+                  <Button variant="outline" size="sm" onClick={onEditClick}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Редактировать профиль
-                  </Button>}
-              </>}
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
         
@@ -259,6 +289,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </a>}
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
 export default ProfileHeader;

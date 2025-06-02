@@ -137,6 +137,33 @@ export type Database = {
           },
         ]
       }
+      community_banned_users: {
+        Row: {
+          banned_by: string
+          community_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          community_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          community_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_comments: {
         Row: {
           content: string
@@ -214,6 +241,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      community_post_images: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          image_url: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          post_id?: string
+        }
+        Relationships: []
       }
       community_post_likes: {
         Row: {
@@ -823,6 +874,10 @@ export type Database = {
       }
     }
     Functions: {
+      ban_user_from_community: {
+        Args: { p_community_id: string; p_user_id: string; p_reason?: string }
+        Returns: boolean
+      }
       check_if_following: {
         Args: { follower: string; following: string }
         Returns: boolean
@@ -834,6 +889,14 @@ export type Database = {
       count_following: {
         Args: { user_id: string }
         Returns: number
+      }
+      decrement_community_members: {
+        Args: { community_id: string }
+        Returns: undefined
+      }
+      delete_community: {
+        Args: { community_id: string }
+        Returns: boolean
       }
       follow_user: {
         Args: { follower: string; following: string }
@@ -945,6 +1008,14 @@ export type Database = {
       }
       has_user_saved_snippet: {
         Args: { snippet_id: string; user_id: string }
+        Returns: boolean
+      }
+      increment_community_members: {
+        Args: { community_id: string }
+        Returns: undefined
+      }
+      unban_user_from_community: {
+        Args: { p_community_id: string; p_user_id: string }
         Returns: boolean
       }
       unfollow_user: {

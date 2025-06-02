@@ -28,6 +28,9 @@ const CommunityDetailPage = () => {
   } = useCommunityAccess(id || '', user?.id);
 
   const loading = communityLoading || accessLoading;
+  
+  // Проверяем является ли пользователь создателем сообщества
+  const isCreator = user?.id === community?.creator_id;
 
   const handleJoin = async () => {
     const success = await joinCommunity();
@@ -38,6 +41,11 @@ const CommunityDetailPage = () => {
   };
 
   const handleLeave = async () => {
+    // Создатель не может покинуть сообщество, только удалить его
+    if (isCreator) {
+      return;
+    }
+    
     const success = await leaveCommunity();
     if (success) {
       await refetch();
@@ -53,6 +61,7 @@ const CommunityDetailPage = () => {
           members={members}
           isMember={isMember}
           memberRole={memberRole}
+          isCreator={isCreator}
           isLoading={loading}
           onJoin={handleJoin}
           onLeave={handleLeave}

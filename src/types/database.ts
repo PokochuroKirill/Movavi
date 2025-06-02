@@ -231,6 +231,23 @@ export interface CommunityPostLike {
   created_at: string;
 }
 
+export interface CommunityPostImage {
+  id: string;
+  post_id: string;
+  image_url: string;
+  created_at: string;
+  display_order: number;
+}
+
+export interface CommunityBannedUser {
+  id: string;
+  community_id: string;
+  user_id: string;
+  banned_by: string;
+  created_at: string;
+  reason?: string;
+}
+
 export interface Subscription {
   id: string;
   user_id: string;
