@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const languageOptions = [
   "javascript",
-  "typescript",
+  "typescript", 
   "python",
   "java",
   "c",
@@ -56,6 +56,24 @@ const CreateSnippetPage = () => {
       return;
     }
 
+    if (title.length > 100) {
+      toast({
+        title: "Ошибка",
+        description: "Название не должно превышать 100 символов",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (description.length > 500) {
+      toast({
+        title: "Ошибка",
+        description: "Описание не должно превышать 500 символов",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -64,7 +82,7 @@ const CreateSnippetPage = () => {
         .map(tag => tag.trim())
         .filter(tag => tag !== '');
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('snippets')
         .insert({
           title,
@@ -73,16 +91,18 @@ const CreateSnippetPage = () => {
           language,
           tags: tagsArray.length ? tagsArray : null,
           user_id: user!.id
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       toast({
         title: "Фрагмент кода создан",
-        description: "Ваш фрагмент кода успешно сохранен"
+        description: "Ваш фрагмент кода успешно опубликован"
       });
       
-      navigate('/snippets');
+      navigate(`/snippets/${data.id}`);
     } catch (error: any) {
       toast({
         title: "Ошибка",
@@ -101,32 +121,36 @@ const CreateSnippetPage = () => {
       
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
-          <h1 className="text-3xl font-bold mb-6">Создание фрагмента кода</h1>
+          <h1 className="text-3xl font-bold mb-6">Создать фрагмент кода</h1>
           
           <Card>
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="title">Название</Label>
+                    <Label htmlFor="title">Название (макс. 100 символов)</Label>
                     <Input 
                       id="title" 
                       value={title} 
                       onChange={(e) => setTitle(e.target.value)} 
                       placeholder="Введите название фрагмента кода"
+                      maxLength={100}
                       required
                     />
+                    <p className="text-xs text-gray-500 mt-1">{title.length}/100</p>
                   </div>
                   
                   <div>
-                    <Label htmlFor="description">Описание</Label>
+                    <Label htmlFor="description">Описание (макс. 500 символов)</Label>
                     <Textarea 
                       id="description" 
                       value={description} 
                       onChange={(e) => setDescription(e.target.value)} 
                       placeholder="Опишите фрагмент кода и его использование"
+                      maxLength={500}
                       required
                     />
+                    <p className="text-xs text-gray-500 mt-1">{description.length}/500</p>
                   </div>
                   
                   <div>
@@ -185,12 +209,12 @@ const CreateSnippetPage = () => {
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Сохранение...
+                          Создание...
                         </>
                       ) : (
                         <>
                           <Save className="mr-2 h-4 w-4" />
-                          Сохранить фрагмент
+                          Создать фрагмент
                         </>
                       )}
                     </Button>

@@ -13,8 +13,6 @@ import EditSnippetPage from '@/pages/EditSnippetPage';
 import ProjectsPage from '@/pages/ProjectsPage';
 import ProjectDetailPage from '@/pages/ProjectDetailPage';
 import CreateProjectPage from '@/pages/CreateProjectPage';
-import BlogPage from '@/pages/BlogPage';
-import BlogPostDetailPage from '@/pages/BlogPostDetailPage';
 import ContactPage from '@/pages/ContactPage';
 import AboutPage from '@/pages/AboutPage';
 import DocumentationPage from '@/pages/DocumentationPage';
@@ -23,7 +21,6 @@ import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import SupportPage from '@/pages/SupportPage';
 import UserProfilePage from '@/pages/UserProfilePage';
-import AdminPage from '@/pages/AdminPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import CommunitiesPage from '@/pages/CommunitiesPage';
 import CommunityDetailPage from '@/pages/CommunityDetailPage';
@@ -31,8 +28,6 @@ import CreateCommunityPage from '@/pages/CreateCommunityPage';
 import CommunityPostDetailPage from '@/pages/CommunityPostDetailPage';
 import CreateCommunityPostPage from '@/pages/CreateCommunityPostPage';
 import EditCommunityPostPage from '@/pages/EditCommunityPostPage';
-import AnalyticsPage from '@/pages/AnalyticsPage';
-import PlaygroundPage from '@/pages/PlaygroundPage';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -66,8 +61,6 @@ function App() {
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:id" element={<ProjectDetailPage />} />
               <Route path="/projects/create" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
-              <Route path="/blog" element={<BlogPage />} />
-              <Route path="/blog/:id" element={<BlogPostDetailPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/docs" element={<DocumentationPage />} />
@@ -76,7 +69,6 @@ function App() {
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/support" element={<SupportPage />} />
               <Route path="/user/:username" element={<UserProfilePage />} />
-              <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/communities" element={<CommunitiesPage />} />
               <Route path="/communities/:id" element={<CommunityDetailPage />} />
@@ -84,8 +76,6 @@ function App() {
               <Route path="/communities/:id/post/:postId" element={<CommunityPostDetailPage />} />
               <Route path="/communities/:id/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
               <Route path="/communities/:id/post/:postId/edit" element={<ProtectedRoute><EditCommunityPostPage /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-              <Route path="/playground" element={<PlaygroundPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
