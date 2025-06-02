@@ -919,6 +919,10 @@ export type Database = {
           relevance_score: number
         }[]
       }
+      get_snippet_comments_count: {
+        Args: { snippet_id: string }
+        Returns: number
+      }
       get_snippet_likes_count: {
         Args: { snippet_id: string }
         Returns: number
