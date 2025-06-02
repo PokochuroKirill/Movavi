@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { MessageSquare, Heart } from 'lucide-react';
 import UserProfileLink from './UserProfileLink';
 
 interface SnippetCardProps {
@@ -30,8 +31,8 @@ const SnippetCard = ({
   authorAvatar,
   authorId,
   authorUsername,
-  likes,
-  comments,
+  likes = 0,
+  comments = 0,
   onClick
 }: SnippetCardProps) => {
   const formatDate = (dateString?: string) => {
@@ -67,7 +68,7 @@ const SnippetCard = ({
           {description}
         </p>
         
-        <div className="flex justify-between items-end">
+        <div className="flex justify-between items-end mb-4">
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <Badge key={tag} variant="outline" className="bg-devhub-purple/10 text-devhub-purple border-devhub-purple/20 text-xs">
@@ -75,7 +76,9 @@ const SnippetCard = ({
               </Badge>
             ))}
           </div>
-          
+        </div>
+
+        <div className="flex items-center justify-between">
           <div className="flex items-center">
             {author && (
               <div className="flex items-center mr-3">
@@ -94,6 +97,17 @@ const SnippetCard = ({
                 {formatDate(created_at)}
               </div>
             )}
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center text-gray-500 dark:text-gray-400">
+              <Heart className="h-4 w-4 mr-1" />
+              <span className="text-xs">{likes || 0}</span>
+            </div>
+            <div className="flex items-center text-gray-500 dark:text-gray-400">
+              <MessageSquare className="h-4 w-4 mr-1" />
+              <span className="text-xs">{comments || 0}</span>
+            </div>
           </div>
         </div>
       </div>

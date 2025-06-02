@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +12,8 @@ import ProjectCard from '@/components/ProjectCard';
 import SnippetCard from '@/components/SnippetCard';
 import ProfileHeader from '@/components/ProfileHeader';
 import EditProfileForm from '@/components/EditProfileForm';
-import { Loader2 } from 'lucide-react';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { Loader2, Trash2 } from 'lucide-react';
 import { Profile, Project, Snippet } from '@/types/database';
 
 const ProfilePage = () => {
@@ -29,6 +29,17 @@ const ProfilePage = () => {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [snippetsLoading, setSnippetsLoading] = useState(true);
   const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    type: 'project' | 'snippet';
+    id: string;
+    title: string;
+  }>({
+    open: false,
+    type: 'project',
+    id: '',
+    title: ''
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -287,12 +298,30 @@ const ProfilePage = () => {
     }
   };
 
-  const handleDeleteProject = async (projectId: string) => {
+  const openDeleteDialog = (type: 'project' | 'snippet', id: string, title: string) => {
+    setDeleteDialog({
+      open: true,
+      type,
+      id,
+      title
+    });
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      open: false,
+      type: 'project',
+      id: '',
+      title: ''
+    });
+  };
+
+  const handleDeleteProject = async () => {
     try {
       const { error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', projectId)
+        .eq('id', deleteDialog.id)
         .eq('user_id', user!.id);
       
       if (error) throw error;
@@ -303,6 +332,7 @@ const ProfilePage = () => {
       
       fetchUserProjects();
       fetchFavorites();
+      closeDeleteDialog();
     } catch (error: any) {
       console.error('Error deleting project:', error.message);
       toast({
@@ -313,12 +343,12 @@ const ProfilePage = () => {
     }
   };
   
-  const handleDeleteSnippet = async (snippetId: string) => {
+  const handleDeleteSnippet = async () => {
     try {
       const { error } = await supabase
         .from('snippets')
         .delete()
-        .eq('id', snippetId)
+        .eq('id', deleteDialog.id)
         .eq('user_id', user!.id);
       
       if (error) throw error;
@@ -329,6 +359,7 @@ const ProfilePage = () => {
       
       fetchUserSnippets();
       fetchFavorites();
+      closeDeleteDialog();
     } catch (error: any) {
       console.error('Error deleting snippet:', error.message);
       toast({
@@ -336,6 +367,14 @@ const ProfilePage = () => {
         description: 'Не удалось удалить сниппет',
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteDialog.type === 'project') {
+      handleDeleteProject();
+    } else {
+      handleDeleteSnippet();
     }
   };
 
@@ -419,11 +458,11 @@ const ProfilePage = () => {
                             />
                             <Button 
                               variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => handleDeleteProject(project.id)}
+                              size="icon"
+                              className="absolute top-2 right-2 h-8 w-8"
+                              onClick={() => openDeleteDialog('project', project.id, project.title)}
                             >
-                              Удалить
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
@@ -485,6 +524,8 @@ const ProfilePage = () => {
                                   language={snippet.language}
                                   tags={snippet.tags || []}
                                   created_at={snippet.created_at}
+                                  likes={snippet.likes}
+                                  comments={snippet.comments}
                                 />
                               ))}
                             </div>
@@ -522,14 +563,16 @@ const ProfilePage = () => {
                               language={snippet.language}
                               tags={snippet.tags || []}
                               created_at={snippet.created_at}
+                              likes={snippet.likes}
+                              comments={snippet.comments}
                             />
                             <Button 
                               variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => handleDeleteSnippet(snippet.id)}
+                              size="icon"
+                              className="absolute top-2 right-2 h-8 w-8"
+                              onClick={() => openDeleteDialog('snippet', snippet.id, snippet.title)}
                             >
-                              Удалить
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
@@ -545,6 +588,14 @@ const ProfilePage = () => {
             </Tabs>
           </div>
         </div>
+
+        <ConfirmDialog
+          open={deleteDialog.open}
+          onOpenChange={closeDeleteDialog}
+          onConfirm={handleConfirmDelete}
+          title={`Удалить ${deleteDialog.type === 'project' ? 'проект' : 'сниппет'}?`}
+          description={`Вы уверены, что хотите удалить ${deleteDialog.type === 'project' ? 'проект' : 'сниппет'} "${deleteDialog.title}"? Это действие нельзя отменить.`}
+        />
       </div>
       <Footer />
     </div>

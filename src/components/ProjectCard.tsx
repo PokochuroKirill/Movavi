@@ -72,11 +72,11 @@ const ProjectCard = ({
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-500 dark:text-gray-400">
               <Heart className="h-4 w-4 mr-1" />
-              <span className="text-xs">{likes}</span>
+              <span className="text-xs">{likes || 0}</span>
             </div>
             <div className="flex items-center text-gray-500 dark:text-gray-400">
               <MessageSquare className="h-4 w-4 mr-1" />
-              <span className="text-xs">{comments}</span>
+              <span className="text-xs">{comments || 0}</span>
             </div>
           </div>
         </div>
