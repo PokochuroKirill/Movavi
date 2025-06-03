@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload, User, Globe, MessageSquare, Github, Twitter, Linkedin, ExternalLink, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, User, Globe, MessageSquare, Github, Twitter, Linkedin, ExternalLink } from 'lucide-react';
 import AvatarUpload from './AvatarUpload';
 import { Profile } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { canChangeUsername } from '@/hooks/useProfileQueries';
-import { Alert, AlertDescription } from './ui/alert';
 
 interface EditProfileFormProps {
   profile: Profile;
@@ -21,7 +20,6 @@ interface EditProfileFormProps {
 
 const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
   const [formData, setFormData] = useState({
-    username: profile.username || '',
     full_name: profile.full_name || '',
     bio: profile.bio || '',
     website: profile.website || '',
@@ -31,23 +29,11 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     linkedin: profile.linkedin || '',
   });
   
-  const [canEditUsername, setCanEditUsername] = useState(true);
-  const [daysRemaining, setDaysRemaining] = useState(0);
   const [avatar, setAvatar] = useState(profile.avatar_url);
   const [banner, setBanner] = useState(profile.banner_url);
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const checkUsernameEditability = async () => {
-      const result = await canChangeUsername(profile.id);
-      setCanEditUsername(result.canChange);
-      setDaysRemaining(result.daysRemaining);
-    };
-    
-    checkUsernameEditability();
-  }, [profile.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -62,19 +48,7 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
     setUpdating(true);
     
     try {
-      // Check if username is being changed
-      if (formData.username !== profile.username && !canEditUsername) {
-        toast({
-          title: "Ограничение изменения",
-          description: `Вы сможете изменить имя пользователя через ${daysRemaining} дней`,
-          variant: "destructive"
-        });
-        setUpdating(false);
-        return;
-      }
-      
       await onUpdate({
-        username: formData.username,
         full_name: formData.full_name,
         bio: formData.bio,
         website: formData.website,
@@ -274,23 +248,16 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
                   <User className="h-4 w-4 mr-2" />
                   Имя пользователя
                 </Label>
-                {!canEditUsername && (
-                  <Alert variant="warning" className="mb-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Имя пользователя можно изменять только раз в 30 дней. Осталось дней: {daysRemaining}
-                    </AlertDescription>
-                  </Alert>
-                )}
                 <Input
                   id="username"
                   name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
+                  value={profile.username || ''}
                   placeholder="username"
-                  className="bg-gray-50 dark:bg-gray-800"
-                  disabled={!canEditUsername}
+                  className="bg-gray-100 dark:bg-gray-700"
+                  disabled
+                  readOnly
                 />
+                <p className="text-sm text-gray-500">Имя пользователя нельзя изменить</p>
               </div>
               
               <div className="space-y-2">
