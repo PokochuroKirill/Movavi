@@ -1,307 +1,231 @@
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Copy, ExternalLink, Github } from 'lucide-react';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
-} from "@/components/ui/alert-dialog";
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Calendar, ExternalLink, Github, Heart, Eye, ArrowLeft } from 'lucide-react';
+import Layout from '@/components/Layout';
+import { supabase } from '@/integrations/supabase/client';
+import { Project } from '@/types/database';
+import { formatDate } from '@/utils/dateUtils';
 import ProjectActions from '@/components/ProjectActions';
-import CommentSection from '@/components/CommentSection';
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  technologies: string[];
-  image_url?: string;
-  github_url?: string;
-  live_url?: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-  profiles?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProject = async () => {
+      if (!id) {
+        setError('ID проекта не указан');
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (!id) return;
-        
         const { data, error } = await supabase
           .from('projects')
           .select(`
-            id, 
-            title, 
-            description, 
-            content, 
-            technologies, 
-            image_url,
-            github_url,
-            live_url,
-            created_at, 
-            updated_at,
-            user_id, 
-            profiles(username, full_name, avatar_url)
+            *,
+            profiles:user_id (
+              username,
+              full_name,
+              avatar_url
+            )
           `)
           .eq('id', id)
           .single();
 
         if (error) throw error;
-        setProject(data as Project);
-      } catch (error: any) {
-        console.error('Error fetching project:', error);
-        toast({
-          title: 'Ошибка',
-          description: 'Не удалось загрузить проект',
-          variant: 'destructive'
-        });
+
+        setProject(data);
+      } catch (err: any) {
+        console.error('Error fetching project:', err);
+        setError('Проект не найден');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProject();
-  }, [id, toast]);
-
-  const handleDelete = async () => {
-    if (!project || !user) return;
-    
-    try {
-      setIsDeleting(true);
-      
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', project.id)
-        .eq('user_id', user.id);
-        
-      if (error) throw error;
-      
-      toast({
-        description: 'Проект успешно удален'
-      });
-      
-      navigate('/projects');
-    } catch (error: any) {
-      console.error('Error deleting project:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось удалить проект',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  }, [id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-          <span className="ml-2 text-lg">Загрузка проекта...</span>
+      <Layout>
+        <div className="container max-w-4xl py-24 mt-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
         </div>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
-  if (!project) {
+  if (error || !project) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center flex-col p-4">
-          <h2 className="text-2xl font-bold mb-4">Проект не найден</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Запрошенный проект не существует или был удален
-          </p>
-          <Button onClick={() => navigate('/projects')}>
-            Вернуться к списку проектов
-          </Button>
+      <Layout>
+        <div className="container max-w-4xl py-24 mt-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {error || 'Проект не найден'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Возможно, проект был удален или у вас нет доступа к нему.
+            </p>
+            <Link to="/projects">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Вернуться к проектам
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
-
-  const isOwnProject = user && user.id === project.user_id;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-            <h1 className="text-3xl font-bold mb-2 md:mb-0">{project.title}</h1>
-            
-            {isOwnProject && (
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate(`/projects/${project.id}/edit`)}
-                >
-                  Редактировать
-                </Button>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      Удалить
+    <Layout>
+      <div className="container max-w-4xl py-24 mt-8">
+        <div className="space-y-6">
+          {/* Кнопка назад */}
+          <Link to="/projects">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Назад к проектам
+            </Button>
+          </Link>
+
+          {/* Основная карточка проекта */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl md:text-3xl mb-2">
+                    {project.title}
+                  </CardTitle>
+                  <CardDescription className="text-base mb-4">
+                    {project.description}
+                  </CardDescription>
+                  
+                  {/* Технологии */}
+                  {project.technologies && project.technologies.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {project.technologies.map((tech, index) => (
+                        <Badge key={index} variant="secondary">
+                          {tech}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Информация об авторе и дате */}
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={project.profiles?.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {project.profiles?.username?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        {project.profiles?.full_name || project.profiles?.username || 'Аноним'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>{formatDate(project.created_at)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Действия с проектом */}
+                <div className="flex items-center gap-2">
+                  <ProjectActions 
+                    project={project}
+                    currentUserId={user?.id}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+
+            {/* Изображение проекта */}
+            {project.image_url && (
+              <div className="px-6 pb-6">
+                <div className="w-full rounded-lg overflow-hidden">
+                  <img 
+                    src={project.image_url} 
+                    alt={project.title}
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
+            <CardContent>
+              {/* Ссылки на проект */}
+              <div className="flex flex-wrap gap-3 mb-6">
+                {project.live_url && (
+                  <a
+                    href={project.live_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Демо
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Удалить проект?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Это действие нельзя отменить. Проект будет безвозвратно удален.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Отмена</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleDelete}
-                        className="bg-red-500 hover:bg-red-600"
-                        disabled={isDeleting}
-                      >
-                        {isDeleting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Удаление...
-                          </>
-                        ) : (
-                          'Удалить'
-                        )}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  </a>
+                )}
+                {project.github_url && (
+                  <a
+                    href={project.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm">
+                      <Github className="h-4 w-4 mr-2" />
+                      GitHub
+                    </Button>
+                  </a>
+                )}
               </div>
-            )}
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4 mb-6">
-            <div className="flex items-center">
-              <Avatar className="h-8 w-8 mr-2">
-                <AvatarImage src={project.profiles?.avatar_url || undefined} />
-                <AvatarFallback>
-                  {(project.profiles?.full_name || project.profiles?.username || 'U')
-                    .substring(0, 2)
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span>{project.profiles?.full_name || project.profiles?.username || 'Неизвестный пользователь'}</span>
-            </div>
-            
-            <div className="flex items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {format(new Date(project.created_at), 'dd MMMM yyyy', { locale: ru })}
-              </span>
-            </div>
 
-            <ProjectActions
-              projectId={project.id}
-            />
-          </div>
-          
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <p className="whitespace-pre-wrap">{project.description}</p>
-            </CardContent>
-          </Card>
-          
-          {project.image_url && (
-            <Card className="mb-6">
-              <CardContent className="p-0">
-                <img 
-                  src={project.image_url} 
-                  alt={project.title}
-                  className="w-full h-auto rounded-lg"
-                />
-              </CardContent>
-            </Card>
-          )}
-          
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold mb-4">О проекте</h3>
-              <div className="whitespace-pre-wrap">{project.content}</div>
-            </CardContent>
-          </Card>
-          
-          {project.technologies && project.technologies.length > 0 && (
-            <div className="mb-6">
-              <p className="text-sm font-medium mb-2">Технологии:</p>
-              <div className="flex flex-wrap gap-2">
-                {project.technologies.map((tech, index) => (
-                  <Badge key={index} variant="secondary">
-                    {tech}
-                  </Badge>
-                ))}
+              {/* Содержание проекта */}
+              <div className="prose prose-gray dark:prose-invert max-w-none">
+                <div className="whitespace-pre-wrap">
+                  {project.content}
+                </div>
               </div>
-            </div>
-          )}
-          
-          <div className="flex gap-4 mb-8">
-            {project.github_url && (
-              <Button variant="outline" asChild>
-                <a href={project.github_url} target="_blank" rel="noopener noreferrer">
-                  <Github className="h-4 w-4 mr-2" />
-                  GitHub
-                </a>
-              </Button>
-            )}
-            
-            {project.live_url && (
-              <Button variant="outline" asChild>
-                <a href={project.live_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Демо
-                </a>
-              </Button>
-            )}
-          </div>
-          
-          <CommentSection projectId={project.id} />
+            </CardContent>
+          </Card>
+
+          {/* Статистика */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-center gap-8 text-center">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-red-500" />
+                  <span className="font-medium">{project.likes_count || 0}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">лайков</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-blue-500" />
+                  <span className="font-medium">Просмотры</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </Layout>
   );
 };
 

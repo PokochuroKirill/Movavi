@@ -40,7 +40,6 @@ export const fetchCommunityMembers = async (communityId: string): Promise<Commun
 
     if (error) throw error;
     
-    // Ensure the role field is properly typed to match CommunityMember interface
     const typedData: CommunityMember[] = data ? data.map(member => ({
       ...member,
       role: member.role as "admin" | "moderator" | "member"
@@ -120,54 +119,6 @@ export const createCommunityPost = async (
   }
 };
 
-// Function to fetch comments for a post
-export const fetchPostComments = async (postId: string): Promise<CommunityComment[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('community_comments')
-      .select(`
-        *,
-        profiles:user_id(username, full_name, avatar_url)
-      `)
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    return [];
-  }
-};
-
-// Function to create a comment on a post
-export const createPostComment = async (
-  postId: string,
-  userId: string,
-  content: string
-): Promise<CommunityComment | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('community_comments')
-      .insert({
-        post_id: postId,
-        user_id: userId,
-        content
-      })
-      .select(`
-        *,
-        profiles:user_id(username, full_name, avatar_url)
-      `)
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error creating comment:', error);
-    return null;
-  }
-};
-
 // Function to check if a user is a member of a community
 export const isUserMember = async (communityId: string, userId: string): Promise<boolean> => {
   try {
@@ -189,6 +140,18 @@ export const isUserMember = async (communityId: string, userId: string): Promise
 // Function to join a community
 export const joinCommunity = async (communityId: string, userId: string): Promise<boolean> => {
   try {
+    // Проверяем, не заблокирован ли пользователь
+    const { data: banCheck } = await supabase
+      .from('community_banned_users')
+      .select('id')
+      .eq('community_id', communityId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (banCheck) {
+      throw new Error('Вы заблокированы в этом сообществе');
+    }
+
     const { error } = await supabase
       .from('community_members')
       .insert({
@@ -198,6 +161,10 @@ export const joinCommunity = async (communityId: string, userId: string): Promis
       });
 
     if (error) throw error;
+
+    // Обновляем счетчик участников
+    await supabase.rpc('increment_community_members', { community_id: communityId });
+
     return true;
   } catch (error) {
     console.error('Error joining community:', error);
@@ -215,6 +182,10 @@ export const leaveCommunity = async (communityId: string, userId: string): Promi
       .eq('user_id', userId);
 
     if (error) throw error;
+
+    // Обновляем счетчик участников
+    await supabase.rpc('decrement_community_members', { community_id: communityId });
+
     return true;
   } catch (error) {
     console.error('Error leaving community:', error);
@@ -250,7 +221,6 @@ export const usePostLikes = (postId: string) => {
   const loadLikes = async () => {
     setLoading(true);
     try {
-      // Get likes count
       const { count, error } = await supabase
         .from('community_post_likes')
         .select('id', { count: 'exact', head: true })
@@ -259,7 +229,6 @@ export const usePostLikes = (postId: string) => {
       if (error) throw error;
       setLikesCount(count || 0);
 
-      // Check if current user has liked the post
       if (user) {
         const hasLiked = await checkUserLike(user.id);
         setUserLiked(hasLiked);
@@ -351,8 +320,6 @@ export default {
   fetchCommunityPosts,
   fetchPostById,
   createCommunityPost,
-  fetchPostComments,
-  createPostComment,
   isUserMember,
   joinCommunity,
   leaveCommunity,

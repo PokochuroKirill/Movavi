@@ -1,110 +1,157 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useCommunityCreationLimit } from '@/hooks/useCommunityCreationLimit';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2, Upload } from 'lucide-react';
+import Layout from '@/components/Layout';
+import { useCommunityCreationLimit } from '@/hooks/useCommunityCreationLimit';
 
 const CreateCommunityPage = () => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [topics, setTopics] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    topics: ''
+  });
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [banner, setBanner] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  
+  const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { checkCommunityLimit } = useCommunityCreationLimit();
+  const { checkCommunityLimit, loading: limitLoading } = useCommunityCreationLimit();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (type === 'avatar') {
+        setAvatar(file);
+      } else {
+        setBanner(file);
+      }
+    }
+  };
+
+  const uploadFile = async (file: File, path: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${path}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(fileName, file);
+    
+    if (uploadError) throw uploadError;
+    
+    const { data } = supabase.storage
+      .from('profiles')
+      .getPublicUrl(fileName);
+    
+    return data.publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !description.trim()) {
+    if (!user) {
       toast({
-        title: "Ошибка",
-        description: "Пожалуйста, заполните все обязательные поля",
+        title: "Требуется авторизация",
+        description: "Для создания сообщества необходимо войти в систему",
         variant: "destructive"
       });
       return;
     }
 
-    if (name.length > 50) {
-      toast({
-        title: "Ошибка",
-        description: "Название не должно превышать 50 символов",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (description.length > 500) {
-      toast({
-        title: "Ошибка",
-        description: "Описание не должно превышать 500 символов",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Проверяем лимит сообществ
-    const canCreate = await checkCommunityLimit(user!.id);
+    // Проверяем лимит создания сообществ
+    const canCreate = await checkCommunityLimit(user.id);
     if (!canCreate) {
       return;
     }
 
-    setIsCreating(true);
+    if (!formData.name.trim() || !formData.description.trim()) {
+      toast({
+        title: "Заполните все поля",
+        description: "Название и описание сообщества обязательны",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    setUploading(true);
 
     try {
-      const topicsArray = topics
+      let avatarUrl = null;
+      let bannerUrl = null;
+
+      // Загружаем файлы если они есть
+      if (avatar) {
+        avatarUrl = await uploadFile(avatar, 'community-avatars');
+      }
+
+      if (banner) {
+        bannerUrl = await uploadFile(banner, 'community-banners');
+      }
+
+      setUploading(false);
+
+      // Обрабатываем темы
+      const topics = formData.topics
         .split(',')
         .map(topic => topic.trim())
-        .filter(topic => topic !== '');
+        .filter(topic => topic.length > 0);
 
-      const { data, error } = await supabase
+      // Создаем сообщество
+      const { data: communityData, error: communityError } = await supabase
         .from('communities')
         .insert({
-          name: name.trim(),
-          description: description.trim(),
-          topics: topicsArray.length ? topicsArray : [],
-          is_public: isPublic,
-          creator_id: user!.id,
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          creator_id: user.id,
+          avatar_url: avatarUrl,
+          banner_url: bannerUrl,
+          topics: topics.length > 0 ? topics : null,
+          is_public: true, // Всегда публичное
           members_count: 1,
           posts_count: 0
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (communityError) throw communityError;
 
-      // Автоматически добавляем создателя как админа
+      // Добавляем создателя как администратора
       const { error: memberError } = await supabase
         .from('community_members')
         .insert({
-          user_id: user!.id,
-          community_id: data.id,
+          user_id: user.id,
+          community_id: communityData.id,
           role: 'admin'
         });
 
-      if (memberError) {
-        console.error('Error adding creator as member:', memberError);
-      }
+      if (memberError) throw memberError;
 
       toast({
         title: "Сообщество создано",
-        description: "Ваше сообщество успешно создано"
+        description: "Ваше сообщество было успешно создано"
       });
 
-      navigate(`/communities/${data.id}`);
+      navigate(`/communities/${communityData.id}`);
     } catch (error: any) {
       console.error('Error creating community:', error);
       toast({
@@ -113,102 +160,133 @@ const CreateCommunityPage = () => {
         variant: "destructive"
       });
     } finally {
-      setIsCreating(false);
+      setSubmitting(false);
+      setUploading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-2xl">
-          <h1 className="text-3xl font-bold mb-6">Создать сообщество</h1>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Новое сообщество</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+    <Layout>
+      <div className="container max-w-2xl py-24 mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Создать новое сообщество</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Название сообщества (макс. 50 символов)</Label>
+                  <Label htmlFor="avatar">Аватар сообщества</Label>
                   <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Введите название сообщества"
-                    maxLength={50}
-                    required
+                    id="avatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, 'avatar')}
+                    disabled={submitting}
                   />
-                  <p className="text-xs text-gray-500 mt-1">{name.length}/50</p>
+                  {avatar && (
+                    <div className="mt-2">
+                      <img 
+                        src={URL.createObjectURL(avatar)} 
+                        alt="Превью аватара" 
+                        className="w-16 h-16 rounded-full object-cover" 
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Описание (макс. 500 символов)</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Опишите ваше сообщество"
-                    className="min-h-[100px]"
-                    maxLength={500}
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{description.length}/500</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="topics">Темы (через запятую)</Label>
+                  <Label htmlFor="banner">Баннер сообщества</Label>
                   <Input
-                    id="topics"
-                    value={topics}
-                    onChange={(e) => setTopics(e.target.value)}
-                    placeholder="React, JavaScript, WebDev"
+                    id="banner"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, 'banner')}
+                    disabled={submitting}
                   />
+                  {banner && (
+                    <div className="mt-2">
+                      <img 
+                        src={URL.createObjectURL(banner)} 
+                        alt="Превью баннера" 
+                        className="w-full h-20 rounded-md object-cover" 
+                      />
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="public"
-                    checked={isPublic}
-                    onCheckedChange={setIsPublic}
-                  />
-                  <Label htmlFor="public">Публичное сообщество</Label>
-                </div>
+              <div>
+                <Label htmlFor="name">Название сообщества</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Введите название сообщества"
+                  disabled={submitting}
+                  required
+                />
+              </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate('/communities')}
-                    disabled={isCreating}
-                  >
-                    Отмена
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isCreating}
-                    className="gradient-bg text-white"
-                  >
-                    {isCreating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Создание...
-                      </>
-                    ) : (
-                      'Создать сообщество'
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+              <div>
+                <Label htmlFor="description">Описание</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Опишите ваше сообщество"
+                  className="min-h-[100px]"
+                  disabled={submitting}
+                  required
+                />
+              </div>
 
-      <Footer />
-    </div>
+              <div>
+                <Label htmlFor="topics">Темы (через запятую)</Label>
+                <Input
+                  id="topics"
+                  name="topics"
+                  value={formData.topics}
+                  onChange={handleInputChange}
+                  placeholder="JavaScript, React, Web Development"
+                  disabled={submitting}
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Укажите основные темы вашего сообщества для лучшего поиска
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => navigate('/communities')}
+                  disabled={submitting}
+                >
+                  Отмена
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={submitting || limitLoading}
+                  className="gradient-bg text-white"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {uploading ? 'Загрузка файлов...' : 'Создание...'}
+                    </>
+                  ) : (
+                    'Создать сообщество'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
   );
 };
 

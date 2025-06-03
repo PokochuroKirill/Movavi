@@ -894,6 +894,10 @@ export type Database = {
         Args: { community_id: string }
         Returns: undefined
       }
+      decrement_community_posts: {
+        Args: { community_id: string }
+        Returns: undefined
+      }
       delete_community: {
         Args: { community_id: string }
         Returns: boolean
@@ -1011,6 +1015,10 @@ export type Database = {
         Returns: boolean
       }
       increment_community_members: {
+        Args: { community_id: string }
+        Returns: undefined
+      }
+      increment_community_posts: {
         Args: { community_id: string }
         Returns: undefined
       }

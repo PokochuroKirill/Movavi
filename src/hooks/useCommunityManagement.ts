@@ -1,44 +1,45 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
-export function useCommunityManagement(communityId: string) {
+export const useCommunityManagement = (communityId: string) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Удаление сообщества (только создатель)
-  const deleteCommunity = async () => {
+  const deleteCommunity = async (): Promise<boolean> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('delete_community', {
-        community_id: communityId
-      });
+      console.log('Attempting to delete community:', communityId);
+      
+      const { data, error } = await supabase
+        .rpc('delete_community', { community_id: communityId });
 
-      if (error) throw error;
-
-      if (data) {
-        toast({
-          title: "Сообщество удалено",
-          description: "Сообщество было успешно удалено"
-        });
-        navigate('/communities');
-        return true;
-      } else {
-        toast({
-          title: "Ошибка",
-          description: "У вас нет прав для удаления этого сообщества",
-          variant: "destructive"
-        });
-        return false;
+      if (error) {
+        console.error('Error calling delete_community function:', error);
+        throw error;
       }
+
+      if (data === false) {
+        throw new Error('У вас нет прав для удаления этого сообщества');
+      }
+
+      console.log('Community deleted successfully');
+      
+      toast({
+        title: "Сообщество удалено",
+        description: "Сообщество и все связанные данные были удалены"
+      });
+      
+      navigate('/communities');
+      return true;
     } catch (error: any) {
       console.error('Error deleting community:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось удалить сообщество",
+        title: "Ошибка удаления",
+        description: error.message || "Не удалось удалить сообщество",
         variant: "destructive"
       });
       return false;
@@ -47,37 +48,40 @@ export function useCommunityManagement(communityId: string) {
     }
   };
 
-  // Блокировка пользователя
-  const banUser = async (userId: string, reason?: string) => {
+  const banUser = async (userId: string, reason?: string): Promise<boolean> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('ban_user_from_community', {
-        p_community_id: communityId,
-        p_user_id: userId,
-        p_reason: reason
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        toast({
-          title: "Пользователь заблокирован",
-          description: "Пользователь был исключен из сообщества"
+      console.log('Attempting to ban user:', userId, 'from community:', communityId);
+      
+      const { data, error } = await supabase
+        .rpc('ban_user_from_community', {
+          p_community_id: communityId,
+          p_user_id: userId,
+          p_reason: reason
         });
-        return true;
-      } else {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось заблокировать пользователя",
-          variant: "destructive"
-        });
-        return false;
+
+      if (error) {
+        console.error('Error calling ban_user_from_community function:', error);
+        throw error;
       }
+
+      if (data === false) {
+        throw new Error('У вас нет прав для блокировки пользователей в этом сообществе');
+      }
+
+      console.log('User banned successfully');
+      
+      toast({
+        title: "Пользователь заблокирован",
+        description: "Пользователь был исключен из сообщества и заблокирован"
+      });
+      
+      return true;
     } catch (error: any) {
       console.error('Error banning user:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось заблокировать пользователя",
+        title: "Ошибка блокировки",
+        description: error.message || "Не удалось заблокировать пользователя",
         variant: "destructive"
       });
       return false;
@@ -86,36 +90,39 @@ export function useCommunityManagement(communityId: string) {
     }
   };
 
-  // Разблокировка пользователя
-  const unbanUser = async (userId: string) => {
+  const unbanUser = async (userId: string): Promise<boolean> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('unban_user_from_community', {
-        p_community_id: communityId,
-        p_user_id: userId
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        toast({
-          title: "Пользователь разблокирован",
-          description: "Пользователь может снова присоединиться к сообществу"
+      console.log('Attempting to unban user:', userId, 'from community:', communityId);
+      
+      const { data, error } = await supabase
+        .rpc('unban_user_from_community', {
+          p_community_id: communityId,
+          p_user_id: userId
         });
-        return true;
-      } else {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось разблокировать пользователя",
-          variant: "destructive"
-        });
-        return false;
+
+      if (error) {
+        console.error('Error calling unban_user_from_community function:', error);
+        throw error;
       }
+
+      if (data === false) {
+        throw new Error('У вас нет прав для разблокировки пользователей в этом сообществе');
+      }
+
+      console.log('User unbanned successfully');
+      
+      toast({
+        title: "Пользователь разблокирован",
+        description: "Пользователь был разблокирован и может снова присоединиться к сообществу"
+      });
+      
+      return true;
     } catch (error: any) {
       console.error('Error unbanning user:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось разблокировать пользователя",
+        title: "Ошибка разблокировки",
+        description: error.message || "Не удалось разблокировать пользователя",
         variant: "destructive"
       });
       return false;
@@ -130,4 +137,4 @@ export function useCommunityManagement(communityId: string) {
     unbanUser,
     loading
   };
-}
+};

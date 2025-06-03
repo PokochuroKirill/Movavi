@@ -29,7 +29,6 @@ const CommunityDetailPage = () => {
 
   const loading = communityLoading || accessLoading;
   
-  // Проверяем является ли пользователь создателем сообщества
   const isCreator = user?.id === community?.creator_id;
 
   const handleJoin = async () => {
@@ -41,7 +40,6 @@ const CommunityDetailPage = () => {
   };
 
   const handleLeave = async () => {
-    // Создатель не может покинуть сообщество, только удалить его
     if (isCreator) {
       return;
     }

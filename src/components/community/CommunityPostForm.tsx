@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Upload, X, Image } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface CommunityPostFormProps {
@@ -40,7 +40,6 @@ const CommunityPostForm: React.FC<CommunityPostFormProps> = ({
       return;
     }
 
-    // Проверяем размер файлов
     const maxSize = 5 * 1024 * 1024; // 5MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
     
@@ -147,44 +146,36 @@ const CommunityPostForm: React.FC<CommunityPostFormProps> = ({
         .select()
         .single();
 
-      if (postError) throw postError;
+      if (postError) {
+        console.error('Error creating post:', postError);
+        throw postError;
+      }
+
+      console.log('Post created successfully:', postData);
 
       // Загружаем изображения если есть
       if (images.length > 0) {
-        const uploadedImages = await uploadImages(postData.id);
-        
-        // Сохраняем информацию об изображениях в базе
-        const { error: imagesError } = await supabase
-          .from('community_post_images')
-          .insert(
-            uploadedImages.map(img => ({
-              post_id: postData.id,
-              image_url: img.image_url,
-              display_order: img.display_order
-            }))
-          );
+        try {
+          const uploadedImages = await uploadImages(postData.id);
+          
+          // Сохраняем информацию об изображениях в базе
+          const { error: imagesError } = await supabase
+            .from('community_post_images')
+            .insert(
+              uploadedImages.map(img => ({
+                post_id: postData.id,
+                image_url: img.image_url,
+                display_order: img.display_order
+              }))
+            );
 
-        if (imagesError) throw imagesError;
-      }
-
-      // Обновляем счетчик постов в сообществе
-      const { data: currentCommunity } = await supabase
-        .from('communities')
-        .select('posts_count')
-        .eq('id', communityId)
-        .single();
-
-      if (currentCommunity) {
-        const { error: updateError } = await supabase
-          .from('communities')
-          .update({ 
-            posts_count: (currentCommunity.posts_count || 0) + 1
-          })
-          .eq('id', communityId);
-
-        if (updateError) {
-          console.error('Error updating posts count:', updateError);
-          // Не прерываем выполнение, так как пост уже создан
+          if (imagesError) {
+            console.error('Error saving images:', imagesError);
+            // Не прерываем выполнение, так как пост уже создан
+          }
+        } catch (error) {
+          console.error('Error with images:', error);
+          // Продолжаем, так как пост создан
         }
       }
 
@@ -208,7 +199,7 @@ const CommunityPostForm: React.FC<CommunityPostFormProps> = ({
       console.error('Error creating post:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось создать пост",
+        description: error.message || "Не удалось создать пост",
         variant: "destructive"
       });
     } finally {
