@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Profile, UserFollow, Project, Snippet } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
@@ -276,16 +277,19 @@ export const fetchFollowCounts = async (
   }
 };
 
-// Function to update profile
+// Function to update profile (without username changes)
 export const updateProfile = async (
   userId: string,
   profileData: Partial<Profile>
 ): Promise<boolean> => {
   try {
+    // Remove username from update data to prevent changes
+    const { username, ...updateData } = profileData;
+    
     const { error } = await supabase
       .from("profiles")
       .update({
-        ...profileData,
+        ...updateData,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
@@ -339,40 +343,6 @@ export const removeProfileBanner = async (userId: string): Promise<boolean> => {
   } catch (error) {
     console.error("Error removing banner:", error);
     return false;
-  }
-};
-
-// Check if username can be changed
-export const canChangeUsername = async (userId: string): Promise<{ canChange: boolean, daysRemaining: number }> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('last_username_change')
-      .eq('id', userId)
-      .single();
-      
-    if (error) throw error;
-    
-    if (!data.last_username_change) {
-      return { canChange: true, daysRemaining: 0 };
-    }
-    
-    const lastChange = new Date(data.last_username_change);
-    const now = new Date();
-    
-    // Calculate the difference in days
-    const diffTime = now.getTime() - lastChange.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Username can be changed once per 30 days
-    if (diffDays >= 30) {
-      return { canChange: true, daysRemaining: 0 };
-    } else {
-      return { canChange: false, daysRemaining: 30 - diffDays };
-    }
-  } catch (error) {
-    console.error("Error checking username change:", error);
-    return { canChange: false, daysRemaining: 30 };
   }
 };
 
@@ -473,23 +443,6 @@ export const useProfileOperations = () => {
   
   const handleProfileUpdate = async (userId: string, data: Partial<Profile>) => {
     try {
-      // If username is being changed, check if it's allowed
-      if (data.username) {
-        const { canChange, daysRemaining } = await canChangeUsername(userId);
-        
-        if (!canChange) {
-          toast({
-            title: "Изменение имени пользователя ограничено",
-            description: `Вы сможете изменить имя пользователя через ${daysRemaining} дней`,
-            variant: "destructive"
-          });
-          return false;
-        }
-        
-        // Update the last_username_change field
-        data.last_username_change = new Date().toISOString();
-      }
-      
       const success = await updateProfile(userId, data);
       
       if (success) {

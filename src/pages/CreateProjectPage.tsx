@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useProjectCreationLimits } from '@/hooks/useProjectQueries';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const CreateProjectPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { checkProjectLimit } = useProjectCreationLimits();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,12 @@ const CreateProjectPage = () => {
         description: "Описание не должно превышать 500 символов",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Проверяем лимит проектов
+    const canCreate = await checkProjectLimit(user!.id);
+    if (!canCreate) {
       return;
     }
 
