@@ -167,12 +167,18 @@ const CommunityPostForm: React.FC<CommunityPostFormProps> = ({
         if (imagesError) throw imagesError;
       }
 
-      // Обновляем счетчик постов
-      await supabase.rpc('increment_counter', {
-        table_name: 'communities',
-        column_name: 'posts_count',
-        row_id: communityId
-      });
+      // Обновляем счетчик постов в сообществе напрямую
+      const { error: updateError } = await supabase
+        .from('communities')
+        .update({ 
+          posts_count: supabase.sql`posts_count + 1`
+        })
+        .eq('id', communityId);
+
+      if (updateError) {
+        console.error('Error updating posts count:', updateError);
+        // Не прерываем выполнение, так как пост уже создан
+      }
 
       toast({
         title: "Пост создан",
