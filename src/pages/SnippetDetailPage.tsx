@@ -158,8 +158,7 @@ const SnippetDetailPage = () => {
                 {/* Действия со сниппетом */}
                 <div className="flex items-center gap-2">
                   <SnippetActions 
-                    snippet={snippet}
-                    currentUserId={user?.id}
+                    snippetId={snippet.id}
                   />
                 </div>
               </div>

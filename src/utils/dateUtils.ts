@@ -1,4 +1,3 @@
-
 /**
  * Formats a date in Russian to display how long ago it was created
  * @param dateString The date string to format
@@ -27,6 +26,15 @@ export const formatDateInRussian = (dateString: string): string => {
     const years = Math.floor(diffDays / 365);
     return `${years} ${getYearEnding(years)} назад`;
   }
+};
+
+/**
+ * Standard date formatting function
+ * @param dateString The date string to format
+ * @returns A formatted date string
+ */
+export const formatDate = (dateString: string): string => {
+  return formatDateInRussian(dateString);
 };
 
 /**

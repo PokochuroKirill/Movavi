@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -149,8 +148,7 @@ const ProjectDetailPage = () => {
                 {/* Действия с проектом */}
                 <div className="flex items-center gap-2">
                   <ProjectActions 
-                    project={project}
-                    currentUserId={user?.id}
+                    projectId={project.id}
                   />
                 </div>
               </div>
