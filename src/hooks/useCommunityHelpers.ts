@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Community, CommunityMember } from '@/types/database';
+import { Community, CommunityMember, CommunityPost } from '@/types/database';
 
 export function useCommunityHelpers() {
   const { toast } = useToast();
@@ -227,6 +226,7 @@ export function useCommunityHelpers() {
 export function useCommunityDetails(communityId: string) {
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -263,6 +263,18 @@ export function useCommunityDetails(communityId: string) {
         
       if (membersError) throw membersError;
 
+      // Fetch community posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('community_posts')
+        .select(`
+          *,
+          profiles:user_id(username, full_name, avatar_url)
+        `)
+        .eq('community_id', communityId)
+        .order('created_at', { ascending: false });
+        
+      if (postsError) throw postsError;
+
       // Ensure the role field is properly cast to the correct type
       const typedMembers: CommunityMember[] = membersData ? membersData.map((member: any) => ({
         ...member,
@@ -271,6 +283,7 @@ export function useCommunityDetails(communityId: string) {
 
       setCommunity(communityData as Community);
       setMembers(typedMembers);
+      setPosts(postsData || []);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching community details:', err);
@@ -290,12 +303,13 @@ export function useCommunityDetails(communityId: string) {
     fetchCommunityData();
   };
 
-  return { community, members, loading, error, refetch };
+  return { community, members, posts, loading, error, refetch };
 }
 
 // Hook to check and manage user access to a community
 export function useCommunityAccess(communityId: string, userId: string | undefined) {
   const [isMember, setIsMember] = useState(false);
+  const [currentUserMembership, setCurrentUserMembership] = useState<CommunityMember | null>(null);
   const [memberRole, setMemberRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -307,6 +321,7 @@ export function useCommunityAccess(communityId: string, userId: string | undefin
     try {
       if (!userId || !communityId) {
         setIsMember(false);
+        setCurrentUserMembership(null);
         setMemberRole(null);
         return;
       }
@@ -314,7 +329,10 @@ export function useCommunityAccess(communityId: string, userId: string | undefin
       // Check if user is a member
       const { data, error } = await supabase
         .from('community_members')
-        .select('role')
+        .select(`
+          *,
+          profiles:user_id(username, full_name, avatar_url)
+        `)
         .eq('community_id', communityId)
         .eq('user_id', userId)
         .maybeSingle();
@@ -322,6 +340,10 @@ export function useCommunityAccess(communityId: string, userId: string | undefin
       if (error) throw error;
       
       setIsMember(!!data);
+      setCurrentUserMembership(data ? {
+        ...data,
+        role: data.role as "admin" | "moderator" | "member"
+      } : null);
       setMemberRole(data?.role || null);
     } catch (err) {
       console.error('Error checking community access:', err);
@@ -365,6 +387,7 @@ export function useCommunityAccess(communityId: string, userId: string | undefin
 
   return {
     isMember,
+    currentUserMembership,
     memberRole,
     loading,
     joinCommunity,

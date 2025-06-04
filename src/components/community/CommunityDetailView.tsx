@@ -147,7 +147,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                     </DialogHeader>
                     <CommunityEditForm 
                       community={community}
-                      onSuccess={handleEditSuccess}
+                      onUpdate={handleEditSuccess}
+                      onCancel={() => setIsEditDialogOpen(false)}
                     />
                   </DialogContent>
                 </Dialog>
@@ -197,7 +198,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                 </DialogHeader>
                 <CommunityPostForm 
                   communityId={community.id}
-                  onSuccess={handlePostSuccess}
+                  onPostCreated={handlePostSuccess}
                 />
               </DialogContent>
             </Dialog>
