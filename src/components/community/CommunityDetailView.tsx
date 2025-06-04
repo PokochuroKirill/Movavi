@@ -4,20 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Calendar, Settings, Plus, Edit } from 'lucide-react';
+import { Users, Calendar, Settings, Plus, Edit, Heart, MessageCircle, Clock } from 'lucide-react';
 import { Community, CommunityMember, CommunityPost } from '@/types/database';
 import { formatDate } from '@/utils/dateUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CommunityPostForm from './CommunityPostForm';
 import CommunityEditForm from './CommunityEditForm';
 import CommunityManagementActions from './CommunityManagementActions';
+import UserProfileLink from '../UserProfileLink';
+import { Link } from 'react-router-dom';
 
 interface CommunityDetailViewProps {
   community: Community | null;
   currentUserMembership?: CommunityMember | null;
   members: CommunityMember[];
   posts: CommunityPost[];
-  isLoading: boolean;
+  loading: boolean;
   onJoinCommunity: () => void;
   onLeaveCommunity: () => void;
   onRefresh: () => void;
@@ -30,7 +33,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   currentUserMembership,
   members,
   posts,
-  isLoading,
+  loading,
   onJoinCommunity,
   onLeaveCommunity,
   onRefresh,
@@ -39,8 +42,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
 }) => {
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
 
-  // Add null safety checks
   const isCreator = userId && community ? userId === community.creator_id : false;
   const isMember = !!currentUserMembership;
 
@@ -54,7 +57,21 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     onRefresh();
   };
 
-  if (isLoading) {
+  // Сортировка постов
+  const sortedPosts = [...posts].sort((a, b) => {
+    switch (sortBy) {
+      case 'newest':
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case 'oldest':
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case 'likes':
+        return (b.likes_count || 0) - (a.likes_count || 0);
+      default:
+        return 0;
+    }
+  });
+
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -62,7 +79,6 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     );
   }
 
-  // Add null check for community
   if (!community) {
     return (
       <div className="text-center py-12">
@@ -79,35 +95,37 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Community Header */}
-      <Card>
+      <Card className="overflow-hidden">
         <div 
-          className="h-48 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-t-lg relative"
+          className="h-48 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative"
           style={{
             backgroundImage: community.banner_url ? `url(${community.banner_url})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         >
-          <div className="absolute inset-0 bg-black/20 rounded-t-lg" />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
         
-        <CardHeader className="relative">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 border-4 border-white -mt-10 relative z-10">
+        <CardHeader className="relative pb-4">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="flex flex-col md:flex-row items-start gap-4">
+              <Avatar className="h-24 w-24 border-4 border-white shadow-lg -mt-12 relative z-10">
                 <AvatarImage src={community.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
                   {community.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="mt-2">
-                <CardTitle className="text-3xl mb-2">{community.name}</CardTitle>
-                <CardDescription className="text-base max-w-2xl">
-                  {community.description}
-                </CardDescription>
+              <div className="space-y-3 flex-1">
+                <div>
+                  <CardTitle className="text-3xl mb-2 text-gray-900 dark:text-white">{community.name}</CardTitle>
+                  <CardDescription className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {community.description}
+                  </CardDescription>
+                </div>
                 
-                <div className="flex items-center gap-4 mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     <span>{community.members_count || 0} участников</span>
@@ -118,11 +136,10 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                   </div>
                 </div>
 
-                {/* Topics */}
                 {community.topics && community.topics.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="flex flex-wrap gap-2">
                     {community.topics.map((topic, index) => (
-                      <Badge key={index} variant="secondary">
+                      <Badge key={index} variant="secondary" className="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                         {topic}
                       </Badge>
                     ))}
@@ -131,13 +148,12 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
-              {/* Edit Button - только для создателя */}
+            <div className="flex items-center gap-2">
               {isCreator && (
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4 mr-1" />
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Edit className="h-4 w-4" />
                       Редактировать
                     </Button>
                   </DialogTrigger>
@@ -148,13 +164,11 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                     <CommunityEditForm 
                       community={community}
                       onUpdate={handleEditSuccess}
-                      onCancel={() => setIsEditDialogOpen(false)}
                     />
                   </DialogContent>
                 </Dialog>
               )}
 
-              {/* Management Actions */}
               {canManage && userId && (
                 <CommunityManagementActions
                   communityId={community.id}
@@ -165,13 +179,12 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                 />
               )}
 
-              {/* Join/Leave Button */}
               {!isMember ? (
-                <Button onClick={onJoinCommunity} className="gradient-bg text-white">
-                  <Plus className="h-4 w-4 mr-1" />
+                <Button onClick={onJoinCommunity} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2">
+                  <Plus className="h-4 w-4" />
                   Присоединиться
                 </Button>
-              ) : (
+              ) : !isCreator && (
                 <Button onClick={onLeaveCommunity} variant="outline">
                   Покинуть
                 </Button>
@@ -187,8 +200,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
           <CardContent className="pt-6">
             <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full gradient-bg text-white">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2">
+                  <Plus className="h-4 w-4" />
                   Создать пост
                 </Button>
               </DialogTrigger>
@@ -209,45 +222,67 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
       {/* Posts Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Посты сообщества</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Посты сообщества</CardTitle>
+            <Select value={sortBy} onValueChange={(value: 'newest' | 'oldest' | 'likes') => setSortBy(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Сначала новые</SelectItem>
+                <SelectItem value="oldest">Сначала старые</SelectItem>
+                <SelectItem value="likes">По лайкам</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
-          {posts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          {sortedPosts.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               Пока нет постов в этом сообществе
             </div>
           ) : (
             <div className="space-y-4">
-              {posts.map((post) => (
-                <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg">{post.title}</h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(post.created_at)}
-                    </span>
+              {sortedPosts.map((post) => (
+                <Link key={post.id} to={`/communities/${community.id}/posts/${post.id}`}>
+                  <div className="border rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 cursor-pointer hover:shadow-md">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-semibold text-xl text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        {post.title}
+                      </h3>
+                      <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                        <Clock className="h-4 w-4" />
+                        {formatDate(post.created_at)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 mb-4">
+                      <UserProfileLink 
+                        username={post.profiles?.username}
+                        fullName={post.profiles?.full_name}
+                        avatarUrl={post.profiles?.avatar_url}
+                        userId={post.user_id}
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    <div 
+                      className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3"
+                      dangerouslySetInnerHTML={{ __html: post.content }}
+                    />
+                    
+                    <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Heart className="h-4 w-4" />
+                        <span>{post.likes_count || 0} лайков</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="h-4 w-4" />
+                        <span>{post.comments_count || 0} комментариев</span>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={post.profiles?.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {post.profiles?.username?.charAt(0).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {post.profiles?.full_name || post.profiles?.username || 'Аноним'}
-                    </span>
-                  </div>
-                  
-                  <p className="text-gray-700 dark:text-gray-300 line-clamp-3">
-                    {post.content}
-                  </p>
-                  
-                  <div className="flex items-center gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
-                    <span>{post.likes_count || 0} лайков</span>
-                    <span>{post.comments_count || 0} комментариев</span>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -262,31 +297,27 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {members.map((member) => (
-              <div key={member.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={member.profiles?.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {member.profiles?.username?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">
-                    {member.profiles?.full_name || member.profiles?.username || 'Аноним'}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={
-                        member.user_id === community.creator_id ? "default" : 
-                        member.role === "admin" ? "destructive" : 
-                        member.role === "moderator" ? "secondary" : "outline"
-                      }
-                      className="text-xs"
-                    >
-                      {member.user_id === community.creator_id ? "Создатель" : 
-                       member.role === "admin" ? "Админ" : 
-                       member.role === "moderator" ? "Модератор" : "Участник"}
-                    </Badge>
-                  </div>
+              <div key={member.id} className="flex items-center gap-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <UserProfileLink 
+                  username={member.profiles?.username}
+                  fullName={member.profiles?.full_name}
+                  avatarUrl={member.profiles?.avatar_url}
+                  userId={member.user_id}
+                  className="flex items-center gap-3"
+                />
+                <div className="ml-auto">
+                  <Badge 
+                    variant={
+                      member.user_id === community.creator_id ? "default" : 
+                      member.role === "admin" ? "destructive" : 
+                      member.role === "moderator" ? "secondary" : "outline"
+                    }
+                    className="text-xs"
+                  >
+                    {member.user_id === community.creator_id ? "Создатель" : 
+                     member.role === "admin" ? "Админ" : 
+                     member.role === "moderator" ? "Модератор" : "Участник"}
+                  </Badge>
                 </div>
               </div>
             ))}

@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { Heart, MessageCircle, Eye } from 'lucide-react';
 import UserProfileLink from './UserProfileLink';
 
 interface ProjectCardProps {
@@ -11,6 +12,7 @@ interface ProjectCardProps {
   authorAvatar?: string;
   likes?: number;
   comments?: number;
+  views?: number;
   technologies?: string[];
   imageUrl?: string;
   authorId?: string;
@@ -23,6 +25,9 @@ const ProjectCard = ({
   description,
   author,
   authorAvatar,
+  likes = 0,
+  comments = 0,
+  views = 0,
   technologies = [],
   imageUrl,
   authorId,
@@ -35,36 +40,57 @@ const ProjectCard = ({
           <img 
             src={imageUrl} 
             alt={title} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />
         </div>
       )}
       
       <div className="p-6">
         <Link to={`/projects/${id}`}>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white hover:text-devhub-purple dark:hover:text-devhub-purple transition-colors mb-2">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-2 line-clamp-2">
             {title}
           </h3>
         </Link>
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
           {description}
         </p>
         
         <div className="flex flex-wrap gap-2 mb-4">
-          {technologies.map((tech) => (
-            <Badge key={tech} variant="outline" className="bg-devhub-purple/10 text-devhub-purple border-devhub-purple/20">
+          {technologies.slice(0, 3).map((tech) => (
+            <Badge key={tech} variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 text-xs">
               {tech}
             </Badge>
           ))}
+          {technologies.length > 3 && (
+            <Badge variant="outline" className="text-xs">
+              +{technologies.length - 3}
+            </Badge>
+          )}
         </div>
         
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center justify-between">
           <UserProfileLink 
             username={authorUsername}
             fullName={author}
             avatarUrl={authorAvatar}
             userId={authorId}
+            className="text-sm"
           />
+          
+          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1">
+              <Heart className="h-3 w-3" />
+              <span>{likes}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MessageCircle className="h-3 w-3" />
+              <span>{comments}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="h-3 w-3" />
+              <span>{views}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

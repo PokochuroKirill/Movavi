@@ -1,149 +1,59 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Upload, X } from 'lucide-react';
 import { Community } from '@/types/database';
 
 interface CommunityEditFormProps {
   community: Community;
   onUpdate: () => void;
-  onCancel: () => void;
 }
 
 const CommunityEditForm: React.FC<CommunityEditFormProps> = ({
   community,
-  onUpdate,
-  onCancel
+  onUpdate
 }) => {
-  const [formData, setFormData] = useState({
-    name: community.name,
-    description: community.description,
-    topics: community.topics?.join(', ') || ''
-  });
-  const [avatar, setAvatar] = useState(community.avatar_url);
-  const [banner, setBanner] = useState(community.banner_url);
-  const [updating, setUpdating] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [name, setName] = useState(community.name);
+  const [description, setDescription] = useState(community.description);
+  const [avatarUrl, setAvatarUrl] = useState(community.avatar_url || '');
+  const [bannerUrl, setBannerUrl] = useState(community.banner_url || '');
+  const [topics, setTopics] = useState<string[]>(community.topics || []);
+  const [newTopic, setNewTopic] = useState('');
+  const [isPublic, setIsPublic] = useState(community.is_public);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `avatars/${community.id}-${Date.now()}.${fileExt}`;
-    
-    setUploading(true);
-    
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(fileName, file, { upsert: true });
-      
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage
-        .from('profiles')
-        .getPublicUrl(fileName);
-      
-      setAvatar(data.publicUrl);
-      
-      toast({
-        title: "Аватар загружен",
-        description: "Аватар сообщества успешно обновлен"
-      });
-    } catch (error: any) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Ошибка загрузки",
-        description: "Не удалось загрузить аватар",
-        variant: "destructive"
-      });
-    } finally {
-      setUploading(false);
+  const addTopic = () => {
+    if (newTopic.trim() && !topics.includes(newTopic.trim())) {
+      setTopics([...topics, newTopic.trim()]);
+      setNewTopic('');
     }
   };
 
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `banners/${community.id}-${Date.now()}.${fileExt}`;
-    
-    setUploading(true);
-    
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(fileName, file, { upsert: true });
-      
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage
-        .from('profiles')
-        .getPublicUrl(fileName);
-      
-      setBanner(data.publicUrl);
-      
-      toast({
-        title: "Баннер загружен",
-        description: "Баннер сообщества успешно обновлен"
-      });
-    } catch (error: any) {
-      console.error('Error uploading banner:', error);
-      toast({
-        title: "Ошибка загрузки",
-        description: "Не удалось загрузить баннер",
-        variant: "destructive"
-      });
-    } finally {
-      setUploading(false);
-    }
+  const removeTopic = (topicToRemove: string) => {
+    setTopics(topics.filter(topic => topic !== topicToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name.trim() || !formData.description.trim()) {
-      toast({
-        title: "Заполните все поля",
-        description: "Название и описание обязательны",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setUpdating(true);
+    setLoading(true);
 
     try {
-      const topics = formData.topics
-        .split(',')
-        .map(topic => topic.trim())
-        .filter(topic => topic.length > 0);
-
       const { error } = await supabase
         .from('communities')
         .update({
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          topics: topics.length > 0 ? topics : null,
-          avatar_url: avatar,
-          banner_url: banner,
+          name: name.trim(),
+          description: description.trim(),
+          avatar_url: avatarUrl.trim() || null,
+          banner_url: bannerUrl.trim() || null,
+          topics,
+          is_public: isPublic,
           updated_at: new Date().toISOString()
         })
         .eq('id', community.id);
@@ -152,140 +62,119 @@ const CommunityEditForm: React.FC<CommunityEditFormProps> = ({
 
       toast({
         title: "Сообщество обновлено",
-        description: "Изменения были успешно сохранены"
+        description: "Изменения сохранены успешно"
       });
-
+      
       onUpdate();
     } catch (error: any) {
       console.error('Error updating community:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось обновить сообщество",
+        title: "Ошибка обновления",
+        description: error.message || "Не удалось обновить сообщество",
         variant: "destructive"
       });
     } finally {
-      setUpdating(false);
+      setLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Редактировать сообщество</CardTitle>
-        <CardDescription>
-          Измените информацию о вашем сообществе
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="avatar">Аватар сообщества</Label>
-              <div className="mt-2 space-y-2">
-                {avatar && (
-                  <img 
-                    src={avatar} 
-                    alt="Аватар сообщества" 
-                    className="w-20 h-20 rounded-full object-cover" 
-                  />
-                )}
-                <Input
-                  id="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  disabled={uploading}
-                />
-              </div>
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="name">Название сообщества</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Введите название сообщества"
+          required
+        />
+      </div>
 
-            <div>
-              <Label htmlFor="banner">Баннер сообщества</Label>
-              <div className="mt-2 space-y-2">
-                {banner && (
-                  <img 
-                    src={banner} 
-                    alt="Баннер сообщества" 
-                    className="w-full h-20 rounded-md object-cover" 
-                  />
-                )}
-                <Input
-                  id="banner"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBannerUpload}
-                  disabled={uploading}
-                />
-              </div>
-            </div>
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="description">Описание</Label>
+        <Textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Опишите ваше сообщество"
+          rows={3}
+          required
+        />
+      </div>
 
-          <div>
-            <Label htmlFor="name">Название сообщества</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Введите название сообщества"
-              disabled={updating}
-              required
-            />
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="avatarUrl">URL аватара</Label>
+        <Input
+          id="avatarUrl"
+          value={avatarUrl}
+          onChange={(e) => setAvatarUrl(e.target.value)}
+          placeholder="https://example.com/avatar.jpg"
+          type="url"
+        />
+      </div>
 
-          <div>
-            <Label htmlFor="description">Описание</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Опишите ваше сообщество"
-              className="min-h-[100px]"
-              disabled={updating}
-              required
-            />
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="bannerUrl">URL баннера</Label>
+        <Input
+          id="bannerUrl"
+          value={bannerUrl}
+          onChange={(e) => setBannerUrl(e.target.value)}
+          placeholder="https://example.com/banner.jpg"
+          type="url"
+        />
+      </div>
 
-          <div>
-            <Label htmlFor="topics">Темы (через запятую)</Label>
-            <Input
-              id="topics"
-              name="topics"
-              value={formData.topics}
-              onChange={handleInputChange}
-              placeholder="JavaScript, React, Web Development"
-              disabled={updating}
-            />
-          </div>
+      <div className="space-y-2">
+        <Label>Темы</Label>
+        <div className="flex gap-2">
+          <Input
+            value={newTopic}
+            onChange={(e) => setNewTopic(e.target.value)}
+            placeholder="Добавить тему"
+            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTopic())}
+          />
+          <Button type="button" onClick={addTopic} variant="outline">
+            Добавить
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {topics.map((topic) => (
+            <Badge key={topic} variant="secondary" className="flex items-center gap-1">
+              {topic}
+              <button
+                type="button"
+                onClick={() => removeTopic(topic)}
+                className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      </div>
 
-          <div className="flex justify-end gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
-              disabled={updating}
-            >
-              Отмена
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={updating || uploading}
-              className="gradient-bg text-white"
-            >
-              {updating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Сохранение...
-                </>
-              ) : (
-                'Сохранить изменения'
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="isPublic"
+          checked={isPublic}
+          onChange={(e) => setIsPublic(e.target.checked)}
+          className="rounded border-gray-300"
+        />
+        <Label htmlFor="isPublic">Публичное сообщество</Label>
+      </div>
+
+      <div className="flex gap-3 pt-4">
+        <Button
+          type="submit"
+          disabled={loading}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+        >
+          {loading ? 'Сохранение...' : 'Сохранить изменения'}
+        </Button>
+      </div>
+    </form>
   );
 };
 
