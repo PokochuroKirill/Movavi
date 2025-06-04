@@ -45,27 +45,9 @@ export function useCommunityManagement() {
     setLoading(true);
     
     try {
-      // Delete community posts first
-      const { error: postsError } = await supabase
-        .from('community_posts')
-        .delete()
-        .eq('community_id', communityId);
-
-      if (postsError) throw postsError;
-
-      // Delete community members
-      const { error: membersError } = await supabase
-        .from('community_members')
-        .delete()
-        .eq('community_id', communityId);
-
-      if (membersError) throw membersError;
-
-      // Delete community
-      const { error } = await supabase
-        .from('communities')
-        .delete()
-        .eq('id', communityId);
+      const { error } = await supabase.rpc('delete_community', {
+        community_id: communityId
+      });
 
       if (error) throw error;
 
@@ -88,9 +70,33 @@ export function useCommunityManagement() {
     }
   };
 
+  const banUser = async (userId: string, reason?: string): Promise<boolean> => {
+    setLoading(true);
+    
+    try {
+      // This function would need to be implemented with proper community context
+      toast({
+        title: "Функция в разработке",
+        description: "Блокировка пользователей будет добавлена позже",
+      });
+      return false;
+    } catch (error: any) {
+      console.error('Error banning user:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось заблокировать пользователя",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     updateCommunity,
     deleteCommunity,
+    banUser,
     loading
   };
 }

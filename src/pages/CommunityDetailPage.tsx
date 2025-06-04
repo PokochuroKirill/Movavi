@@ -62,12 +62,13 @@ const CommunityDetailPage = () => {
           currentUserMembership={currentUserMembership}
           members={members}
           posts={posts || []}
-          isLoading={loading}
-          onJoinCommunity={handleJoin}
-          onLeaveCommunity={handleLeave}
-          onRefresh={refetch}
-          canManage={canManage}
-          userId={user?.id}
+          loading={loading}
+          onJoin={handleJoin}
+          onLeave={handleLeave}
+          onUpdate={refetch}
+          isMember={isMember}
+          isOwner={isCreator}
+          isAdmin={canManage}
         />
       </div>
     </Layout>

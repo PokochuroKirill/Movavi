@@ -104,7 +104,7 @@ const ProjectDetailPage = () => {
             </div>
             <ProjectActions 
               projectId={project.id}
-              authorId={project.user_id}
+              userId={project.user_id}
             />
           </div>
           

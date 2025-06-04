@@ -90,6 +90,9 @@ const CommunityDetailView = ({
     }
   });
 
+  const memberRole = currentUserMembership?.role;
+  const canManage = isOwner || memberRole === 'admin' || memberRole === 'moderator';
+
   return (
     <div className="space-y-6">
       {/* Community Header */}
@@ -165,7 +168,7 @@ const CommunityDetailView = ({
               </Button>
             )}
             
-            {(isOwner || isAdmin) && (
+            {canManage && (
               <div className="flex gap-2">
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
@@ -174,13 +177,14 @@ const CommunityDetailView = ({
                       Редактировать
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Редактировать сообщество</DialogTitle>
                     </DialogHeader>
                     <CommunityEditForm 
                       community={community}
                       onUpdate={handleEditSuccess}
+                      onCancel={() => setIsEditDialogOpen(false)}
                     />
                   </DialogContent>
                 </Dialog>
@@ -258,7 +262,7 @@ const CommunityDetailView = ({
                       Создать пост
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Создать новый пост</DialogTitle>
                     </DialogHeader>
