@@ -1,15 +1,11 @@
-
 import { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-
 const PrivacyPolicyPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex-grow container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto">
@@ -96,17 +92,12 @@ const PrivacyPolicyPage = () => {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">9. Контакты</h2>
-              <p>
-                Если у вас есть вопросы о данной Политике конфиденциальности, свяжитесь с нами: 
-                privacy@devhub.ru
-              </p>
+              <p>Если у вас есть вопросы о данной Политике конфиденциальности, свяжитесь с нами в Discord.</p>
             </section>
           </div>
         </div>
       </div>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default PrivacyPolicyPage;
