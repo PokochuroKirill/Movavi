@@ -1,7 +1,6 @@
 
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Eye } from 'lucide-react';
 import UserProfileLink from './UserProfileLink';
 
 interface ProjectCardProps {
@@ -10,9 +9,6 @@ interface ProjectCardProps {
   description: string;
   author: string;
   authorAvatar?: string;
-  likes?: number;
-  comments?: number;
-  views?: number;
   technologies?: string[];
   imageUrl?: string;
   authorId?: string;
@@ -25,9 +21,6 @@ const ProjectCard = ({
   description,
   author,
   authorAvatar,
-  likes = 0,
-  comments = 0,
-  views = 0,
   technologies = [],
   imageUrl,
   authorId,
@@ -76,21 +69,6 @@ const ProjectCard = ({
             userId={authorId}
             className="text-sm"
           />
-          
-          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-            <div className="flex items-center gap-1">
-              <Heart className="h-3 w-3" />
-              <span>{likes}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageCircle className="h-3 w-3" />
-              <span>{comments}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              <span>{views}</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
