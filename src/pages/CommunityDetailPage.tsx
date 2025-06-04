@@ -13,6 +13,7 @@ const CommunityDetailPage = () => {
   const {
     community,
     members,
+    posts,
     loading: communityLoading, 
     error,
     refetch
@@ -20,6 +21,7 @@ const CommunityDetailPage = () => {
   
   const {
     isMember,
+    currentUserMembership,
     memberRole,
     loading: accessLoading,
     joinCommunity,
@@ -30,6 +32,7 @@ const CommunityDetailPage = () => {
   const loading = communityLoading || accessLoading;
   
   const isCreator = user?.id === community?.creator_id;
+  const canManage = isCreator || (memberRole && ['admin', 'moderator'].includes(memberRole));
 
   const handleJoin = async () => {
     const success = await joinCommunity();
@@ -56,13 +59,15 @@ const CommunityDetailPage = () => {
       <div className="container max-w-5xl py-24 mt-8">
         <CommunityDetailView
           community={community}
+          currentUserMembership={currentUserMembership}
           members={members}
-          isMember={isMember}
-          memberRole={memberRole}
-          isCreator={isCreator}
+          posts={posts || []}
           isLoading={loading}
-          onJoin={handleJoin}
-          onLeave={handleLeave}
+          onJoinCommunity={handleJoin}
+          onLeaveCommunity={handleLeave}
+          onRefresh={refetch}
+          canManage={canManage}
+          userId={user?.id}
         />
       </div>
     </Layout>

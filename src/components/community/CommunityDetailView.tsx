@@ -13,7 +13,7 @@ import CommunityEditForm from './CommunityEditForm';
 import CommunityManagementActions from './CommunityManagementActions';
 
 interface CommunityDetailViewProps {
-  community: Community;
+  community: Community | null;
   currentUserMembership?: CommunityMember | null;
   members: CommunityMember[];
   posts: CommunityPost[];
@@ -40,7 +40,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const isCreator = userId === community.creator_id;
+  // Add null safety checks
+  const isCreator = userId && community ? userId === community.creator_id : false;
   const isMember = !!currentUserMembership;
 
   const handlePostSuccess = () => {
@@ -57,6 +58,20 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Add null check for community
+  if (!community) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Сообщество не найдено
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          Возможно, сообщество было удалено или у вас нет доступа к нему.
+        </p>
       </div>
     );
   }
