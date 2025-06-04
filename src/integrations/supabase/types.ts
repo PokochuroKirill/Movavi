@@ -444,6 +444,30 @@ export type Database = {
           },
         ]
       }
+      project_views: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          project_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          project_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          project_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           comments_count: number | null
@@ -459,6 +483,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          views_count: number | null
         }
         Insert: {
           comments_count?: number | null
@@ -474,6 +499,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          views_count?: number | null
         }
         Update: {
           comments_count?: number | null
@@ -489,6 +515,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          views_count?: number | null
         }
         Relationships: [
           {
@@ -626,6 +653,30 @@ export type Database = {
           },
         ]
       }
+      snippet_views: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          snippet_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          snippet_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          snippet_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       snippets: {
         Row: {
           code: string
@@ -637,6 +688,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          views_count: number | null
         }
         Insert: {
           code: string
@@ -648,6 +700,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          views_count?: number | null
         }
         Update: {
           code?: string
@@ -659,6 +712,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          views_count?: number | null
         }
         Relationships: [
           {
@@ -1020,6 +1074,14 @@ export type Database = {
       }
       increment_community_posts: {
         Args: { community_id: string }
+        Returns: undefined
+      }
+      increment_project_views: {
+        Args: { project_id: string; user_id?: string; ip_address?: unknown }
+        Returns: undefined
+      }
+      increment_snippet_views: {
+        Args: { snippet_id: string; user_id?: string; ip_address?: unknown }
         Returns: undefined
       }
       unban_user_from_community: {

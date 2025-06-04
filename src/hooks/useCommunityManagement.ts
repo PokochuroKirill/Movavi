@@ -1,129 +1,86 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Community } from '@/types/database';
 
-export const useCommunityManagement = (communityId: string) => {
+export function useCommunityManagement() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const deleteCommunity = async (): Promise<boolean> => {
+  const updateCommunity = async (
+    communityId: string,
+    updates: Partial<Community>
+  ): Promise<boolean> => {
     setLoading(true);
+    
     try {
-      console.log('Attempting to delete community:', communityId);
-      
-      const { data, error } = await supabase
-        .rpc('delete_community', { community_id: communityId });
+      const { error } = await supabase
+        .from('communities')
+        .update(updates)
+        .eq('id', communityId);
 
-      if (error) {
-        console.error('Error calling delete_community function:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      if (data === false) {
-        throw new Error('У вас нет прав для удаления этого сообщества');
-      }
+      toast({
+        title: "Сообщество обновлено",
+        description: "Изменения успешно сохранены",
+      });
 
-      console.log('Community deleted successfully');
-      
+      return true;
+    } catch (error: any) {
+      console.error('Error updating community:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить сообщество",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteCommunity = async (communityId: string): Promise<boolean> => {
+    setLoading(true);
+    
+    try {
+      // Delete community posts first
+      const { error: postsError } = await supabase
+        .from('community_posts')
+        .delete()
+        .eq('community_id', communityId);
+
+      if (postsError) throw postsError;
+
+      // Delete community members
+      const { error: membersError } = await supabase
+        .from('community_members')
+        .delete()
+        .eq('community_id', communityId);
+
+      if (membersError) throw membersError;
+
+      // Delete community
+      const { error } = await supabase
+        .from('communities')
+        .delete()
+        .eq('id', communityId);
+
+      if (error) throw error;
+
       toast({
         title: "Сообщество удалено",
-        description: "Сообщество и все связанные данные были удалены"
+        description: "Сообщество успешно удалено",
       });
-      
-      navigate('/communities');
+
       return true;
     } catch (error: any) {
       console.error('Error deleting community:', error);
       toast({
-        title: "Ошибка удаления",
-        description: error.message || "Не удалось удалить сообщество",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const banUser = async (userId: string, reason?: string): Promise<boolean> => {
-    setLoading(true);
-    try {
-      console.log('Attempting to ban user:', userId, 'from community:', communityId);
-      
-      const { data, error } = await supabase
-        .rpc('ban_user_from_community', {
-          p_community_id: communityId,
-          p_user_id: userId,
-          p_reason: reason
-        });
-
-      if (error) {
-        console.error('Error calling ban_user_from_community function:', error);
-        throw error;
-      }
-
-      if (data === false) {
-        throw new Error('У вас нет прав для блокировки пользователей в этом сообществе');
-      }
-
-      console.log('User banned successfully');
-      
-      toast({
-        title: "Пользователь заблокирован",
-        description: "Пользователь был исключен из сообщества и заблокирован"
-      });
-      
-      return true;
-    } catch (error: any) {
-      console.error('Error banning user:', error);
-      toast({
-        title: "Ошибка блокировки",
-        description: error.message || "Не удалось заблокировать пользователя",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const unbanUser = async (userId: string): Promise<boolean> => {
-    setLoading(true);
-    try {
-      console.log('Attempting to unban user:', userId, 'from community:', communityId);
-      
-      const { data, error } = await supabase
-        .rpc('unban_user_from_community', {
-          p_community_id: communityId,
-          p_user_id: userId
-        });
-
-      if (error) {
-        console.error('Error calling unban_user_from_community function:', error);
-        throw error;
-      }
-
-      if (data === false) {
-        throw new Error('У вас нет прав для разблокировки пользователей в этом сообществе');
-      }
-
-      console.log('User unbanned successfully');
-      
-      toast({
-        title: "Пользователь разблокирован",
-        description: "Пользователь был разблокирован и может снова присоединиться к сообществу"
-      });
-      
-      return true;
-    } catch (error: any) {
-      console.error('Error unbanning user:', error);
-      toast({
-        title: "Ошибка разблокировки",
-        description: error.message || "Не удалось разблокировать пользователя",
-        variant: "destructive"
+        title: "Ошибка",
+        description: "Не удалось удалить сообщество",
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -132,9 +89,8 @@ export const useCommunityManagement = (communityId: string) => {
   };
 
   return {
+    updateCommunity,
     deleteCommunity,
-    banUser,
-    unbanUser,
     loading
   };
-};
+}

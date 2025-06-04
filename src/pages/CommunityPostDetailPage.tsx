@@ -1,136 +1,157 @@
 
-// We need to update the imports to include supabase
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Layout from '@/components/Layout';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { CommunityPost } from '@/types/database';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowLeft, Calendar, Heart, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext';
-import CommunityPostActions from '@/components/community/CommunityPostActions';
-import { supabase } from '@/integrations/supabase/client';
-
-// Import hooks and types
-import { usePostLikes } from '@/hooks/useCommunityQueries';
+import { ru } from 'date-fns/locale';
+import UserProfileLink from '@/components/UserProfileLink';
+import { useCommunityPostInteractions } from '@/hooks/useCommunityPostInteractions';
 
 const CommunityPostDetailPage = () => {
-  const { id: communityId, postId } = useParams<{ id: string; postId: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  const [post, setPost] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  
-  useEffect(() => {
-    if (!communityId || !postId) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-    
-    const fetchPost = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('community_posts')
-          .select(`
-            *,
-            profiles(username, full_name, avatar_url)
-          `)
-          .eq('id', postId)
-          .eq('community_id', communityId)
-          .single();
-        
-        if (error) throw error;
-        
-        if (!data) {
-          setNotFound(true);
-        } else {
-          setPost(data);
-        }
-      } catch (error: any) {
-        console.error('Error fetching community post:', error);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchPost();
-  }, [communityId, postId]);
-  
-  if (notFound) {
+  const { communityId, postId } = useParams<{ communityId: string; postId: string }>();
+  const { likes, isLiked, toggleLike } = useCommunityPostInteractions(postId || '');
+
+  const { data: post, isLoading, error } = useQuery({
+    queryKey: ['community-post', postId],
+    queryFn: async (): Promise<CommunityPost> => {
+      if (!postId) throw new Error('Post ID is required');
+      
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select(`
+          *,
+          profiles:user_id(username, full_name, avatar_url)
+        `)
+        .eq('id', postId)
+        .single();
+
+      if (error) throw error;
+      return data as CommunityPost;
+    },
+    enabled: !!postId,
+  });
+
+  const { data: community } = useQuery({
+    queryKey: ['community', communityId],
+    queryFn: async () => {
+      if (!communityId) throw new Error('Community ID is required');
+      
+      const { data, error } = await supabase
+        .from('communities')
+        .select('name')
+        .eq('id', communityId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!communityId,
+  });
+
+  if (isLoading) {
     return (
-      <Layout>
-        <div className="container max-w-4xl py-8">
-          <Card>
-            <CardContent className="text-center py-8">
-              <h1 className="text-2xl font-bold mb-4">Пост не найден</h1>
-              <p className="text-gray-500">Возможно, пост был удален или не существует.</p>
-              <Button onClick={() => navigate(`/communities/${communityId}`)}>
-                Вернуться в сообщество
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-  
-  return (
-    <Layout>
-      <div className="container max-w-4xl py-8">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Skeleton className="h-10 w-40 mb-6" />
         <Card>
-          <CardContent className="space-y-4">
-            {loading ? (
-              <>
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-1/2" />
-              </>
-            ) : (
-              <>
-                <div className="flex items-center space-x-4">
-                  <Avatar>
-                    <AvatarImage src={post.profiles?.avatar_url} alt={post.profiles?.username} />
-                    <AvatarFallback>{post.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="font-medium">
-                    {post.profiles?.username}
-                  </div>
-                </div>
-                
-                <h1 className="text-2xl font-bold">{post.title}</h1>
-                <p className="text-gray-500">
-                  Опубликовано {format(new Date(post.created_at), 'dd.MM.yyyy в HH:mm')}
-                </p>
-                
-                <Separator />
-                
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
-                
-                <Separator />
-                
-                {user && (
-                  <CommunityPostActions 
-                    communityId={communityId!}
-                    postId={postId!}
-                    isAuthor={post.user_id === user.id}
-                    isModerator={false}
-                    onPostDeleted={() => navigate(`/communities/${communityId}`)}
-                  />
-                )}
-              </>
-            )}
+          <CardHeader>
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-3/4" />
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardContent className="text-center py-8">
+            <h2 className="text-2xl font-bold mb-2">Пост не найден</h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Запрошенный пост не существует или был удален.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" asChild>
+          <Link to={`/communities/${communityId}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Назад к сообществу
+          </Link>
+        </Button>
+        {community && (
+          <div className="text-sm text-gray-500">
+            в сообществе <span className="font-medium">{community.name}</span>
+          </div>
+        )}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl mb-4">{post.title}</CardTitle>
+          
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <UserProfileLink
+              username={post.profiles?.username}
+              fullName={post.profiles?.full_name}
+              avatarUrl={post.profiles?.avatar_url}
+              userId={post.user_id}
+            />
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              <span>{format(new Date(post.created_at), 'dd MMMM yyyy в HH:mm', { locale: ru })}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1">
+              <Heart className={`h-4 w-4 ${isLiked ? 'text-red-500 fill-current' : ''}`} />
+              <span>{likes} лайков</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MessageCircle className="h-4 w-4" />
+              <span>{post.comments_count || 0} комментариев</span>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <div className="prose prose-gray dark:prose-invert max-w-none mb-6">
+            <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
+              {post.content}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              onClick={toggleLike}
+              variant={isLiked ? "default" : "outline"}
+              className={isLiked ? "bg-red-500 hover:bg-red-600" : ""}
+            >
+              <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
+              {isLiked ? 'Убрать лайк' : 'Лайк'} ({likes})
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

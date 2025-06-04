@@ -9,6 +9,7 @@ interface UserProfileLinkProps {
   avatarUrl?: string;
   userId?: string;
   className?: string;
+  showAvatar?: boolean;
 }
 
 const UserProfileLink = ({
@@ -16,7 +17,8 @@ const UserProfileLink = ({
   fullName,
   avatarUrl,
   userId,
-  className = ""
+  className = "",
+  showAvatar = true
 }: UserProfileLinkProps) => {
   const displayName = fullName || username || 'Неизвестный пользователь';
   
@@ -30,13 +32,15 @@ const UserProfileLink = ({
       to={linkPath}
       className={`flex items-center hover:text-devhub-purple transition-colors ${className}`}
     >
-      <Avatar className="h-8 w-8 mr-2">
-        <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-        <AvatarFallback>
-          {displayName.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <span>{displayName}</span>
+      {showAvatar && (
+        <Avatar className="h-8 w-8 mr-2">
+          <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+          <AvatarFallback>
+            {displayName.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      )}
+      <span className="font-medium">{displayName}</span>
     </Link>
   );
 };
