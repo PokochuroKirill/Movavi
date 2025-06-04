@@ -62,7 +62,7 @@ const CommunityDetailPage = () => {
           currentUserMembership={currentUserMembership}
           members={members}
           posts={posts || []}
-          isLoading={loading}
+          loading={loading}
           onJoinCommunity={handleJoin}
           onLeaveCommunity={handleLeave}
           onRefresh={refetch}
