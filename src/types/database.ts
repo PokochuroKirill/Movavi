@@ -40,7 +40,6 @@ export interface Project {
   comments?: number;
   likes_count?: number;
   comments_count?: number;
-  views_count?: number;
   popularityScore?: number;
   profiles?: {
     username?: string;
@@ -65,7 +64,6 @@ export interface Snippet {
   authorAvatar?: string;
   likes?: number;
   comments?: number;
-  views_count?: number;
   popularityScore?: number;
   profiles?: {
     username?: string;

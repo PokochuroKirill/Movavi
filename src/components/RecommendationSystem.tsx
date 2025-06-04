@@ -72,7 +72,15 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
           {recommendedProjects.map(project => (
             <ProjectCard
               key={project.id}
-              project={project}
+              id={project.id}
+              title={project.title}
+              description={project.description}
+              technologies={project.technologies || []}
+              author={project.author || ''}
+              authorAvatar={project.authorAvatar}
+              imageUrl={project.image_url}
+              likes={project.likes}
+              comments={project.comments}
             />
           ))}
         </div>
@@ -91,7 +99,12 @@ const RecommendationSystem = ({ userId }: RecommendationSystemProps) => {
           {recommendedSnippets.map(snippet => (
             <SnippetCard
               key={snippet.id}
-              snippet={snippet}
+              id={snippet.id}
+              title={snippet.title}
+              description={snippet.description}
+              language={snippet.language}
+              tags={snippet.tags || []}
+              created_at={snippet.created_at}
             />
           ))}
         </div>
