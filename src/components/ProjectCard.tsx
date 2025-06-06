@@ -26,6 +26,9 @@ const ProjectCard = ({
   authorId,
   authorUsername,
 }: ProjectCardProps) => {
+  // Ensure technologies is always an array
+  const techArray = Array.isArray(technologies) ? technologies : [];
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
       {imageUrl && (
@@ -49,14 +52,14 @@ const ProjectCard = ({
         </p>
         
         <div className="flex flex-wrap gap-2 mb-4">
-          {technologies.slice(0, 3).map((tech) => (
+          {techArray.slice(0, 3).map((tech) => (
             <Badge key={tech} variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 text-xs">
               {tech}
             </Badge>
           ))}
-          {technologies.length > 3 && (
+          {techArray.length > 3 && (
             <Badge variant="outline" className="text-xs">
-              +{technologies.length - 3}
+              +{techArray.length - 3}
             </Badge>
           )}
         </div>
