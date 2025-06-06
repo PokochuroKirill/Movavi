@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ProjectCard from './ProjectCard';
 import SnippetCard from './SnippetCard';
+import FollowersModal from './FollowersModal';
 
 interface UserProfileViewProps {
   profile: Profile;
@@ -33,6 +34,8 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -107,7 +110,6 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
 
       setIsFollowing(!!data);
     } catch (error) {
-      // Если записи нет, то не подписан
       setIsFollowing(false);
     }
   };
@@ -271,14 +273,20 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
                     <span className="font-semibold text-gray-900 dark:text-white">{snippets.length}</span>
                     <span className="text-gray-500 dark:text-gray-400 ml-1">сниппетов</span>
                   </div>
-                  <div>
+                  <button
+                    onClick={() => setShowFollowersModal(true)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
                     <span className="font-semibold text-gray-900 dark:text-white">{followersCount}</span>
                     <span className="text-gray-500 dark:text-gray-400 ml-1">подписчиков</span>
-                  </div>
-                  <div>
+                  </button>
+                  <button
+                    onClick={() => setShowFollowingModal(true)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
                     <span className="font-semibold text-gray-900 dark:text-white">{followingCount}</span>
                     <span className="text-gray-500 dark:text-gray-400 ml-1">подписок</span>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -318,6 +326,21 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           </div>
         </CardHeader>
       </Card>
+
+      {/* Модальные окна для подписчиков и подписок */}
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        userId={profile.id}
+        type="followers"
+      />
+      
+      <FollowersModal
+        isOpen={showFollowingModal}
+        onClose={() => setShowFollowingModal(false)}
+        userId={profile.id}
+        type="following"
+      />
 
       {/* Вкладки с контентом */}
       <Tabs defaultValue="projects" className="w-full">

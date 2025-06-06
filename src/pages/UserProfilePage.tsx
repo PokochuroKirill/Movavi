@@ -278,7 +278,7 @@ const UserProfilePage = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
                     Loading projects...
                   </p> : userProjects.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userProjects.map(project => <ProjectCard key={project.id} id={project.id} title={project.title} description={project.description} technologies={project.technologies || []} author={project.author || ''} authorAvatar={project.authorAvatar || ''} imageUrl={project.image_url || undefined} likes={project.likes} comments={project.comments} />)}
+                    {userProjects.map(project => <ProjectCard key={project.id} id={project.id} title={project.title} description={project.description} technologies={project.technologies || []} author={project.author || ''} authorAvatar={project.authorAvatar || ''} authorId={project.user_id} authorUsername={project.profiles?.username} imageUrl={project.image_url || undefined} />)}
                   </div> : <p className="text-center py-10 text-gray-500">
                     No projects to display
                   </p>}
@@ -296,7 +296,7 @@ const UserProfilePage = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
                     Loading snippets...
                   </p> : userSnippets.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userSnippets.map(snippet => <SnippetCard key={snippet.id} id={snippet.id} title={snippet.title} description={snippet.description} language={snippet.language} tags={snippet.tags || []} created_at={snippet.created_at} />)}
+                    {userSnippets.map(snippet => <SnippetCard key={snippet.id} id={snippet.id} title={snippet.title} description={snippet.description} language={snippet.language} tags={snippet.tags || []} author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'} authorAvatar={snippet.profiles?.avatar_url} authorId={snippet.user_id} authorUsername={snippet.profiles?.username} />)}
                   </div> : <p className="text-center py-10 text-gray-500">
                     No code snippets to display
                   </p>}

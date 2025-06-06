@@ -113,10 +113,10 @@ const CommunityPostForm: React.FC<CommunityPostFormProps> = ({
       return;
     }
 
-    if (title.length > 100) {
+    if (title.length > 25) {
       toast({
         title: "Слишком длинное название",
-        description: "Название не должно превышать 100 символов",
+        description: "Название не должно превышать 25 символов",
         variant: "destructive"
       });
       return;
@@ -220,13 +220,13 @@ const CommunityPostForm: React.FC<CommunityPostFormProps> = ({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Введите название поста (макс. 100 символов)"
-              maxLength={100}
+              placeholder="Введите название поста (макс. 25 символов)"
+              maxLength={25}
               disabled={submitting}
               required
             />
             <div className="text-xs text-gray-500 mt-1">
-              {title.length}/100 символов
+              {title.length}/25 символов
             </div>
           </div>
 

@@ -1,604 +1,407 @@
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import EditProfileForm from '@/components/EditProfileForm';
 import ProjectCard from '@/components/ProjectCard';
 import SnippetCard from '@/components/SnippetCard';
-import ProfileHeader from '@/components/ProfileHeader';
-import EditProfileForm from '@/components/EditProfileForm';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { Loader2, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Profile, Project, Snippet } from '@/types/database';
+import { formatDate } from '@/utils/dateUtils';
+import { useToast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [userProjects, setUserProjects] = useState<Project[]>([]);
-  const [favoriteItems, setFavoriteItems] = useState<{projects: Project[], snippets: Snippet[]}>(
-    {projects: [], snippets: []}
-  );
-  const [userSnippets, setUserSnippets] = useState<Snippet[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [snippetsLoading, setSnippetsLoading] = useState(true);
-  const [favoritesLoading, setFavoritesLoading] = useState(true);
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    type: 'project' | 'snippet';
-    id: string;
-    title: string;
-  }>({
-    open: false,
-    type: 'project',
-    id: '',
-    title: ''
-  });
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [savedProjects, setSavedProjects] = useState<Project[]>([]);
+  const [savedSnippets, setSavedSnippets] = useState<Snippet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchUserProjects();
-      fetchUserSnippets();
-      fetchFavorites();
+    if (!user) {
+      navigate('/auth');
+      return;
     }
-  }, [user]);
+    fetchUserData();
+  }, [user, navigate]);
 
-  const fetchProfile = async () => {
+  const fetchUserData = async () => {
+    if (!user) return;
+
     try {
-      setLoading(true);
-      const { data, error } = await supabase
+      // Получаем профиль пользователя
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user!.id)
+        .eq('id', user.id)
         .single();
 
-      if (error) throw error;
-      setProfile(data as Profile);
+      if (profileError) throw profileError;
+      setProfile(profileData);
+
+      // Получаем проекты пользователя
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (projectsError) throw projectsError;
+      setProjects(projectsData || []);
+
+      // Получаем сниппеты пользователя
+      const { data: snippetsData, error: snippetsError } = await supabase
+        .from('snippets')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (snippetsError) throw snippetsError;
+      setSnippets(snippetsData || []);
+
+      // Получаем сохраненные проекты
+      const { data: savedProjectsData, error: savedProjectsError } = await supabase
+        .from('saved_projects')
+        .select(`
+          projects (
+            *,
+            profiles:user_id (
+              username,
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (savedProjectsError) throw savedProjectsError;
+      setSavedProjects(savedProjectsData?.map(item => item.projects).filter(Boolean) || []);
+
+      // Получаем сохраненные сниппеты
+      const { data: savedSnippetsData, error: savedSnippetsError } = await supabase
+        .from('saved_snippets')
+        .select(`
+          snippets (
+            *,
+            profiles:user_id (
+              username,
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (savedSnippetsError) throw savedSnippetsError;
+      setSavedSnippets(savedSnippetsData?.map(item => item.snippets).filter(Boolean) || []);
+
     } catch (error: any) {
-      console.error('Error fetching profile:', error.message);
+      console.error('Error fetching user data:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось загрузить профиль',
-        variant: 'destructive',
+        description: 'Не удалось загрузить данные профиля',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUserProjects = async () => {
-    setProjectsLoading(true);
-    try {
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          profiles:user_id(username, full_name, avatar_url)
-        `)
-        .eq('user_id', user!.id);
-
-      if (projectsError) throw projectsError;
-      
-      if (!projectsData) {
-        setUserProjects([]);
-        return;
-      }
-      
-      const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
-        const { data: likesCount } = await supabase
-          .rpc('get_project_likes_count', { project_id: project.id });
-        
-        const { count: commentsCount } = await supabase
-          .from('comments')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', project.id);
-        
-        return {
-          ...project,
-          author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
-          authorAvatar: project.profiles?.avatar_url,
-          likes: likesCount || 0,
-          comments: commentsCount || 0
-        } as Project;
-      }));
-
-      setUserProjects(projectsWithCounts);
-    } catch (error: any) {
-      console.error('Error fetching user projects:', error.message);
-    } finally {
-      setProjectsLoading(false);
-    }
+  const handleEditProfile = () => {
+    setEditMode(!editMode);
   };
 
-  const fetchFavorites = async () => {
-    setFavoritesLoading(true);
-    try {
-      // Fetch favorite projects
-      const { data: savedProjectsData, error: savedProjectsError } = await supabase
-        .from('saved_projects')
-        .select('project_id')
-        .eq('user_id', user!.id);
-
-      if (savedProjectsError) throw savedProjectsError;
-      
-      // Fetch favorite snippets
-      const { data: savedSnippetsData, error: savedSnippetsError } = await supabase
-        .from('saved_snippets')
-        .select('snippet_id')
-        .eq('user_id', user!.id);
-        
-      if (savedSnippetsError) throw savedSnippetsError;
-      
-      const favoriteProjects: Project[] = [];
-      const favoriteSnippets: Snippet[] = [];
-      
-      // Get project details
-      if (savedProjectsData && savedProjectsData.length > 0) {
-        const projectIds = savedProjectsData.map(item => item.project_id);
-        
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            profiles:user_id(username, full_name, avatar_url)
-          `)
-          .in('id', projectIds);
-          
-        if (projectsError) throw projectsError;
-        
-        if (projectsData) {
-          const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
-            const { data: likesCount } = await supabase
-              .rpc('get_project_likes_count', { project_id: project.id });
-            
-            const { count: commentsCount } = await supabase
-              .from('comments')
-              .select('id', { count: 'exact', head: true })
-              .eq('project_id', project.id);
-            
-            return {
-              ...project,
-              author: project.profiles?.full_name || project.profiles?.username || 'Неизвестный автор',
-              authorAvatar: project.profiles?.avatar_url,
-              likes: likesCount || 0,
-              comments: commentsCount || 0
-            } as Project;
-          }));
-          
-          favoriteProjects.push(...projectsWithCounts);
-        }
-      }
-      
-      // Get snippet details
-      if (savedSnippetsData && savedSnippetsData.length > 0) {
-        const snippetIds = savedSnippetsData.map(item => item.snippet_id);
-        
-        const { data: snippetsData, error: snippetsError } = await supabase
-          .from('snippets')
-          .select(`
-            *,
-            profiles:user_id(username, full_name, avatar_url)
-          `)
-          .in('id', snippetIds);
-          
-        if (snippetsError) throw snippetsError;
-        
-        if (snippetsData) {
-          const snippetsWithCounts = await Promise.all(snippetsData.map(async (snippet) => {
-            const { data: likesCount } = await supabase
-              .rpc('get_snippet_likes_count', { snippet_id: snippet.id });
-            
-            const { count: commentsCount } = await supabase
-              .from('snippet_comments')
-              .select('id', { count: 'exact', head: true })
-              .eq('snippet_id', snippet.id);
-            
-            return {
-              ...snippet,
-              author: snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный автор',
-              authorAvatar: snippet.profiles?.avatar_url,
-              likes: likesCount || 0,
-              comments: commentsCount || 0
-            } as Snippet;
-          }));
-          
-          favoriteSnippets.push(...snippetsWithCounts);
-        }
-      }
-      
-      setFavoriteItems({
-        projects: favoriteProjects,
-        snippets: favoriteSnippets
-      });
-    } catch (error: any) {
-      console.error('Error fetching favorites:', error.message);
-    } finally {
-      setFavoritesLoading(false);
-    }
-  };
-
-  const fetchUserSnippets = async () => {
-    setSnippetsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('snippets')
-        .select(`
-          *,
-          profiles:user_id(username, full_name, avatar_url)
-        `)
-        .eq('user_id', user!.id);
-
-      if (error) throw error;
-
-      if (!data) {
-        setUserSnippets([]);
-        return;
-      }
-      
-      const snippetsWithCounts = await Promise.all(data.map(async (snippet) => {
-        const { data: likesCount } = await supabase
-          .rpc('get_snippet_likes_count', { snippet_id: snippet.id });
-        
-        const { count: commentsCount } = await supabase
-          .from('snippet_comments')
-          .select('id', { count: 'exact', head: true })
-          .eq('snippet_id', snippet.id);
-        
-        return {
-          ...snippet,
-          author: snippet.profiles?.full_name || snippet.profiles?.username || 'Неизвестный автор',
-          authorAvatar: snippet.profiles?.avatar_url,
-          likes: likesCount || 0,
-          comments: commentsCount || 0
-        } as Snippet;
-      }));
-      
-      setUserSnippets(snippetsWithCounts);
-    } catch (error: any) {
-      console.error('Error fetching user snippets:', error.message);
-    } finally {
-      setSnippetsLoading(false);
-    }
-  };
-
-  const handleUpdateProfile = async (updatedData: Partial<Profile>) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          ...updatedData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user!.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Успех',
-        description: 'Профиль успешно обновлен',
-      });
-      
-      fetchProfile();
-      setIsEditing(false);
-    } catch (error: any) {
-      console.error('Error updating profile:', error.message);
-      toast({
-        title: 'Ошибка',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const openDeleteDialog = (type: 'project' | 'snippet', id: string, title: string) => {
-    setDeleteDialog({
-      open: true,
-      type,
-      id,
-      title
+  const handleProfileUpdate = () => {
+    setEditMode(false);
+    fetchUserData();
+    toast({
+      title: 'Профиль обновлен',
+      description: 'Ваш профиль был успешно обновлен'
     });
-  };
-
-  const closeDeleteDialog = () => {
-    setDeleteDialog({
-      open: false,
-      type: 'project',
-      id: '',
-      title: ''
-    });
-  };
-
-  const handleDeleteProject = async () => {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', deleteDialog.id)
-        .eq('user_id', user!.id);
-      
-      if (error) throw error;
-      
-      toast({
-        description: 'Проект успешно удален'
-      });
-      
-      fetchUserProjects();
-      fetchFavorites();
-      closeDeleteDialog();
-    } catch (error: any) {
-      console.error('Error deleting project:', error.message);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось удалить проект',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  const handleDeleteSnippet = async () => {
-    try {
-      const { error } = await supabase
-        .from('snippets')
-        .delete()
-        .eq('id', deleteDialog.id)
-        .eq('user_id', user!.id);
-      
-      if (error) throw error;
-      
-      toast({
-        description: 'Сниппет успешно удален'
-      });
-      
-      fetchUserSnippets();
-      fetchFavorites();
-      closeDeleteDialog();
-    } catch (error: any) {
-      console.error('Error deleting snippet:', error.message);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось удалить сниппет',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleConfirmDelete = () => {
-    if (deleteDialog.type === 'project') {
-      handleDeleteProject();
-    } else {
-      handleDeleteSnippet();
-    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-          <span className="ml-2 text-lg">Загрузка профиля...</span>
+      <Layout>
+        <div className="container max-w-4xl py-24 mt-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
         </div>
-        <Footer />
-      </div>
+      </Layout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="container max-w-4xl py-24 mt-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Профиль не найден
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Не удалось загрузить данные профиля
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (editMode) {
+    return (
+      <Layout>
+        <div className="container max-w-4xl py-24 mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Редактировать профиль</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EditProfileForm
+                profile={profile}
+                onUpdate={handleProfileUpdate}
+                onCancel={() => setEditMode(false)}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-20">
-        <h1 className="text-3xl font-bold mb-8 mt-8">Личный кабинет</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-5">
-            {profile && !isEditing && (
-              <ProfileHeader 
-                profile={profile} 
-                isCurrentUser={true} 
-                onEditClick={() => setIsEditing(true)} 
-              />
-            )}
-
-            {profile && isEditing && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Редактирование профиля</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EditProfileForm 
-                    profile={profile} 
-                    onUpdate={handleUpdateProfile} 
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          <div className="lg:col-span-7">
-            <Tabs defaultValue="projects" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="projects">Мои проекты</TabsTrigger>
-                <TabsTrigger value="favorites">Избранное</TabsTrigger>
-                <TabsTrigger value="snippets">Мои сниппеты</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="projects">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Мои проекты</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {projectsLoading ? (
-                      <p className="text-center py-10 text-gray-500">
-                        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                        Загрузка проектов...
-                      </p>
-                    ) : userProjects.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {userProjects.map(project => (
-                          <div key={project.id} className="relative">
-                            <ProjectCard
-                              id={project.id}
-                              title={project.title}
-                              description={project.description}
-                              technologies={project.technologies || []}
-                              author={project.author || ''}
-                              authorAvatar={project.authorAvatar || ''}
-                              imageUrl={project.image_url || undefined}
-                              likes={project.likes}
-                              comments={project.comments}
-                            />
-                            <Button 
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-2 right-2 h-8 w-8"
-                              onClick={() => openDeleteDialog('project', project.id, project.title)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+    <Layout>
+      <div className="container max-w-6xl py-24 mt-8">
+        <div className="space-y-6">
+          {/* Профиль пользователя */}
+          <Card className="overflow-hidden">
+            <div 
+              className="h-48 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative"
+              style={{
+                backgroundImage: profile.banner_url ? `url(${profile.banner_url})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              <div className="absolute inset-0 bg-black/30" />
+            </div>
+            
+            <CardHeader className="relative pb-6">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-start gap-4">
+                  <div className="w-24 h-24 rounded-full bg-white shadow-lg -mt-12 relative z-10 overflow-hidden border-4 border-white">
+                    {profile.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt={profile.full_name || profile.username || ''} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                        {(profile.full_name || profile.username || 'U').charAt(0).toUpperCase()}
                       </div>
-                    ) : (
-                      <p className="text-center py-10 text-gray-500">
-                        У вас пока нет проектов. Вы можете создать проект на странице проектов.
-                      </p>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="favorites">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Избранное</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {favoritesLoading ? (
-                      <p className="text-center py-10 text-gray-500">
-                        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                        Загрузка избранного...
-                      </p>
-                    ) : (favoriteItems.projects.length > 0 || favoriteItems.snippets.length > 0) ? (
-                      <>
-                        {favoriteItems.projects.length > 0 && (
-                          <>
-                            <h3 className="text-lg font-semibold mb-4">Проекты</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                              {favoriteItems.projects.map(project => (
-                                <ProjectCard
-                                  key={project.id}
-                                  id={project.id}
-                                  title={project.title}
-                                  description={project.description}
-                                  technologies={project.technologies || []}
-                                  author={project.author || ''}
-                                  authorAvatar={project.authorAvatar || ''}
-                                  imageUrl={project.image_url || undefined}
-                                  likes={project.likes}
-                                  comments={project.comments}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-                        
-                        {favoriteItems.snippets.length > 0 && (
-                          <>
-                            <h3 className="text-lg font-semibold mb-4">Сниппеты</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {favoriteItems.snippets.map(snippet => (
-                                <SnippetCard
-                                  key={snippet.id}
-                                  id={snippet.id}
-                                  title={snippet.title}
-                                  description={snippet.description}
-                                  language={snippet.language}
-                                  tags={snippet.tags || []}
-                                  created_at={snippet.created_at}
-                                  likes={snippet.likes}
-                                  comments={snippet.comments}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-center py-10 text-gray-500">
-                        У вас нет избранных элементов. Нажмите на иконку закладки на странице проекта или сниппета, чтобы добавить их в избранное.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="snippets">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Мои сниппеты</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {snippetsLoading ? (
-                      <p className="text-center py-10 text-gray-500">
-                        <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                        Загрузка сниппетов...
-                      </p>
-                    ) : userSnippets.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {userSnippets.map(snippet => (
-                          <div key={snippet.id} className="relative">
-                            <SnippetCard
-                              id={snippet.id}
-                              title={snippet.title}
-                              description={snippet.description}
-                              language={snippet.language}
-                              tags={snippet.tags || []}
-                              created_at={snippet.created_at}
-                              likes={snippet.likes}
-                              comments={snippet.comments}
-                            />
-                            <Button 
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-2 right-2 h-8 w-8"
-                              onClick={() => openDeleteDialog('snippet', snippet.id, snippet.title)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                  </div>
+                  
+                  <div className="space-y-3 flex-1">
+                    <div>
+                      <CardTitle className="text-3xl text-gray-900 dark:text-white mb-2">
+                        {profile.full_name || profile.username}
+                      </CardTitle>
+                      {profile.username && profile.full_name && (
+                        <p className="text-gray-600 dark:text-gray-400 mb-2">@{profile.username}</p>
+                      )}
+                      {profile.bio && (
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {profile.bio}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      <span>Зарегистрирован {formatDate(profile.created_at)}</span>
+                    </div>
+
+                    <div className="flex gap-6 text-sm">
+                      <div>
+                        <span className="font-semibold text-gray-900 dark:text-white">{projects.length}</span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-1">проектов</span>
                       </div>
-                    ) : (
-                      <p className="text-center py-10 text-gray-500">
-                        У вас пока нет сниппетов. Вы можете создать сниппет на странице сниппетов.
-                      </p>
-                    )}
+                      <div>
+                        <span className="font-semibold text-gray-900 dark:text-white">{snippets.length}</span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-1">сниппетов</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={handleEditProfile} className="gap-2">
+                    Редактировать профиль
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Вкладки с контентом */}
+          <Tabs defaultValue="projects" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="projects">Мои проекты ({projects.length})</TabsTrigger>
+              <TabsTrigger value="snippets">Мои сниппеты ({snippets.length})</TabsTrigger>
+              <TabsTrigger value="saved-projects">Сохраненные проекты ({savedProjects.length})</TabsTrigger>
+              <TabsTrigger value="saved-snippets">Сохраненные сниппеты ({savedSnippets.length})</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="projects" className="space-y-6">
+              {projects.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      У вас пока нет проектов
+                    </p>
+                    <Button onClick={() => navigate('/projects/create')}>
+                      Создать первый проект
+                    </Button>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      id={project.id}
+                      title={project.title}
+                      description={project.description}
+                      technologies={project.technologies || []}
+                      author={project.profiles?.full_name || project.profiles?.username || 'Аноним'}
+                      authorAvatar={project.profiles?.avatar_url}
+                      authorId={project.user_id}
+                      authorUsername={project.profiles?.username}
+                      imageUrl={project.image_url}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="snippets" className="space-y-6">
+              {snippets.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      У вас пока нет сниппетов
+                    </p>
+                    <Button onClick={() => navigate('/snippets/create')}>
+                      Создать первый сниппет
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {snippets.map((snippet) => (
+                    <SnippetCard
+                      key={snippet.id}
+                      id={snippet.id}
+                      title={snippet.title}
+                      description={snippet.description}
+                      language={snippet.language}
+                      tags={snippet.tags || []}
+                      author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'}
+                      authorAvatar={snippet.profiles?.avatar_url}
+                      authorId={snippet.user_id}
+                      authorUsername={snippet.profiles?.username}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="saved-projects" className="space-y-6">
+              {savedProjects.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      У вас пока нет сохраненных проектов
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {savedProjects.map((project: any) => (
+                    <ProjectCard
+                      key={project.id}
+                      id={project.id}
+                      title={project.title}
+                      description={project.description}
+                      technologies={project.technologies || []}
+                      author={project.profiles?.full_name || project.profiles?.username || 'Аноним'}
+                      authorAvatar={project.profiles?.avatar_url}
+                      authorId={project.user_id}
+                      authorUsername={project.profiles?.username}
+                      imageUrl={project.image_url}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="saved-snippets" className="space-y-6">
+              {savedSnippets.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      У вас пока нет сохраненных сниппетов
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {savedSnippets.map((snippet: any) => (
+                    <SnippetCard
+                      key={snippet.id}
+                      id={snippet.id}
+                      title={snippet.title}
+                      description={snippet.description}
+                      language={snippet.language}
+                      tags={snippet.tags || []}
+                      author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'}
+                      authorAvatar={snippet.profiles?.avatar_url}
+                      authorId={snippet.user_id}
+                      authorUsername={snippet.profiles?.username}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
-
-        <ConfirmDialog
-          open={deleteDialog.open}
-          onOpenChange={closeDeleteDialog}
-          onConfirm={handleConfirmDelete}
-          title={`Удалить ${deleteDialog.type === 'project' ? 'проект' : 'сниппет'}?`}
-          description={`Вы уверены, что хотите удалить ${deleteDialog.type === 'project' ? 'проект' : 'сниппет'} "${deleteDialog.title}"? Это действие нельзя отменить.`}
-        />
       </div>
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 
