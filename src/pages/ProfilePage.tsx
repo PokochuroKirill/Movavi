@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import UserProfileView from '@/components/UserProfileView';
 import EditProfileForm from '@/components/EditProfileForm';
-import { useProfileQueries } from '@/hooks/useProfileQueries';
+import { fetchProfileById } from '@/hooks/useProfileQueries';
 import { Profile } from '@/types/database';
 
 const ProfilePage = () => {
@@ -19,7 +20,11 @@ const ProfilePage = () => {
     isLoading, 
     error, 
     refetch 
-  } = useProfileQueries.useProfile(user?.id);
+  } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: () => fetchProfileById(user?.id || ''),
+    enabled: !!user?.id
+  });
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -88,13 +93,12 @@ const ProfilePage = () => {
           <EditProfileForm 
             profile={profile}
             onUpdate={handleProfileUpdate}
-            onCancel={handleCancel}
           />
         ) : (
           <UserProfileView 
             profile={profile}
             isOwnProfile={true}
-            onEdit={handleEdit}
+            onEditProfile={handleEdit}
           />
         )}
       </div>
