@@ -71,11 +71,11 @@ function App() {
               <Route path="/user/:username" element={<UserProfilePage />} />
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/communities" element={<CommunitiesPage />} />
-              <Route path="/communities/:id" element={<CommunityDetailPage />} />
+              <Route path="/communities/:communityId" element={<CommunityDetailPage />} />
               <Route path="/communities/create" element={<ProtectedRoute><CreateCommunityPage /></ProtectedRoute>} />
-              <Route path="/communities/:id/post/:postId" element={<CommunityPostDetailPage />} />
-              <Route path="/communities/:id/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
-              <Route path="/communities/:id/post/:postId/edit" element={<ProtectedRoute><EditCommunityPostPage /></ProtectedRoute>} />
+              <Route path="/communities/:communityId/posts/:postId" element={<CommunityPostDetailPage />} />
+              <Route path="/communities/:communityId/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
+              <Route path="/communities/:communityId/post/:postId/edit" element={<ProtectedRoute><EditCommunityPostPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>

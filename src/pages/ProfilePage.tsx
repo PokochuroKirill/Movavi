@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -193,6 +192,62 @@ const ProfilePage = () => {
     }
   };
 
+  const handleDeleteProject = async (projectId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Обновляем список проектов
+      setProjects(projects.filter(project => project.id !== projectId));
+      
+      toast({
+        title: "Проект удален",
+        description: "Ваш проект был успешно удален"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось удалить проект",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteSnippet = async (snippetId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('snippets')
+        .delete()
+        .eq('id', snippetId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Обновляем список сниппетов
+      setSnippets(snippets.filter(snippet => snippet.id !== snippetId));
+      
+      toast({
+        title: "Сниппет удален",
+        description: "Ваш сниппет был успешно удален"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось удалить сниппет",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -249,6 +304,8 @@ const ProfilePage = () => {
             savedProjects={savedProjects}
             savedSnippets={savedSnippets}
             savedLoading={savedLoading}
+            onDeleteProject={handleDeleteProject}
+            onDeleteSnippet={handleDeleteSnippet}
           />
         )}
       </div>

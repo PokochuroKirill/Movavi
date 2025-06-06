@@ -314,6 +314,49 @@ export const usePostLikes = (postId: string) => {
   };
 };
 
+// Функция для добавления комментариев к постам
+export const addCommentToPost = async (postId: string, userId: string, content: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('community_comments')
+      .insert({
+        post_id: postId,
+        user_id: userId,
+        content
+      });
+
+    if (error) throw error;
+
+    // Обновляем счетчик комментариев в посте
+    await supabase.rpc('increment_post_comments_count', { post_id: postId });
+      
+    return true;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    return false;
+  }
+};
+
+// Функция для получения комментариев к посту
+export const fetchPostComments = async (postId: string): Promise<CommunityComment[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('community_comments')
+      .select(`
+        *,
+        profiles:user_id(username, full_name, avatar_url)
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
+};
+
 export default {
   fetchCommunityById,
   fetchCommunityMembers,
@@ -323,5 +366,7 @@ export default {
   isUserMember,
   joinCommunity,
   leaveCommunity,
-  usePostLikes
+  usePostLikes,
+  addCommentToPost,
+  fetchPostComments
 };

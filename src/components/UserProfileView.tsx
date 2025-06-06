@@ -1,31 +1,32 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Pencil, Trash2, AlertCircle } from 'lucide-react';
 import { Profile, Project, Snippet } from '@/types/database';
-import { Loader2 } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import SnippetCard from './SnippetCard';
-import ProfileHeader from './ProfileHeader';
 import FollowersModal from './FollowersModal';
+import ProfileHeader from './ProfileHeader';
+import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 
 interface UserProfileViewProps {
   profile: Profile;
   isOwnProfile: boolean;
-  onEditProfile?: () => void;
-  onFollowToggle?: () => void;
-  isFollowing?: boolean;
+  onEditProfile: () => void;
   followersCount: number;
   followingCount: number;
   onFollowersClick: () => void;
   onFollowingClick: () => void;
-  showFollowers?: boolean;
-  showFollowing?: boolean;
-  followers?: Profile[];
-  following?: Profile[];
-  onCloseFollowers?: () => void;
-  onCloseFollowing?: () => void;
+  showFollowers: boolean;
+  showFollowing: boolean;
+  followers: Profile[];
+  following: Profile[];
+  onCloseFollowers: () => void;
+  onCloseFollowing: () => void;
   projects: Project[];
   snippets: Snippet[];
   projectsLoading: boolean;
@@ -33,22 +34,22 @@ interface UserProfileViewProps {
   savedProjects?: Project[];
   savedSnippets?: Snippet[];
   savedLoading?: boolean;
+  onDeleteProject?: (projectId: string) => void;
+  onDeleteSnippet?: (snippetId: string) => void;
 }
 
 const UserProfileView: React.FC<UserProfileViewProps> = ({
   profile,
   isOwnProfile,
   onEditProfile,
-  onFollowToggle,
-  isFollowing = false,
   followersCount,
   followingCount,
   onFollowersClick,
   onFollowingClick,
-  showFollowers = false,
-  showFollowing = false,
-  followers = [],
-  following = [],
+  showFollowers,
+  showFollowing,
+  followers,
+  following,
   onCloseFollowers,
   onCloseFollowing,
   projects,
@@ -57,237 +58,259 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   snippetsLoading,
   savedProjects = [],
   savedSnippets = [],
-  savedLoading = false
+  savedLoading = false,
+  onDeleteProject,
+  onDeleteSnippet
 }) => {
-  
-  const defaultTab = isOwnProfile && savedProjects.length + savedSnippets.length > 0 
-    ? "favorites" 
-    : "projects";
-  
+  const navigate = useNavigate();
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [snippetToDelete, setSnippetToDelete] = useState<string | null>(null);
+
   return (
-    <div className="space-y-6">
-      {/* Profile header */}
+    <div>
       <ProfileHeader 
-        profile={profile}
-        isCurrentUser={isOwnProfile}
-        onEditClick={isOwnProfile ? onEditProfile : undefined}
+        profile={profile} 
+        isOwnProfile={isOwnProfile}
+        onEditProfile={onEditProfile}
         followersCount={followersCount}
         followingCount={followingCount}
         onFollowersClick={onFollowersClick}
         onFollowingClick={onFollowingClick}
       />
+
+      <FollowersModal 
+        show={showFollowers} 
+        followers={followers} 
+        onClose={onCloseFollowers} 
+        title="Подписчики" 
+      />
       
-      {/* Follow button for other profiles */}
-      {!isOwnProfile && onFollowToggle && (
-        <div className="flex justify-end mt-4">
-          <Button 
-            onClick={onFollowToggle}
-            variant={isFollowing ? "outline" : "default"}
-            className={isFollowing ? "" : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"}
-          >
-            {isFollowing ? "Отписаться" : "Подписаться"}
-          </Button>
-        </div>
-      )}
+      <FollowersModal 
+        show={showFollowing} 
+        followers={following} 
+        onClose={onCloseFollowing} 
+        title="Подписки" 
+      />
       
-      {/* Modal windows for followers and following */}
-      {showFollowers && followers && onCloseFollowers && (
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Подписчики ({followers.length})</CardTitle>
-            <Button variant="outline" onClick={onCloseFollowers}>Закрыть</Button>
-          </CardHeader>
-          <CardContent>
-            <FollowersModal 
-              isOpen={true}
-              onClose={onCloseFollowers}
-              userId={profile.id}
-              type="followers"
-            />
-          </CardContent>
-        </Card>
-      )}
-      
-      {showFollowing && following && onCloseFollowing && (
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Подписки ({following.length})</CardTitle>
-            <Button variant="outline" onClick={onCloseFollowing}>Закрыть</Button>
-          </CardHeader>
-          <CardContent>
-            <FollowersModal 
-              isOpen={true}
-              onClose={onCloseFollowing}
-              userId={profile.id}
-              type="following"
-            />
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Content tabs */}
-      <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-3">
+      <Tabs defaultValue="projects" className="mt-8">
+        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto">
           <TabsTrigger value="projects">Проекты</TabsTrigger>
           <TabsTrigger value="snippets">Сниппеты</TabsTrigger>
-          {isOwnProfile && (
-            <TabsTrigger value="favorites">Избранное</TabsTrigger>
-          )}
+          <TabsTrigger value="saved">Избранное</TabsTrigger>
+          <TabsTrigger value="about">Обо мне</TabsTrigger>
         </TabsList>
         
-        {/* Projects tab */}
-        <TabsContent value="projects">
+        <TabsContent value="projects" className="mt-6">
           {projectsLoading ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                <p className="text-gray-500">Загрузка проектов...</p>
-              </CardContent>
-            </Card>
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
           ) : projects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map(project => (
-                <ProjectCard 
-                  key={project.id}
-                  id={project.id}
-                  title={project.title}
-                  description={project.description}
-                  technologies={project.technologies || []}
-                  author={project.author || project.profiles?.full_name || project.profiles?.username || 'Аноним'}
-                  authorAvatar={project.authorAvatar || project.profiles?.avatar_url}
-                  authorId={project.user_id}
-                  authorUsername={project.profiles?.username}
-                  imageUrl={project.image_url || undefined}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {projects.map((project) => (
+                <div key={project.id} className="relative">
+                  <ProjectCard project={project} />
+                  
+                  {isOwnProfile && onDeleteProject && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 p-2 h-auto"
+                      onClick={() => setProjectToDelete(project.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-500">
-                  {isOwnProfile ? 'У вас пока нет проектов' : 'У пользователя пока нет проектов'}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="text-center py-12 text-gray-500">
+              {isOwnProfile ? (
+                <>
+                  <p className="mb-4">У вас пока нет проектов</p>
+                  <Button 
+                    onClick={() => navigate('/projects/create')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Создать проект
+                  </Button>
+                </>
+              ) : (
+                <p>У этого пользователя пока нет проектов</p>
+              )}
+            </div>
           )}
         </TabsContent>
         
-        {/* Snippets tab */}
-        <TabsContent value="snippets">
+        <TabsContent value="snippets" className="mt-6">
           {snippetsLoading ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                <p className="text-gray-500">Загрузка сниппетов...</p>
-              </CardContent>
-            </Card>
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
           ) : snippets.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {snippets.map(snippet => (
-                <SnippetCard
-                  key={snippet.id}
-                  id={snippet.id}
-                  title={snippet.title}
-                  description={snippet.description}
-                  language={snippet.language}
-                  tags={snippet.tags || []}
-                  author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'}
-                  authorAvatar={snippet.profiles?.avatar_url}
-                  authorId={snippet.user_id}
-                  authorUsername={snippet.profiles?.username}
-                />
+            <div className="grid grid-cols-1 gap-4">
+              {snippets.map((snippet) => (
+                <div key={snippet.id} className="relative">
+                  <SnippetCard snippet={snippet} />
+                  
+                  {isOwnProfile && onDeleteSnippet && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 p-2 h-auto"
+                      onClick={() => setSnippetToDelete(snippet.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-500">
-                  {isOwnProfile ? 'У вас пока нет сниппетов' : 'У пользователя пока нет сниппетов'}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="text-center py-12 text-gray-500">
+              {isOwnProfile ? (
+                <>
+                  <p className="mb-4">У вас пока нет сниппетов</p>
+                  <Button 
+                    onClick={() => navigate('/snippets/create')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Создать сниппет
+                  </Button>
+                </>
+              ) : (
+                <p>У этого пользователя пока нет сниппетов</p>
+              )}
+            </div>
           )}
         </TabsContent>
         
-        {/* Favorites tab (only for user's own profile) */}
-        {isOwnProfile && (
-          <TabsContent value="favorites">
-            <div className="space-y-8">
-              {/* Saved Projects */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4">Избранные проекты</h3>
-                {savedLoading ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                      <p className="text-gray-500">Загрузка избранных проектов...</p>
-                    </CardContent>
-                  </Card>
-                ) : savedProjects.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedProjects.map(project => (
-                      <ProjectCard
-                        key={project.id}
-                        id={project.id}
-                        title={project.title}
-                        description={project.description}
-                        technologies={project.technologies || []}
-                        author={project.profiles?.full_name || project.profiles?.username || 'Аноним'}
-                        authorAvatar={project.profiles?.avatar_url}
-                        authorId={project.user_id}
-                        authorUsername={project.profiles?.username}
-                        imageUrl={project.image_url || undefined}
-                      />
-                    ))}
+        <TabsContent value="saved" className="mt-6">
+          <Tabs defaultValue="saved-projects">
+            <TabsList className="mb-4">
+              <TabsTrigger value="saved-projects">Проекты</TabsTrigger>
+              <TabsTrigger value="saved-snippets">Сниппеты</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="saved-projects">
+              {savedLoading ? (
+                <div className="flex justify-center items-center min-h-[200px]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              ) : savedProjects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {savedProjects.map((project) => (
+                    <ProjectCard key={project.id} project={project} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p>У вас пока нет избранных проектов</p>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="saved-snippets">
+              {savedLoading ? (
+                <div className="flex justify-center items-center min-h-[200px]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              ) : savedSnippets.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {savedSnippets.map((snippet) => (
+                    <SnippetCard key={snippet.id} snippet={snippet} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p>У вас пока нет избранных сниппетов</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+        
+        <TabsContent value="about" className="mt-6">
+          <Card className="p-6">
+            {profile.bio ? (
+              <div className="prose dark:prose-invert max-w-none">
+                <h2>Обо мне</h2>
+                <p>{profile.bio}</p>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                {isOwnProfile ? (
+                  <div>
+                    <p className="mb-4">Вы еще не добавили информацию о себе</p>
+                    <Button 
+                      onClick={onEditProfile}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Редактировать профиль
+                    </Button>
                   </div>
                 ) : (
-                  <Card>
-                    <CardContent className="py-8 text-center">
-                      <p className="text-gray-500">У вас нет избранных проектов</p>
-                    </CardContent>
-                  </Card>
+                  <p>Пользователь еще не добавил информацию о себе</p>
                 )}
               </div>
-              
-              {/* Saved Snippets */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4">Избранные сниппеты</h3>
-                {savedLoading ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                      <p className="text-gray-500">Загрузка избранных сниппетов...</p>
-                    </CardContent>
-                  </Card>
-                ) : savedSnippets.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedSnippets.map(snippet => (
-                      <SnippetCard
-                        key={snippet.id}
-                        id={snippet.id}
-                        title={snippet.title}
-                        description={snippet.description}
-                        language={snippet.language}
-                        tags={snippet.tags || []}
-                        author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'}
-                        authorAvatar={snippet.profiles?.avatar_url}
-                        authorId={snippet.user_id}
-                        authorUsername={snippet.profiles?.username}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <Card>
-                    <CardContent className="py-8 text-center">
-                      <p className="text-gray-500">У вас нет избранных сниппетов</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-        )}
+            )}
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Диалог подтверждения удаления проекта */}
+      <Dialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Подтверждение удаления</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите удалить этот проект? Это действие нельзя отменить.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProjectToDelete(null)}>
+              Отмена
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                onDeleteProject?.(projectToDelete!);
+                setProjectToDelete(null);
+              }}
+            >
+              Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог подтверждения удаления сниппета */}
+      <Dialog open={!!snippetToDelete} onOpenChange={() => setSnippetToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Подтверждение удаления</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите удалить этот сниппет? Это действие нельзя отменить.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSnippetToDelete(null)}>
+              Отмена
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                onDeleteSnippet?.(snippetToDelete!);
+                setSnippetToDelete(null);
+              }}
+            >
+              Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
