@@ -11,14 +11,18 @@ import { Project } from '@/types/database';
 import { formatDate } from '@/utils/dateUtils';
 import ProjectActions from '@/components/ProjectActions';
 import { useAuth } from '@/contexts/AuthContext';
-
 const ProjectDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-
+  const {
+    user
+  } = useAuth();
   useEffect(() => {
     const fetchProject = async () => {
       if (!id) {
@@ -26,23 +30,19 @@ const ProjectDetailPage = () => {
         setLoading(false);
         return;
       }
-
       try {
-        const { data, error } = await supabase
-          .from('projects')
-          .select(`
+        const {
+          data,
+          error
+        } = await supabase.from('projects').select(`
             *,
             profiles:user_id (
               username,
               full_name,
               avatar_url
             )
-          `)
-          .eq('id', id)
-          .single();
-
+          `).eq('id', id).single();
         if (error) throw error;
-
         setProject(data);
       } catch (err: any) {
         console.error('Error fetching project:', err);
@@ -51,25 +51,19 @@ const ProjectDetailPage = () => {
         setLoading(false);
       }
     };
-
     fetchProject();
   }, [id]);
-
   if (loading) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-
   if (error || !project) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -86,12 +80,9 @@ const ProjectDetailPage = () => {
             </Link>
           </div>
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="container max-w-4xl py-24 mt-8">
         <div className="space-y-6">
           {/* Кнопка назад */}
@@ -115,15 +106,11 @@ const ProjectDetailPage = () => {
                   </CardDescription>
                   
                   {/* Технологии */}
-                  {project.technologies && project.technologies.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {project.technologies.map((tech, index) => (
-                        <Badge key={index} variant="secondary">
+                  {project.technologies && project.technologies.length > 0 && <div className="flex flex-wrap gap-2 mb-4">
+                      {project.technologies.map((tech, index) => <Badge key={index} variant="secondary">
                           {tech}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                        </Badge>)}
+                    </div>}
 
                   {/* Информация об авторе и дате */}
                   <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -147,53 +134,33 @@ const ProjectDetailPage = () => {
 
                 {/* Действия с проектом */}
                 <div className="flex items-center gap-2">
-                  <ProjectActions 
-                    projectId={project.id}
-                  />
+                  <ProjectActions projectId={project.id} />
                 </div>
               </div>
             </CardHeader>
 
             {/* Изображение проекта */}
-            {project.image_url && (
-              <div className="px-6 pb-6">
+            {project.image_url && <div className="px-6 pb-6">
                 <div className="w-full rounded-lg overflow-hidden">
-                  <img 
-                    src={project.image_url} 
-                    alt={project.title}
-                    className="w-full h-auto object-cover"
-                  />
+                  <img src={project.image_url} alt={project.title} className="w-full h-auto object-cover" />
                 </div>
-              </div>
-            )}
+              </div>}
 
             <CardContent>
               {/* Ссылки на проект */}
               <div className="flex flex-wrap gap-3 mb-6">
-                {project.live_url && (
-                  <a
-                    href={project.live_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                {project.live_url && <a href={project.live_url} target="_blank" rel="noopener noreferrer">
                     <Button variant="outline" size="sm">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Демо
                     </Button>
-                  </a>
-                )}
-                {project.github_url && (
-                  <a
-                    href={project.github_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  </a>}
+                {project.github_url && <a href={project.github_url} target="_blank" rel="noopener noreferrer">
                     <Button variant="outline" size="sm">
                       <Github className="h-4 w-4 mr-2" />
                       GitHub
                     </Button>
-                  </a>
-                )}
+                  </a>}
               </div>
 
               {/* Содержание проекта */}
@@ -207,24 +174,10 @@ const ProjectDetailPage = () => {
 
           {/* Статистика */}
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center gap-8 text-center">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-red-500" />
-                  <span className="font-medium">{project.likes_count || 0}</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">лайков</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-blue-500" />
-                  <span className="font-medium">Просмотры</span>
-                </div>
-              </div>
-            </CardContent>
+            
           </Card>
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default ProjectDetailPage;
