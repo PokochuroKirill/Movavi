@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Snippet } from '@/types/database';
 import { Search, Filter, Plus, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import SnippetCard from '@/components/SnippetCard';
 
@@ -30,7 +29,6 @@ const SnippetsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSnippets();
@@ -263,7 +261,6 @@ const SnippetsPage = () => {
                   authorAvatar={snippet.profiles?.avatar_url}
                   authorId={snippet.user_id}
                   authorUsername={snippet.profiles?.username}
-                  onClick={() => handleSnippetClick(snippet.id)}
                 />
               ))}
             </div>

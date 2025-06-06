@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -9,10 +8,12 @@ import { Button } from '@/components/ui/button';
 import EditProfileForm from '@/components/EditProfileForm';
 import ProjectCard from '@/components/ProjectCard';
 import SnippetCard from '@/components/SnippetCard';
+import FollowersModal from '@/components/FollowersModal';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile, Project, Snippet } from '@/types/database';
 import { formatDate } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { fetchFollowCounts } from '@/hooks/useProfileQueries';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -25,6 +26,10 @@ const ProfilePage = () => {
   const [savedSnippets, setSavedSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +52,11 @@ const ProfilePage = () => {
 
       if (profileError) throw profileError;
       setProfile(profileData);
+
+      // Получаем счетчики подписчиков
+      const counts = await fetchFollowCounts(user.id);
+      setFollowersCount(counts.followers);
+      setFollowingCount(counts.following);
 
       // Получаем проекты пользователя
       const { data: projectsData, error: projectsError } = await supabase
@@ -134,9 +144,9 @@ const ProfilePage = () => {
     setEditMode(!editMode);
   };
 
-  const handleProfileUpdate = () => {
+  const handleProfileUpdate = async (data?: Partial<Profile>) => {
     setEditMode(false);
-    fetchUserData();
+    await fetchUserData();
     toast({
       title: 'Профиль обновлен',
       description: 'Ваш профиль был успешно обновлен'
@@ -255,6 +265,20 @@ const ProfilePage = () => {
                         <span className="font-semibold text-gray-900 dark:text-white">{snippets.length}</span>
                         <span className="text-gray-500 dark:text-gray-400 ml-1">сниппетов</span>
                       </div>
+                      <button
+                        onClick={() => setShowFollowersModal(true)}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
+                        <span className="font-semibold text-gray-900 dark:text-white">{followersCount}</span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-1">подписчиков</span>
+                      </button>
+                      <button
+                        onClick={() => setShowFollowingModal(true)}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
+                        <span className="font-semibold text-gray-900 dark:text-white">{followingCount}</span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-1">подписок</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -400,6 +424,20 @@ const ProfilePage = () => {
             </TabsContent>
           </Tabs>
         </div>
+
+        <FollowersModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          userId={user?.id || ''}
+          type="followers"
+        />
+
+        <FollowersModal
+          isOpen={showFollowingModal}
+          onClose={() => setShowFollowingModal(false)}
+          userId={user?.id || ''}
+          type="following"
+        />
       </div>
     </Layout>
   );

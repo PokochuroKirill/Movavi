@@ -55,60 +55,60 @@ const SnippetCard = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-3">
-          <Link to={`/snippets/${id}`} className="flex-1">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2">
+    <Link to={`/snippets/${id}`} className="block">
+      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group">
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2 flex-1">
               {title}
             </h3>
-          </Link>
-          {code && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={copyToClipboard}
-              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
-          {description}
-        </p>
-        
-        <div className="flex items-center gap-2 mb-4">
-          <Badge variant="secondary" className="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
-            {language}
-          </Badge>
-        </div>
-        
-        <div className="flex flex-wrap gap-2 mb-4">
-          {tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs">
-              {tag}
+            {code && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyToClipboard}
+                className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
+            {description}
+          </p>
+          
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant="secondary" className="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+              {language}
             </Badge>
-          ))}
-          {tags.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{tags.length - 3}
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <UserProfileLink 
-            username={authorUsername}
-            fullName={author}
-            avatarUrl={authorAvatar}
-            userId={authorId}
-            className="text-sm"
-          />
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            {tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {tags.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{tags.length - 3}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <UserProfileLink 
+              username={authorUsername}
+              fullName={author}
+              avatarUrl={authorAvatar}
+              userId={authorId}
+              className="text-sm"
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
