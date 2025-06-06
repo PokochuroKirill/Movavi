@@ -197,7 +197,7 @@ const UserProfilePage = () => {
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-          <span className="ml-2 text-lg">Loading profile...</span>
+          <span className="ml-2 text-lg">Загрузка профиля...</span>
         </div>
         <Footer />
       </div>;
