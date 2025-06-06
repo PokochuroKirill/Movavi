@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ const SnippetsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSnippets();
@@ -177,7 +179,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="Язык программирования" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Все языки</SelectItem>
+                    <SelectItem value="all">Все языки</SelectItem>
                     {PROGRAMMING_LANGUAGES.map(lang => (
                       <SelectItem key={lang} value={lang}>{lang}</SelectItem>
                     ))}
