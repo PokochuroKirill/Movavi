@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ProfileHeaderProps {
   profile: Profile;
   isCurrentUser: boolean;
+  isOwnProfile?: boolean; // Added to support UserProfileView
   onEditClick?: () => void;
   followersCount?: number;
   followingCount?: number;
@@ -24,6 +26,7 @@ interface ProfileHeaderProps {
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   profile,
   isCurrentUser,
+  isOwnProfile = false, // Added with a default value
   onEditClick,
   followersCount = 0,
   followingCount = 0,

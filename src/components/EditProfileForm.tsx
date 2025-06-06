@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,9 +15,10 @@ import { useToast } from '@/hooks/use-toast';
 interface EditProfileFormProps {
   profile: Profile;
   onUpdate: (data: Partial<Profile>) => Promise<void>;
+  onCancel?: () => void; // Added onCancel prop
 }
 
-const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
+const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) => {
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     bio: profile.bio || '',
@@ -371,7 +371,16 @@ const EditProfileForm = ({ profile, onUpdate }: EditProfileFormProps) => {
           </CardContent>
         </Tabs>
 
-        <CardFooter className="flex justify-end pt-4">
+        <CardFooter className="flex justify-between pt-4">
+          {onCancel && (
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={onCancel}
+            >
+              Отмена
+            </Button>
+          )}
           <Button 
             type="submit" 
             className="gradient-bg text-white px-8" 

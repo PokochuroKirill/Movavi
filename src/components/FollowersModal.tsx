@@ -13,22 +13,32 @@ interface FollowersModalProps {
   onClose: () => void;
   userId: string;
   type: 'followers' | 'following';
+  // Added properties to support UserProfileView
+  show?: boolean;
+  followers?: Profile[];
+  title?: string;
 }
 
 const FollowersModal: React.FC<FollowersModalProps> = ({
   isOpen,
   onClose,
   userId,
-  type
+  type,
+  show = false, // Added with default values
+  followers: providedFollowers = [], // Added with default values
+  title = '' // Added with default value
 }) => {
-  const [users, setUsers] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<Profile[]>(providedFollowers);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && userId) {
+    // Support both old and new usage patterns
+    if ((isOpen || show) && userId && !providedFollowers.length) {
       fetchUsers();
+    } else if (providedFollowers.length) {
+      setUsers(providedFollowers);
     }
-  }, [isOpen, userId, type]);
+  }, [isOpen, show, userId, type]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -79,13 +89,14 @@ const FollowersModal: React.FC<FollowersModalProps> = ({
     }
   };
 
-  const title = type === 'followers' ? 'Подписчики' : 'Подписки';
+  const modalTitle = title || (type === 'followers' ? 'Подписчики' : 'Подписки');
+  const isModalOpen = isOpen || show;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isModalOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>{title} ({users.length})</DialogTitle>
+          <DialogTitle>{modalTitle} ({users.length})</DialogTitle>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto">
