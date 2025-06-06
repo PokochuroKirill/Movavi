@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +30,6 @@ const SnippetsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSnippets();
@@ -62,7 +60,11 @@ const SnippetsPage = () => {
       // Собираем все уникальные теги
       const tags = new Set<string>();
       data?.forEach(snippet => {
-        snippet.tags?.forEach(tag => tags.add(tag));
+        if (snippet.tags && Array.isArray(snippet.tags)) {
+          snippet.tags.forEach(tag => {
+            if (tag) tags.add(tag);
+          });
+        }
       });
       setAvailableTags(Array.from(tags).sort());
       

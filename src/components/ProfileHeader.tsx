@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
 interface ProfileHeaderProps {
   profile: Profile;
   isCurrentUser: boolean;
@@ -19,6 +20,7 @@ interface ProfileHeaderProps {
   onFollowersClick?: () => void;
   onFollowingClick?: () => void;
 }
+
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   profile,
   isCurrentUser,
@@ -29,20 +31,17 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onFollowingClick
 }) => {
   const [uploading, setUploading] = useState(false);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
 
   // Форматируем дату создания аккаунта в формат "месяц год" на русском языке
   const formatCreationDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'LLLL yyyy', {
-        locale: ru
-      });
+      return format(new Date(dateString), 'LLLL yyyy', { locale: ru });
     } catch (error) {
       return 'Дата не указана';
     }
   };
+
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
       return;
@@ -107,6 +106,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       setUploading(false);
     }
   };
+
   const handleRemoveBanner = async () => {
     try {
       setUploading(true);
@@ -148,6 +148,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       setUploading(false);
     }
   };
+
   return (
     <Card className="mb-6 overflow-hidden">
       <div className="relative h-48 bg-gradient-to-r from-blue-500 to-devhub-purple">
@@ -225,7 +226,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   </Button>
                 )}
                 {onEditClick && (
-                  <Button variant="outline" size="sm" onClick={onEditClick}>
+                  <Button 
+                    onClick={onEditClick}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                  >
                     <Pencil className="h-4 w-4 mr-2" />
                     Редактировать профиль
                   </Button>
@@ -292,4 +296,5 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     </Card>
   );
 };
+
 export default ProfileHeader;

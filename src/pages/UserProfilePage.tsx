@@ -1,32 +1,21 @@
+
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Users } from 'lucide-react';
-import ProjectCard from '@/components/ProjectCard';
-import SnippetCard from '@/components/SnippetCard';
-import ProfileHeader from '@/components/ProfileHeader';
-import { Profile, Project, Snippet } from '@/types/database';
-import { fetchProfileById, fetchUserProjects, fetchUserSnippets, isFollowingUser, followUser, unfollowUser, fetchFollowers, fetchFollowing, fetchFollowCounts } from '@/hooks/useProfileQueries';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import Layout from '@/components/Layout';
+import UserProfileView from '@/components/UserProfileView';
+import { Profile, Project, Snippet } from '@/types/database';
+import { fetchProfileById, fetchProfileByUsername, fetchUserProjects, fetchUserSnippets, isFollowingUser, followUser, unfollowUser, fetchFollowers, fetchFollowing, fetchFollowCounts } from '@/hooks/useProfileQueries';
+
 const UserProfilePage = () => {
-  const {
-    username
-  } = useParams<{
-    username: string;
-  }>();
-  const {
-    user
-  } = useAuth();
+  const { username } = useParams<{ username: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [userSnippets, setUserSnippets] = useState<Snippet[]>([]);
@@ -42,26 +31,29 @@ const UserProfilePage = () => {
   const [showFollowing, setShowFollowing] = useState(false);
   const [followers, setFollowers] = useState<Profile[]>([]);
   const [following, setFollowing] = useState<Profile[]>([]);
+  const [savedProjects, setSavedProjects] = useState<Project[]>([]);
+  const [savedSnippets, setSavedSnippets] = useState<Snippet[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+
   useEffect(() => {
     if (!username) {
       navigate('/');
       return;
     }
+    
     const loadProfile = async () => {
       setLoading(true);
       try {
         // First try to find by username
-        const {
-          data,
-          error
-        } = await supabase.from('profiles').select('*').eq('username', username).single();
-        if (error) {
+        let profileData: Profile | null = null;
+        
+        profileData = await fetchProfileByUsername(username);
+        
+        if (!profileData) {
           // If username not found, try by ID
-          const {
-            data: idData,
-            error: idError
-          } = await supabase.from('profiles').select('*').eq('id', username).single();
-          if (idError) {
+          profileData = await fetchProfileById(username);
+          
+          if (!profileData) {
             toast({
               title: 'Error',
               description: 'User profile not found',
@@ -70,12 +62,10 @@ const UserProfilePage = () => {
             navigate('/');
             return;
           }
-          setProfile(idData as Profile);
-          await loadUserData(idData.id);
-        } else {
-          setProfile(data as Profile);
-          await loadUserData(data.id);
         }
+        
+        setProfile(profileData);
+        await loadUserData(profileData.id);
       } catch (error: any) {
         console.error('Error loading profile:', error);
         toast({
@@ -87,11 +77,14 @@ const UserProfilePage = () => {
         setLoading(false);
       }
     };
+    
     loadProfile();
-  }, [username, navigate]);
+  }, [username, navigate, toast]);
+
   const loadUserData = async (profileId: string) => {
     setProjectsLoading(true);
     setSnippetsLoading(true);
+    
     try {
       // Check if current user is following this profile
       if (user) {
@@ -111,6 +104,11 @@ const UserProfilePage = () => {
       // Get snippets
       const snippets = await fetchUserSnippets(profileId);
       setUserSnippets(snippets);
+      
+      // Load saved/favorite items if viewing own profile
+      if (user && user.id === profileId) {
+        await loadSavedItems(profileId);
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
@@ -118,6 +116,54 @@ const UserProfilePage = () => {
       setSnippetsLoading(false);
     }
   };
+
+  const loadSavedItems = async (userId: string) => {
+    setSavedLoading(true);
+    try {
+      // Get saved projects
+      const { data: savedProjectsData } = await supabase
+        .from('saved_projects')
+        .select(`
+          project_id,
+          projects:project_id (
+            *,
+            profiles:user_id (
+              username,
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('user_id', userId);
+        
+      // Get saved snippets
+      const { data: savedSnippetsData } = await supabase
+        .from('saved_snippets')
+        .select(`
+          snippet_id,
+          snippets:snippet_id (
+            *,
+            profiles:user_id (
+              username,
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('user_id', userId);
+      
+      const projects = savedProjectsData?.map(item => item.projects) || [];
+      const snippets = savedSnippetsData?.map(item => item.snippets) || [];
+      
+      setSavedProjects(projects as Project[]);
+      setSavedSnippets(snippets as Snippet[]);
+    } catch (error) {
+      console.error("Error loading saved items:", error);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+  
   const handleFollowToggle = async () => {
     if (!user || !profile) {
       toast({
@@ -128,8 +174,10 @@ const UserProfilePage = () => {
       navigate('/auth');
       return;
     }
+    
     try {
       let success;
+      
       if (isFollowing) {
         success = await unfollowUser(user.id, profile.id);
         if (success) {
@@ -160,8 +208,10 @@ const UserProfilePage = () => {
       });
     }
   };
+  
   const loadFollowers = async () => {
     if (!profile) return;
+    
     try {
       const followersList = await fetchFollowers(profile.id);
       setFollowers(followersList);
@@ -176,8 +226,10 @@ const UserProfilePage = () => {
       });
     }
   };
+  
   const loadFollowing = async () => {
     if (!profile) return;
+    
     try {
       const followingList = await fetchFollowing(profile.id);
       setFollowing(followingList);
@@ -192,120 +244,54 @@ const UserProfilePage = () => {
       });
     }
   };
+
   if (loading) {
-    return <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple" />
-          <span className="ml-2 text-lg">Загрузка профиля...</span>
+    return (
+      <Layout>
+        <div className="container max-w-4xl py-24 mt-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
+            <span className="text-lg">Загрузка профиля...</span>
+          </div>
         </div>
-        <Footer />
-      </div>;
+      </Layout>
+    );
   }
+
   const isOwnProfile = user && profile && user.id === profile.id;
-  return <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-20">
-        <h1 className="text-3xl font-bold mb-8 mt-8">Профиль пользователя</h1>
 
-        {profile && <div className="mb-8">
-            <ProfileHeader profile={profile} isCurrentUser={isOwnProfile} onEditClick={() => navigate('/profile')} followersCount={followersCount} followingCount={followingCount} onFollowersClick={loadFollowers} onFollowingClick={loadFollowing} />
-            
-            {!isOwnProfile && user && <div className="flex justify-end mt-4">
-                <Button onClick={handleFollowToggle} variant={isFollowing ? "outline" : "default"} className={isFollowing ? "" : "gradient-bg text-white"}>
-                  {isFollowing ? "Unfollow" : "Follow"}
-                </Button>
-              </div>}
-          </div>}
-        
-        {showFollowers && <Card className="mb-8">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Followers ({followers.length})</CardTitle>
-              <Button variant="outline" onClick={() => setShowFollowers(false)}>Close</Button>
-            </CardHeader>
-            <CardContent>
-              {followers.length > 0 ? <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {followers.map(follower => <Link key={follower.id} to={`/user/${follower.username || follower.id}`}>
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden">
-                          {follower.avatar_url ? <img src={follower.avatar_url} alt={follower.username || ''} className="w-full h-full object-cover" /> : <Users className="w-full h-full p-2 text-gray-500" />}
-                        </div>
-                        <div>
-                          <p className="font-medium">{follower.full_name || follower.username || 'User'}</p>
-                          {follower.username && <p className="text-sm text-gray-500">@{follower.username}</p>}
-                        </div>
-                      </div>
-                    </Link>)}
-                </div> : <p className="text-center py-6 text-gray-500">No followers yet</p>}
-            </CardContent>
-          </Card>}
-        
-        {showFollowing && <Card className="mb-8">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Following ({following.length})</CardTitle>
-              <Button variant="outline" onClick={() => setShowFollowing(false)}>Close</Button>
-            </CardHeader>
-            <CardContent>
-              {following.length > 0 ? <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {following.map(followedUser => <Link key={followedUser.id} to={`/user/${followedUser.username || followedUser.id}`}>
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden">
-                          {followedUser.avatar_url ? <img src={followedUser.avatar_url} alt={followedUser.username || ''} className="w-full h-full object-cover" /> : <Users className="w-full h-full p-2 text-gray-500" />}
-                        </div>
-                        <div>
-                          <p className="font-medium">{followedUser.full_name || followedUser.username || 'User'}</p>
-                          {followedUser.username && <p className="text-sm text-gray-500">@{followedUser.username}</p>}
-                        </div>
-                      </div>
-                    </Link>)}
-                </div> : <p className="text-center py-6 text-gray-500">Not following anyone yet</p>}
-            </CardContent>
-          </Card>}
-
-        <Tabs defaultValue="projects" className="w-full max-w-4xl mx-auto">
-          <TabsList className="mb-6">
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="snippets">Snippets</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="projects">
-            <Card>
-              <CardHeader>
-                <CardTitle>Projects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {projectsLoading ? <p className="text-center py-10 text-gray-500">
-                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                    Loading projects...
-                  </p> : userProjects.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userProjects.map(project => <ProjectCard key={project.id} id={project.id} title={project.title} description={project.description} technologies={project.technologies || []} author={project.author || ''} authorAvatar={project.authorAvatar || ''} authorId={project.user_id} authorUsername={project.profiles?.username} imageUrl={project.image_url || undefined} />)}
-                  </div> : <p className="text-center py-10 text-gray-500">
-                    No projects to display
-                  </p>}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="snippets">
-            <Card>
-              <CardHeader>
-                <CardTitle>Code Snippets</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {snippetsLoading ? <p className="text-center py-10 text-gray-500">
-                    <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-                    Loading snippets...
-                  </p> : userSnippets.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userSnippets.map(snippet => <SnippetCard key={snippet.id} id={snippet.id} title={snippet.title} description={snippet.description} language={snippet.language} tags={snippet.tags || []} author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'} authorAvatar={snippet.profiles?.avatar_url} authorId={snippet.user_id} authorUsername={snippet.profiles?.username} />)}
-                  </div> : <p className="text-center py-10 text-gray-500">
-                    No code snippets to display
-                  </p>}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+  return (
+    <Layout>
+      <div className="container max-w-4xl py-24 mt-8">
+        {profile && (
+          <UserProfileView 
+            profile={profile}
+            isOwnProfile={isOwnProfile}
+            onEditProfile={() => navigate('/profile')}
+            onFollowToggle={handleFollowToggle}
+            isFollowing={isFollowing}
+            followersCount={followersCount}
+            followingCount={followingCount}
+            onFollowersClick={loadFollowers}
+            onFollowingClick={loadFollowing}
+            showFollowers={showFollowers}
+            showFollowing={showFollowing}
+            followers={followers}
+            following={following}
+            onCloseFollowers={() => setShowFollowers(false)}
+            onCloseFollowing={() => setShowFollowing(false)}
+            projects={userProjects}
+            snippets={userSnippets}
+            projectsLoading={projectsLoading}
+            snippetsLoading={snippetsLoading}
+            savedProjects={savedProjects}
+            savedSnippets={savedSnippets}
+            savedLoading={savedLoading}
+          />
+        )}
       </div>
-      <Footer />
-    </div>;
+    </Layout>
+  );
 };
+
 export default UserProfilePage;

@@ -53,7 +53,11 @@ const ProjectsPage = () => {
       // Собираем все уникальные технологии
       const technologies = new Set<string>();
       data?.forEach(project => {
-        project.technologies?.forEach(tech => technologies.add(tech));
+        if (project.technologies && Array.isArray(project.technologies)) {
+          project.technologies.forEach(tech => {
+            if (tech) technologies.add(tech);
+          });
+        }
       });
       setAvailableTechnologies(Array.from(technologies).sort());
       
