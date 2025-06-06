@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Community, CommunityMember, CommunityPost, CommunityComment } from '@/types/database';
+import { incrementCounter, decrementCounter } from '@/utils/dbFunctions';
 
 // Function to fetch community details
 export const fetchCommunityById = async (id: string): Promise<Community | null> => {
@@ -360,6 +361,91 @@ export const fetchPostComments = async (postId: string): Promise<CommunityCommen
   }
 };
 
+// Hook for community posts
+export const useCommunityPosts = (communityId?: string) => {
+  return useQuery({
+    queryKey: ['community-posts', communityId],
+    queryFn: async () => {
+      if (!communityId) return [];
+      
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          ),
+          community_post_images (
+            id,
+            image_url,
+            display_order
+          )
+        `)
+        .eq('community_id', communityId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as (CommunityPost & {
+        profiles: Profile;
+        community_post_images: Array<{
+          id: string;
+          image_url: string;
+          display_order: number;
+        }>;
+      })[];
+    },
+    enabled: !!communityId
+  });
+};
+
+// Hook for creating community comments
+export const useCreateCommunityComment = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('community_comments')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          content
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Increment comments count using the utility function
+      await incrementCounter('community_posts', 'comments_count', postId);
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['community-post-comments', data.post_id] });
+      queryClient.invalidateQueries({ queryKey: ['community-post', data.post_id] });
+      toast({
+        title: 'Комментарий добавлен',
+        description: 'Ваш комментарий был успешно добавлен'
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Ошибка',
+        description: error.message || 'Не удалось добавить комментарий',
+        variant: 'destructive'
+      });
+    }
+  });
+};
+
 export default {
   fetchCommunityById,
   fetchCommunityMembers,
@@ -371,5 +457,7 @@ export default {
   leaveCommunity,
   usePostLikes,
   addCommentToPost,
-  fetchPostComments
+  fetchPostComments,
+  useCommunityPosts,
+  useCreateCommunityComment
 };

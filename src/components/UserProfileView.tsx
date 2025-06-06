@@ -3,15 +3,13 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Profile, Project, Snippet } from '@/types/database';
 import ProjectCard from './ProjectCard';
 import SnippetCard from './SnippetCard';
-import FollowersModal from './FollowersModal';
 import ProfileHeader from './ProfileHeader';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface UserProfileViewProps {
   profile: Profile;
@@ -36,7 +34,6 @@ interface UserProfileViewProps {
   savedLoading?: boolean;
   onDeleteProject?: (projectId: string) => void;
   onDeleteSnippet?: (snippetId: string) => void;
-  // Add missing props
   isFollowing?: boolean;
   onFollowToggle?: () => Promise<void>;
 }
@@ -64,7 +61,6 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   savedLoading = false,
   onDeleteProject,
   onDeleteSnippet,
-  // Add missing props with defaults
   isFollowing = false,
   onFollowToggle
 }) => {
@@ -77,12 +73,13 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       <ProfileHeader 
         profile={profile} 
         isCurrentUser={isOwnProfile}
-        isOwnProfile={isOwnProfile}
         onEditClick={onEditProfile}
         followersCount={followersCount}
         followingCount={followingCount}
         onFollowersClick={onFollowersClick}
         onFollowingClick={onFollowingClick}
+        isFollowing={isFollowing}
+        onFollowToggle={onFollowToggle}
       />
 
       <Dialog open={showFollowers} onOpenChange={onCloseFollowers}>
@@ -119,20 +116,12 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {projects.map((project) => (
-                <div key={project.id} className="relative">
-                  <ProjectCard project={project} />
-                  
-                  {isOwnProfile && onDeleteProject && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 p-2 h-auto"
-                      onClick={() => setProjectToDelete(project.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <ProjectCard 
+                  key={project.id} 
+                  project={project} 
+                  showDeleteButton={isOwnProfile && !!onDeleteProject}
+                  onDelete={onDeleteProject}
+                />
               ))}
             </div>
           ) : (
@@ -162,20 +151,12 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           ) : snippets.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {snippets.map((snippet) => (
-                <div key={snippet.id} className="relative">
-                  <SnippetCard snippet={snippet} />
-                  
-                  {isOwnProfile && onDeleteSnippet && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 p-2 h-auto"
-                      onClick={() => setSnippetToDelete(snippet.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <SnippetCard 
+                  key={snippet.id} 
+                  snippet={snippet} 
+                  showDeleteButton={isOwnProfile && !!onDeleteSnippet}
+                  onDelete={onDeleteSnippet}
+                />
               ))}
             </div>
           ) : (
@@ -326,19 +307,6 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Follow button section for non-own profiles */}
-      {!isOwnProfile && onFollowToggle && (
-        <div className="mt-6">
-          <Button
-            onClick={onFollowToggle}
-            variant={isFollowing ? "outline" : "default"}
-            className={isFollowing ? "" : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"}
-          >
-            {isFollowing ? 'Отписаться' : 'Подписаться'}
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,6 +1,8 @@
 
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import UserProfileLink from './UserProfileLink';
 import { Project } from '@/types/database';
 
@@ -14,7 +16,9 @@ interface ProjectCardProps {
   imageUrl?: string;
   authorId?: string;
   authorUsername?: string;
-  project?: Project; // Added to support the project object directly
+  project?: Project;
+  showDeleteButton?: boolean;
+  onDelete?: (projectId: string) => void;
 }
 
 const ProjectCard = ({
@@ -27,7 +31,9 @@ const ProjectCard = ({
   imageUrl,
   authorId,
   authorUsername,
-  project, // Added project prop
+  project,
+  showDeleteButton = false,
+  onDelete,
 }: ProjectCardProps) => {
   // If project is provided, extract properties from it
   const projectId = project?.id || id;
@@ -46,7 +52,22 @@ const ProjectCard = ({
   const techArray = Array.isArray(projectTech) ? projectTech : [];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 relative">
+      {showDeleteButton && onDelete && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="absolute top-2 right-2 p-2 h-auto z-10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(projectId || '');
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+      
       {projectImageUrl && (
         <div className="h-48 overflow-hidden">
           <img 

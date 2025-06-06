@@ -1,101 +1,130 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProjectCard from './ProjectCard';
 import SnippetCard from './SnippetCard';
-import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Project, Snippet } from '@/types/database';
+
+interface RecommendedProject extends Project {
+  relevance_score: number;
+}
+
+interface RecommendedSnippet extends Snippet {
+  relevance_score: number;
+}
 
 const RecommendationSystem = () => {
   const { user } = useAuth();
 
-  const { data: recommendedProjects = [] } = useQuery({
+  const { data: recommendedProjects, isLoading: projectsLoading } = useQuery({
     queryKey: ['recommended-projects', user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .rpc('get_recommended_projects', { p_user_id: user.id });
       
       if (error) throw error;
-      return data || [];
+      return data as RecommendedProject[] || [];
     },
-    enabled: !!user,
+    enabled: !!user?.id
   });
 
-  const { data: recommendedSnippets = [] } = useQuery({
+  const { data: recommendedSnippets, isLoading: snippetsLoading } = useQuery({
     queryKey: ['recommended-snippets', user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .rpc('get_recommended_snippets', { p_user_id: user.id });
       
       if (error) throw error;
-      return data || [];
+      return data as RecommendedSnippet[] || [];
     },
-    enabled: !!user,
+    enabled: !!user?.id
   });
 
   if (!user) {
     return null;
   }
 
-  return (
-    <div className="space-y-8">
-      {recommendedProjects.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Рекомендуемые проекты</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recommendedProjects.slice(0, 6).map((project: any) => (
-                <ProjectCard
-                  key={project.id}
-                  id={project.id}
-                  title={project.title}
-                  description={project.description}
-                  technologies={project.technologies || []}
-                  author={project.profiles?.full_name || project.profiles?.username || 'Аноним'}
-                  authorAvatar={project.profiles?.avatar_url}
-                  authorId={project.user_id}
-                  authorUsername={project.profiles?.username}
-                  imageUrl={project.image_url}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+  const hasRecommendations = (recommendedProjects && recommendedProjects.length > 0) || 
+                             (recommendedSnippets && recommendedSnippets.length > 0);
 
-      {recommendedSnippets.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Рекомендуемые сниппеты</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recommendedSnippets.slice(0, 6).map((snippet: any) => (
-                <SnippetCard
-                  key={snippet.id}
-                  id={snippet.id}
-                  title={snippet.title}
-                  description={snippet.description}
-                  language={snippet.language}
-                  tags={snippet.tags || []}
-                  author={snippet.profiles?.full_name || snippet.profiles?.username || 'Аноним'}
-                  authorAvatar={snippet.profiles?.avatar_url}
-                  authorId={snippet.user_id}
-                  authorUsername={snippet.profiles?.username}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+  if (!hasRecommendations && !projectsLoading && !snippetsLoading) {
+    return null;
+  }
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-xl font-bold">Рекомендации для вас</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="projects" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="projects">Проекты</TabsTrigger>
+            <TabsTrigger value="snippets">Сниппеты</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="projects" className="mt-4">
+            {projectsLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : recommendedProjects && recommendedProjects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recommendedProjects.slice(0, 4).map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    id={project.id}
+                    title={project.title}
+                    description={project.description}
+                    imageUrl={project.image_url}
+                    technologies={project.technologies}
+                    authorId={project.user_id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                Пока нет рекомендаций проектов. Создайте больше проектов, чтобы получить персональные рекомендации!
+              </p>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="snippets" className="mt-4">
+            {snippetsLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : recommendedSnippets && recommendedSnippets.length > 0 ? (
+              <div className="space-y-4">
+                {recommendedSnippets.slice(0, 4).map((snippet) => (
+                  <SnippetCard
+                    key={snippet.id}
+                    id={snippet.id}
+                    title={snippet.title}
+                    description={snippet.description}
+                    language={snippet.language}
+                    tags={snippet.tags}
+                    authorId={snippet.user_id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                Пока нет рекомендаций сниппетов. Создайте больше сниппетов, чтобы получить персональные рекомендации!
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 

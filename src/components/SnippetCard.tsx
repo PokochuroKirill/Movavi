@@ -1,6 +1,8 @@
+
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { Code, Eye, ThumbsUp } from 'lucide-react';
+import { Code, Eye, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import UserProfileLink from './UserProfileLink';
 import { Snippet } from '@/types/database';
 
@@ -17,7 +19,9 @@ interface SnippetCardProps {
   authorId?: string;
   authorUsername?: string;
   createdAt?: string;
-  snippet?: Snippet; // Added to support direct snippet object
+  snippet?: Snippet;
+  showDeleteButton?: boolean;
+  onDelete?: (snippetId: string) => void;
 }
 
 const SnippetCard = ({ 
@@ -33,7 +37,9 @@ const SnippetCard = ({
   authorId,
   authorUsername,
   createdAt,
-  snippet // Added snippet prop
+  snippet,
+  showDeleteButton = false,
+  onDelete
 }: SnippetCardProps) => {
   // If snippet is provided, extract properties from it
   const snippetId = snippet?.id || id;
@@ -41,7 +47,7 @@ const SnippetCard = ({
   const snippetDescription = snippet?.description || description;
   const snippetLanguage = snippet?.language || language;
   const snippetTags = snippet?.tags || tags;
-  const snippetViewsCount = snippet?.views_count || viewsCount;
+  const snippetViewsCount = snippet?.views_count || viewsCount || 0;
   
   // Extract author info from snippet if available
   const author = authorName || (snippet?.profiles?.full_name || snippet?.profiles?.username);
@@ -51,7 +57,22 @@ const SnippetCard = ({
   const dateCreated = createdAt || snippet?.created_at;
   
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md transition-shadow duration-300 relative">
+      {showDeleteButton && onDelete && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="absolute top-2 right-2 p-2 h-auto z-10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(snippetId || '');
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+      
       <Link to={`/snippets/${snippetId}`} className="block">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-2">
           {snippetTitle}
