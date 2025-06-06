@@ -24,7 +24,7 @@ const SnippetsPage = () => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +90,7 @@ const SnippetsPage = () => {
     }
 
     // Фильтр по языку программирования
-    if (selectedLanguage) {
+    if (selectedLanguage && selectedLanguage !== 'all') {
       filtered = filtered.filter(snippet =>
         snippet.language.toLowerCase() === selectedLanguage.toLowerCase()
       );
@@ -118,7 +118,7 @@ const SnippetsPage = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedLanguage('');
+    setSelectedLanguage('all');
     setSelectedTags([]);
   };
 
@@ -176,7 +176,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="Язык программирования" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Все языки</SelectItem>
+                    <SelectItem value="all">Все языки</SelectItem>
                     {PROGRAMMING_LANGUAGES.map(lang => (
                       <SelectItem key={lang} value={lang}>{lang}</SelectItem>
                     ))}
@@ -191,7 +191,7 @@ const SnippetsPage = () => {
                     <Filter className="h-4 w-4" />
                     Теги
                   </Button>
-                  {(searchTerm || selectedLanguage || selectedTags.length > 0) && (
+                  {(searchTerm || selectedLanguage !== 'all' || selectedTags.length > 0) && (
                     <Button variant="outline" onClick={clearFilters} className="gap-2">
                       <X className="h-4 w-4" />
                       Очистить
