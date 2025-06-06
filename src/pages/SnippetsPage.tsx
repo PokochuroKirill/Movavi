@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -121,10 +122,6 @@ const SnippetsPage = () => {
     setSelectedTags([]);
   };
 
-  const handleSnippetClick = (snippetId: string) => {
-    navigate(`/snippets/${snippetId}`);
-  };
-
   if (loading) {
     return (
       <Layout>
@@ -179,7 +176,7 @@ const SnippetsPage = () => {
                     <SelectValue placeholder="Язык программирования" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Все языки</SelectItem>
+                    <SelectItem value="">Все языки</SelectItem>
                     {PROGRAMMING_LANGUAGES.map(lang => (
                       <SelectItem key={lang} value={lang}>{lang}</SelectItem>
                     ))}

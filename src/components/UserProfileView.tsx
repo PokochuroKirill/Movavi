@@ -263,16 +263,8 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
                   </div>
                 )}
 
-                {/* Статистика */}
+                {/* Статистика подписок */}
                 <div className="flex gap-6 text-sm">
-                  <div>
-                    <span className="font-semibold text-gray-900 dark:text-white">{projects.length}</span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-1">проектов</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-900 dark:text-white">{snippets.length}</span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-1">сниппетов</span>
-                  </div>
                   <button
                     onClick={() => setShowFollowersModal(true)}
                     className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -345,8 +337,8 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       {/* Вкладки с контентом */}
       <Tabs defaultValue="projects" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="projects">Проекты ({projects.length})</TabsTrigger>
-          <TabsTrigger value="snippets">Сниппеты ({snippets.length})</TabsTrigger>
+          <TabsTrigger value="projects">Проекты</TabsTrigger>
+          <TabsTrigger value="snippets">Сниппеты</TabsTrigger>
         </TabsList>
         
         <TabsContent value="projects" className="space-y-6">
