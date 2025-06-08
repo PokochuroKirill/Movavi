@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +46,11 @@ const CommunitiesPage = () => {
   });
 
   const filteredCommunities = React.useMemo(() => {
+    // Add null check to prevent the "Cannot read properties of undefined" error
+    if (!communities) {
+      return [];
+    }
+
     let filtered = communities.filter(community => {
       if (searchTerm) {
         return community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
