@@ -18,6 +18,9 @@ export interface Profile {
   is_verified: boolean;
   is_pro?: boolean;
   last_username_change?: string | null;
+  verification_type?: number | null;
+  verification_granted_at?: string | null;
+  verification_granted_by?: string | null;
 }
 
 export interface Project {

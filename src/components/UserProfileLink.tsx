@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import VerificationBadge from './VerificationBadge';
 
 interface UserProfileLinkProps {
   username?: string;
@@ -9,6 +10,7 @@ interface UserProfileLinkProps {
   avatarUrl?: string;
   userId?: string;
   className?: string;
+  verificationType?: number | null;
 }
 
 const UserProfileLink = ({
@@ -16,7 +18,8 @@ const UserProfileLink = ({
   fullName,
   avatarUrl,
   userId,
-  className = ""
+  className = "",
+  verificationType
 }: UserProfileLinkProps) => {
   const displayName = fullName || username || 'Неизвестный пользователь';
   
@@ -36,7 +39,10 @@ const UserProfileLink = ({
           {displayName.charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      <span>{displayName}</span>
+      <div className="flex items-center gap-1">
+        <span>{displayName}</span>
+        {verificationType && <VerificationBadge verificationType={verificationType} />}
+      </div>
     </Link>
   );
 };
