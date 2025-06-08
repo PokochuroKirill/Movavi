@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, MessageCircle, Heart, Plus, Settings } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Users, Calendar, MessageCircle, Heart, Plus, Settings, Edit } from 'lucide-react';
 import { Community, CommunityMember, CommunityPost } from '@/types/database';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import CreateCommunityPostDialog from './CreateCommunityPostDialog';
+import CommunityEditForm from './CommunityEditForm';
 
 interface CommunityDetailViewProps {
   community: Community | null;
@@ -38,6 +40,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   userId
 }) => {
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   if (loading) {
     return (
@@ -58,6 +61,11 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
 
   const handlePostCreated = async () => {
     setShowCreatePost(false);
+    await onRefresh();
+  };
+
+  const handleCommunityUpdated = async () => {
+    setShowEditDialog(false);
     await onRefresh();
   };
 
@@ -136,8 +144,12 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                         Покинуть
                       </Button>
                       {canManage && (
-                        <Button variant="outline" size="icon">
-                          <Settings className="h-4 w-4" />
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => setShowEditDialog(true)}
+                        >
+                          <Edit className="h-4 w-4" />
                         </Button>
                       )}
                     </>
@@ -278,6 +290,19 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
         communityId={community.id}
         onPostCreated={handlePostCreated}
       />
+
+      {/* Диалог редактирования сообщества */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Редактировать сообщество</DialogTitle>
+          </DialogHeader>
+          <CommunityEditForm
+            community={community}
+            onUpdate={handleCommunityUpdated}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
