@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -19,7 +18,6 @@ import { ru } from 'date-fns/locale';
 import Layout from '@/components/Layout';
 import SnippetCard from '@/components/SnippetCard';
 import { Snippet } from '@/types/database';
-
 const SnippetsPage = () => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,19 +26,22 @@ const SnippetsPage = () => {
   const [selectedTag, setSelectedTag] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     loadSnippets();
   }, []);
-
   const loadSnippets = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('snippets')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('snippets').select(`
           *,
           profiles:user_id (
             id,
@@ -48,11 +49,10 @@ const SnippetsPage = () => {
             full_name,
             avatar_url
           )
-        `)
-        .order('created_at', { ascending: false });
-
+        `).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
-
       setSnippets(data as Snippet[]);
     } catch (error: any) {
       console.error('Error loading snippets:', error);
@@ -65,39 +65,24 @@ const SnippetsPage = () => {
       setLoading(false);
     }
   };
-
   const filteredSnippets = React.useMemo(() => {
     let filtered = snippets.filter(snippet => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        return snippet.title.toLowerCase().includes(searchLower) ||
-               snippet.description.toLowerCase().includes(searchLower) ||
-               snippet.language.toLowerCase().includes(searchLower) ||
-               snippet.tags?.some(tag => 
-                 tag.toLowerCase().includes(searchLower)
-               ) ||
-               (snippet.profiles?.username?.toLowerCase().includes(searchLower)) ||
-               (snippet.profiles?.full_name?.toLowerCase().includes(searchLower));
+        return snippet.title.toLowerCase().includes(searchLower) || snippet.description.toLowerCase().includes(searchLower) || snippet.language.toLowerCase().includes(searchLower) || snippet.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || snippet.profiles?.username?.toLowerCase().includes(searchLower) || snippet.profiles?.full_name?.toLowerCase().includes(searchLower);
       }
-      
       return true;
     });
 
     // Language filter
     if (selectedLanguage && selectedLanguage !== 'all') {
-      filtered = filtered.filter(snippet => 
-        snippet.language.toLowerCase() === selectedLanguage.toLowerCase()
-      );
+      filtered = filtered.filter(snippet => snippet.language.toLowerCase() === selectedLanguage.toLowerCase());
     }
 
     // Tag filter
     if (selectedTag && selectedTag !== 'all') {
-      filtered = filtered.filter(snippet => 
-        snippet.tags?.some(tag => 
-          tag.toLowerCase() === selectedTag.toLowerCase()
-        )
-      );
+      filtered = filtered.filter(snippet => snippet.tags?.some(tag => tag.toLowerCase() === selectedTag.toLowerCase()));
     }
 
     // Sort
@@ -114,16 +99,13 @@ const SnippetsPage = () => {
       default:
         break;
     }
-
     return filtered;
   }, [snippets, searchTerm, selectedLanguage, selectedTag, sortBy]);
-
   const languages = useMemo(() => {
     const uniqueLanguages = new Set<string>();
     snippets.forEach(snippet => uniqueLanguages.add(snippet.language));
     return Array.from(uniqueLanguages);
   }, [snippets]);
-
   const tags = useMemo(() => {
     const uniqueTags = new Set<string>();
     snippets.forEach(snippet => {
@@ -131,9 +113,7 @@ const SnippetsPage = () => {
     });
     return Array.from(uniqueTags);
   }, [snippets]);
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="container py-24 mt-8">
         {/* Header and Filters */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8">
@@ -147,11 +127,9 @@ const SnippetsPage = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {user && (
-              <Button onClick={() => navigate('/snippets/create')}>
+            {user && <Button onClick={() => navigate('/snippets/create')}>
                 Создать сниппет
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
 
@@ -161,13 +139,7 @@ const SnippetsPage = () => {
           <div className="md:col-span-1">
             <Label htmlFor="search">Поиск</Label>
             <div className="relative">
-              <Input
-                id="search"
-                type="search"
-                placeholder="Поиск по названию, описанию, языку..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <Input id="search" type="search" placeholder="Поиск по названию, описанию, языку..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
               <Search className="absolute top-2.5 right-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
@@ -181,9 +153,7 @@ const SnippetsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Все языки</SelectItem>
-                {languages.map(language => (
-                  <SelectItem key={language} value={language}>{language}</SelectItem>
-                ))}
+                {languages.map(language => <SelectItem key={language} value={language}>{language}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -197,9 +167,7 @@ const SnippetsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Все тэги</SelectItem>
-                {tags.map(tag => (
-                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                ))}
+                {tags.map(tag => <SelectItem key={tag} value={tag}>{tag}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -210,49 +178,25 @@ const SnippetsPage = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {filteredSnippets.length} сниппетов
           </p>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="sort" className="text-sm text-gray-500 dark:text-gray-400">
-              Сортировать по:
-            </Label>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Новые</SelectItem>
-                <SelectItem value="oldest">Старые</SelectItem>
-                <SelectItem value="alphabetical">Алфавиту</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          
         </div>
 
         {/* Snippets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {loading ? (
-            <>
+          {loading ? <>
               <Skeleton className="w-full h-48" />
               <Skeleton className="w-full h-48" />
               <Skeleton className="w-full h-48" />
-            </>
-          ) : filteredSnippets.length > 0 ? (
-            filteredSnippets.map((snippet) => (
-              <SnippetCard key={snippet.id} snippet={snippet} />
-            ))
-          ) : (
-            <div className="text-center py-12">
+            </> : filteredSnippets.length > 0 ? filteredSnippets.map(snippet => <SnippetCard key={snippet.id} snippet={snippet} />) : <div className="text-center py-12">
               <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
                 Сниппеты не найдены
               </h2>
               <p className="text-gray-500 dark:text-gray-400">
                 Попробуйте изменить параметры поиска
               </p>
-            </div>
-          )}
+            </div>}
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default SnippetsPage;
