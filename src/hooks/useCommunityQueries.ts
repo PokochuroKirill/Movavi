@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -329,11 +328,16 @@ export const addCommentToPost = async (postId: string, userId: string, content: 
 
     if (error) throw error;
 
-    // Обновляем счетчик комментариев в посте
-    const { error: rpcError } = await supabase.rpc('increment_post_comments', { post_id: postId });
+    // Manually update comments count
+    const { error: updateError } = await supabase
+      .from('community_posts')
+      .update({ 
+        comments_count: supabase.sql`comments_count + 1`
+      })
+      .eq('id', postId);
     
-    if (rpcError) {
-      console.error('Error updating comments count:', rpcError);
+    if (updateError) {
+      console.error('Error updating comments count:', updateError);
     }
       
     return true;
@@ -415,13 +419,10 @@ export const useCreateCommunityComment = () => {
 
       if (error) throw error;
 
-      // Update comments count manually since RPC function doesn't exist
-      const { error: updateError } = await supabase
-        .from('community_posts')
-        .update({ 
-          comments_count: supabase.sql`comments_count + 1`
-        })
-        .eq('id', postId);
+      // Update comments count manually
+      const { error: updateError } = await supabase.rpc('increment_community_posts', {
+        community_id: postId
+      });
 
       if (updateError) {
         console.error('Error updating comments count:', updateError);
