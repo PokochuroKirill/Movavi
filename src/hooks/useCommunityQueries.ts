@@ -415,8 +415,17 @@ export const useCreateCommunityComment = () => {
 
       if (error) throw error;
 
-      // Increment comments count using the utility function
-      await incrementCounter('community_posts', 'comments_count', postId);
+      // Update comments count manually since RPC function doesn't exist
+      const { error: updateError } = await supabase
+        .from('community_posts')
+        .update({ 
+          comments_count: supabase.sql`comments_count + 1`
+        })
+        .eq('id', postId);
+
+      if (updateError) {
+        console.error('Error updating comments count:', updateError);
+      }
 
       return data;
     },

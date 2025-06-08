@@ -1,412 +1,208 @@
-
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, Search, Users, Filter, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Users, Calendar, MessageCircle, Search } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Community } from '@/types/database';
 
 const CommunitiesPage = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('recent');
   const { toast } = useToast();
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [myCommunities, setMyCommunities] = useState<Community[]>([]);
-  const [popularCommunities, setPopularCommunities] = useState<Community[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('members_count');
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('discover');
-  const [availableTopics, setAvailableTopics] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchCommunities();
-  }, [user]);
-
-  const fetchCommunities = async () => {
-    try {
-      setLoading(true);
-
-      // Загрузка всех публичных сообществ
-      const { data: communitiesData, error: communitiesError } = await supabase
+  const { data: communities, isLoading, error } = useQuery({
+    queryKey: ['communities'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('communities')
         .select(`
           *,
-          profiles:creator_id (username, full_name, avatar_url)
+          creator:creator_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
         `)
-        .eq('is_public', true)
-        .order('members_count', { ascending: false });
-      
-      if (communitiesError) throw communitiesError;
-      setCommunities(communitiesData as unknown as Community[]);
-      
-      // Популярные сообщества - сортируем по количеству участников
-      const popular = [...(communitiesData as unknown as Community[])]
-        .sort((a, b) => (b.members_count || 0) - (a.members_count || 0))
-        .slice(0, 6);
-      setPopularCommunities(popular);
-      
-      // Собираем все уникальные темы
-      const topics = new Set<string>();
-      communitiesData?.forEach(community => {
-        if (community.topics && Array.isArray(community.topics)) {
-          community.topics.forEach(topic => {
-            if (topic) topics.add(topic);
-          });
-        }
-      });
-      setAvailableTopics(Array.from(topics).sort());
-      
-      // Если пользователь авторизован, получаем сообщества, где он состоит
-      if (user) {
-        const { data: userCommunitiesData, error: userCommunitiesError } = await supabase
-          .from('community_members')
-          .select(`
-            community_id
-          `)
-          .eq('user_id', user.id);
+        .order('created_at', { ascending: false });
 
-        if (userCommunitiesError) throw userCommunitiesError;
-        
-        if (userCommunitiesData.length > 0) {
-          const communityIds = userCommunitiesData.map(item => item.community_id);
-          
-          const { data: myCommunitiesData, error: myCommunitiesError } = await supabase
-            .from('communities')
-            .select(`
-              *,
-              profiles:creator_id (username, full_name, avatar_url)
-            `)
-            .in('id', communityIds)
-            .order('created_at', { ascending: false });
-            
-          if (myCommunitiesError) throw myCommunitiesError;
-          setMyCommunities(myCommunitiesData as unknown as Community[]);
-        } else {
-          setMyCommunities([]);
-        }
+      if (error) {
+        throw error;
       }
-    } catch (error: any) {
-      console.error('Error fetching communities:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить сообщества',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+
+      return data as Community[];
     }
-  };
+  });
 
-  const filteredCommunities = () => {
-    let filtered = communities;
+  const filteredCommunities = React.useMemo(() => {
+    let filtered = communities.filter(community => {
+      if (searchTerm) {
+        return community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               community.description.toLowerCase().includes(searchTerm.toLowerCase());
+      }
+      return true;
+    });
 
-    // Поиск
-    if (searchQuery) {
-      filtered = filtered.filter(community =>
-        community.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (community.description && community.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (community.topics && community.topics.some(topic => topic.toLowerCase().includes(searchQuery.toLowerCase())))
-      );
-    }
-
-    // Фильтр по темам
-    if (selectedTopic !== 'all') {
-      filtered = filtered.filter(community =>
-        community.topics && community.topics.includes(selectedTopic)
-      );
-    }
-
-    // Сортировка
-    if (sortBy === 'members_count') {
-      filtered = filtered.sort((a, b) => (b.members_count || 0) - (a.members_count || 0));
-    } else if (sortBy === 'posts_count') {
-      filtered = filtered.sort((a, b) => (b.posts_count || 0) - (a.posts_count || 0));
-    } else if (sortBy === 'name') {
-      filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
-    } else {
-      filtered = filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    if (sortBy === 'name') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'members') {
+      filtered.sort((a, b) => (b.members_count || 0) - (a.members_count || 0));
+    } else if (sortBy === 'recent') {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
     return filtered;
-  };
-
-  const clearFilters = () => {
-    setSearchQuery('');
-    setSelectedTopic('all');
-    setSortBy('members_count');
-  };
-
-  const hasActiveFilters = searchQuery || selectedTopic !== 'all' || sortBy !== 'members_count';
-
-  const renderCommunityCard = (community: Community) => (
-    <Link to={`/communities/${community.id}`} key={community.id}>
-      <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-        {community.banner_url && (
-          <div className="h-40 overflow-hidden">
-            <img 
-              src={community.banner_url} 
-              alt={community.name} 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        <CardHeader>
-          <div className="flex items-center space-x-3 mb-2">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={community.avatar_url || undefined} />
-              <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                {community.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg line-clamp-1">{community.name}</CardTitle>
-              <p className="text-sm text-gray-500">
-                {community.profiles?.username && `@${community.profiles.username}`}
-              </p>
-            </div>
-          </div>
-          <CardDescription className="line-clamp-2 min-h-[2.5rem]">
-            {community.description}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-1 mb-3">
-            {community.topics && community.topics.slice(0, 3).map((topic, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {topic}
-              </Badge>
-            ))}
-            {community.topics && community.topics.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{community.topics.length - 3}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <div className="flex items-center justify-between w-full text-sm text-gray-500">
-            <div className="flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              <span>{community.members_count || 0}</span>
-            </div>
-            <span>{community.posts_count || 0} постов</span>
-          </div>
-        </CardFooter>
-      </Card>
-    </Link>
-  );
+  }, [communities, searchTerm, sortBy]);
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 mt-16">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Сообщества</h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Присоединяйтесь к сообществам по интересам и общайтесь с единомышленниками
+      <div className="container py-24 mt-8">
+        {/* Header and Filters */}
+        <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold">Сообщества</h1>
+            <p className="text-gray-500">
+              Найдите сообщества по интересам и общайтесь с единомышленниками
             </p>
           </div>
           
-          <Button 
-            onClick={() => navigate('/communities/create')} 
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 mt-4 lg:mt-0"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Создать сообщество
-          </Button>
+          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Input
+                type="search"
+                placeholder="Поиск сообществ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10"
+              />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Label htmlFor="sort" className="text-sm text-gray-500">
+                Сортировать:
+              </Label>
+              <select
+                id="sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-white border border-gray-300 rounded px-4 py-2 text-sm"
+              >
+                <option value="recent">Недавно созданные</option>
+                <option value="name">По названию</option>
+                <option value="members">По количеству участников</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="discover" onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="discover">Открыть</TabsTrigger>
-            {user && <TabsTrigger value="my">Мои сообщества</TabsTrigger>}
-            <TabsTrigger value="popular">Популярные</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="discover">
-            {/* Фильтры */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex flex-col lg:flex-row gap-4">
-                {/* Поиск */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Найти сообщество..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+        {/* Communities Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCommunities.map((community) => (
+            <Link key={community.id} to={`/communities/${community.id}`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                {community.banner_url && (
+                  <div className="h-32 overflow-hidden">
+                    <img 
+                      src={community.banner_url} 
+                      alt={community.name}
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                </div>
-
-                {/* Фильтр по темам */}
-                <div className="w-full lg:w-48">
-                  <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Тема" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Все темы</SelectItem>
-                      {availableTopics.map((topic) => (
-                        <SelectItem key={topic} value={topic}>
-                          {topic}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Сортировка */}
-                <div className="w-full lg:w-48">
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Сортировка" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="members_count">По участникам</SelectItem>
-                      <SelectItem value="posts_count">По активности</SelectItem>
-                      <SelectItem value="created_at">Новые</SelectItem>
-                      <SelectItem value="name">По названию</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Активные фильтры */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                  <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                    <Filter className="mr-1 h-3 w-3" />
-                    Активные фильтры:
-                  </span>
-                  
-                  {searchQuery && (
-                    <Badge variant="secondary">
-                      Поиск: "{searchQuery}"
-                    </Badge>
-                  )}
-                  
-                  {selectedTopic !== 'all' && (
-                    <Badge variant="secondary">
-                      Тема: {selectedTopic}
-                    </Badge>
-                  )}
-                  
-                  {sortBy !== 'members_count' && (
-                    <Badge variant="secondary">
-                      Сортировка: {sortBy === 'posts_count' ? 'По активности' : sortBy === 'created_at' ? 'Новые' : 'По названию'}
-                    </Badge>
-                  )}
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="text-xs h-6 px-2"
-                  >
-                    Очистить все
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-                <span className="text-lg">Загрузка сообществ...</span>
-              </div>
-            ) : filteredCommunities().length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCommunities().map(renderCommunityCard)}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="max-w-md mx-auto">
-                  <div className="text-gray-400 mb-4">
-                    <Search className="mx-auto h-12 w-12" />
+                )}
+                
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <Avatar>
+                      <AvatarImage src={community.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {community.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg mb-1 truncate">
+                        {community.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-2">
+                        Создатель: {community.creator?.full_name || community.creator?.username || 'Пользователь'}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Сообщества не найдены
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6">
-                    {hasActiveFilters 
-                      ? 'Попробуйте изменить параметры поиска'
-                      : 'Сообществ пока нет'
-                    }
+                  
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                    {community.description}
                   </p>
-                  {hasActiveFilters ? (
-                    <Button variant="outline" onClick={clearFilters}>
-                      Очистить фильтры
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={() => navigate('/communities/create')}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Создать сообщество
-                    </Button>
+                  
+                  {community.topics && community.topics.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {community.topics.slice(0, 3).map((topic, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {topic}
+                        </Badge>
+                      ))}
+                      {community.topics.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{community.topics.length - 3}
+                        </Badge>
+                      )}
+                    </div>
                   )}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          {user && (
-            <TabsContent value="my">
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-                  <span className="text-lg">Загрузка ваших сообществ...</span>
-                </div>
-              ) : myCommunities.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myCommunities.map(renderCommunityCard)}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    Вы пока не присоединились ни к одному сообществу
-                  </p>
-                  <Button onClick={() => setActiveTab('discover')}>
-                    Найти сообщества
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
-          )}
-          
-          <TabsContent value="popular">
-            {loading ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-                <span className="text-lg">Загрузка популярных сообществ...</span>
-              </div>
-            ) : popularCommunities.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {popularCommunities.map(renderCommunityCard)}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Популярных сообществ пока нет
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+                  
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span>{community.members_count || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="h-4 w-4" />
+                        <span>{community.posts_count || 0}</span>
+                      </div>
+                    </div>
+                    <span>
+                      {formatDistanceToNow(new Date(community.created_at), { 
+                        addSuffix: true, 
+                        locale: ru 
+                      })}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {communities && communities.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-gray-700">
+              Сообществ пока нет
+            </h2>
+            <p className="text-gray-500">
+              Будьте первым, кто создаст сообщество!
+            </p>
+            <Button>
+              <Link to="/communities/create">Создать сообщество</Link>
+            </Button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
       </div>
     </Layout>
   );

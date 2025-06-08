@@ -80,16 +80,22 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       />
 
       <FollowersModal
-        open={showFollowers}
-        followers={followers}
+        isOpen={showFollowers}
         onClose={onCloseFollowers}
+        userId={profile.id}
+        type="followers"
+        show={showFollowers}
+        followers={followers}
         title="Подписчики"
       />
       
       <FollowersModal
-        open={showFollowing}
-        followers={following}
+        isOpen={showFollowing}
         onClose={onCloseFollowing}
+        userId={profile.id}
+        type="following"
+        show={showFollowing}
+        followers={following}
         title="Подписки"
       />
       
@@ -176,28 +182,13 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
           ) : (savedProjects.length > 0 || savedSnippets.length > 0) ? (
-            <div className="space-y-8">
-              {savedProjects.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Избранные проекты</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {savedProjects.map((project) => (
-                      <ProjectCard key={project.id} project={project} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {savedSnippets.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Избранные сниппеты</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    {savedSnippets.map((snippet) => (
-                      <SnippetCard key={snippet.id} snippet={snippet} />
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="space-y-6">
+              {savedProjects.map((project) => (
+                <ProjectCard key={`saved-project-${project.id}`} project={project} />
+              ))}
+              {savedSnippets.map((snippet) => (
+                <SnippetCard key={`saved-snippet-${snippet.id}`} snippet={snippet} />
+              ))}
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500">

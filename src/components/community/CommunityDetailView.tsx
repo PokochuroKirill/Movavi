@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -284,15 +283,6 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                     {community.description || 'Описание не добавлено'}
                   </p>
                 </div>
-                
-                {community.rules && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Правила</h4>
-                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                      {community.rules}
-                    </p>
-                  </div>
-                )}
                 
                 <div>
                   <h4 className="font-semibold mb-2">Создатель</h4>

@@ -54,6 +54,11 @@ const CommunityDetailPage = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    await refetch();
+    await refreshStatus();
+  };
+
   return (
     <Layout>
       <div className="container max-w-5xl py-24 mt-8">
@@ -65,7 +70,7 @@ const CommunityDetailPage = () => {
           loading={loading}
           onJoinCommunity={handleJoin}
           onLeaveCommunity={handleLeave}
-          onRefresh={refetch}
+          onRefresh={handleRefresh}
           canManage={canManage}
           userId={user?.id}
         />

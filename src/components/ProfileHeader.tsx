@@ -68,12 +68,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <p className="text-gray-700 dark:text-gray-300 mb-4">{profile.bio}</p>
           )}
           
-          <div className="flex flex-wrap gap-2 mb-4">
-            {profile.skills && profile.skills.map((skill) => (
-              <Badge key={skill} variant="secondary">{skill}</Badge>
-            ))}
-          </div>
-          
           {profile.is_pro && (
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white mb-4">
               PRO
