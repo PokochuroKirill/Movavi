@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,8 +24,8 @@ const SnippetsPage = () => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('all');
+  const [selectedTag, setSelectedTag] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -84,14 +85,14 @@ const SnippetsPage = () => {
     });
 
     // Language filter
-    if (selectedLanguage) {
+    if (selectedLanguage && selectedLanguage !== 'all') {
       filtered = filtered.filter(snippet => 
         snippet.language.toLowerCase() === selectedLanguage.toLowerCase()
       );
     }
 
     // Tag filter
-    if (selectedTag) {
+    if (selectedTag && selectedTag !== 'all') {
       filtered = filtered.filter(snippet => 
         snippet.tags?.some(tag => 
           tag.toLowerCase() === selectedTag.toLowerCase()
@@ -179,7 +180,7 @@ const SnippetsPage = () => {
                 <SelectValue placeholder="Все языки" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Все языки</SelectItem>
+                <SelectItem value="all">Все языки</SelectItem>
                 {languages.map(language => (
                   <SelectItem key={language} value={language}>{language}</SelectItem>
                 ))}
@@ -195,7 +196,7 @@ const SnippetsPage = () => {
                 <SelectValue placeholder="Все тэги" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Все тэги</SelectItem>
+                <SelectItem value="all">Все тэги</SelectItem>
                 {tags.map(tag => (
                   <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                 ))}
