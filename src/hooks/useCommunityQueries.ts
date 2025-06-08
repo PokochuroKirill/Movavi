@@ -328,17 +328,8 @@ export const addCommentToPost = async (postId: string, userId: string, content: 
 
     if (error) throw error;
 
-    // Manually update comments count
-    const { error: updateError } = await supabase
-      .from('community_posts')
-      .update({ 
-        comments_count: supabase.sql`comments_count + 1`
-      })
-      .eq('id', postId);
-    
-    if (updateError) {
-      console.error('Error updating comments count:', updateError);
-    }
+    // Manually update comments count using incrementCounter utility
+    await incrementCounter('community_posts', 'comments_count', postId);
       
     return true;
   } catch (error) {
@@ -419,14 +410,8 @@ export const useCreateCommunityComment = () => {
 
       if (error) throw error;
 
-      // Update comments count manually
-      const { error: updateError } = await supabase.rpc('increment_community_posts', {
-        community_id: postId
-      });
-
-      if (updateError) {
-        console.error('Error updating comments count:', updateError);
-      }
+      // Update comments count manually using incrementCounter utility
+      await incrementCounter('community_posts', 'comments_count', postId);
 
       return data;
     },

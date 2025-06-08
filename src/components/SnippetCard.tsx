@@ -47,7 +47,7 @@ const SnippetCard = ({
   const snippetDescription = snippet?.description || description;
   const snippetLanguage = snippet?.language || language;
   const snippetTags = snippet?.tags || tags;
-  const snippetViewsCount = snippet?.views_count || viewsCount || 0;
+  const snippetViewsCount = viewsCount || 0; // Use props viewsCount since views_count doesn't exist on Snippet type
   
   // Extract author info from snippet if available
   const author = authorName || (snippet?.profiles?.full_name || snippet?.profiles?.username);
