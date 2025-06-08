@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -22,7 +23,7 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTech, setSelectedTech] = useState('');
+  const [selectedTech, setSelectedTech] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [availableTech, setAvailableTech] = useState<string[]>([]);
 
@@ -92,7 +93,7 @@ const ProjectsPage = () => {
     });
 
     // Technology filter
-    if (selectedTech) {
+    if (selectedTech && selectedTech !== 'all') {
       filtered = filtered.filter(project => 
         project.technologies?.some(tech => 
           tech.toLowerCase() === selectedTech.toLowerCase()
@@ -159,7 +160,7 @@ const ProjectsPage = () => {
               <SelectValue placeholder="Все технологии" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Все технологии</SelectItem>
+              <SelectItem value="all">Все технологии</SelectItem>
               {availableTech.sort().map(tech => (
                 <SelectItem key={tech} value={tech}>{tech}</SelectItem>
               ))}
