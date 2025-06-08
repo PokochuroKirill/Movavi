@@ -1,29 +1,26 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Calendar, Settings, Plus, Edit, Heart, MessageCircle, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Users, Calendar, MessageCircle, Heart, Plus, Settings } from 'lucide-react';
 import { Community, CommunityMember, CommunityPost } from '@/types/database';
-import { formatDate } from '@/utils/dateUtils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import CommunityPostForm from './CommunityPostForm';
-import CommunityEditForm from './CommunityEditForm';
-import CommunityManagementActions from './CommunityManagementActions';
-import UserProfileLink from '../UserProfileLink';
+import { formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import CreateCommunityPostDialog from './CreateCommunityPostDialog';
 
 interface CommunityDetailViewProps {
   community: Community | null;
-  currentUserMembership?: CommunityMember | null;
+  currentUserMembership: CommunityMember | null;
   members: CommunityMember[];
   posts: CommunityPost[];
   loading: boolean;
-  onJoinCommunity: () => void;
-  onLeaveCommunity: () => void;
-  onRefresh: () => void;
+  onJoinCommunity: () => Promise<void>;
+  onLeaveCommunity: () => Promise<void>;
+  onRefresh: () => Promise<void>;
   canManage: boolean;
   userId?: string;
 }
@@ -40,36 +37,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   canManage,
   userId
 }) => {
-  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
-
-  const isCreator = userId && community ? userId === community.creator_id : false;
-  const isMember = !!currentUserMembership;
-
-  const handlePostSuccess = () => {
-    setIsPostDialogOpen(false);
-    onRefresh();
-  };
-
-  const handleEditSuccess = () => {
-    setIsEditDialogOpen(false);
-    onRefresh();
-  };
-
-  // Сортировка постов
-  const sortedPosts = [...posts].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case 'oldest':
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      case 'likes':
-        return (b.likes_count || 0) - (a.likes_count || 0);
-      default:
-        return 0;
-    }
-  });
+  const [showCreatePost, setShowCreatePost] = useState(false);
 
   if (loading) {
     return (
@@ -82,248 +50,297 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   if (!community) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Сообщество не найдено
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Возможно, сообщество было удалено или у вас нет доступа к нему.
-        </p>
+        <h1 className="text-2xl font-bold text-red-600">Сообщество не найдено</h1>
+        <p className="text-gray-600 mt-2">Возможно, сообщество было удалено или не существует</p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Community Header */}
-      <Card className="overflow-hidden">
-        <div 
-          className="h-48 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative"
-          style={{
-            backgroundImage: community.banner_url ? `url(${community.banner_url})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          <div className="absolute inset-0 bg-black/30" />
-        </div>
-        
-        <CardHeader className="relative pb-4">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div className="flex flex-col md:flex-row items-start gap-4">
-              <Avatar className="h-24 w-24 border-4 border-white shadow-lg -mt-12 relative z-10">
-                <AvatarImage src={community.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-                  {community.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="space-y-3 flex-1">
-                <div>
-                  <CardTitle className="text-3xl mb-2 text-gray-900 dark:text-white">{community.name}</CardTitle>
-                  <CardDescription className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {community.description}
-                  </CardDescription>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>{community.members_count || 0} участников</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>Создано {formatDate(community.created_at)}</span>
-                  </div>
-                </div>
+  const handlePostCreated = async () => {
+    setShowCreatePost(false);
+    await onRefresh();
+  };
 
-                {community.topics && community.topics.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {community.topics.map((topic, index) => (
-                      <Badge key={index} variant="secondary" className="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                        {topic}
-                      </Badge>
+  return (
+    <div className="space-y-8">
+      {/* Заголовок сообщества */}
+      <Card>
+        <CardContent className="pt-6">
+          {community.banner_url && (
+            <div className="h-48 rounded-lg overflow-hidden mb-6">
+              <img 
+                src={community.banner_url} 
+                alt={community.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          
+          <div className="flex flex-col md:flex-row gap-6">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={community.avatar_url || undefined} />
+              <AvatarFallback className="text-2xl">
+                {community.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">{community.name}</h1>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    {community.description}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {community.topics?.map((topic, index) => (
+                      <Badge key={index} variant="outline">{topic}</Badge>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {isCreator && (
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Edit className="h-4 w-4" />
-                      Редактировать
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Редактировать сообщество</DialogTitle>
-                    </DialogHeader>
-                    <CommunityEditForm 
-                      community={community}
-                      onUpdate={handleEditSuccess}
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
-
-              {canManage && userId && (
-                <CommunityManagementActions
-                  communityId={community.id}
-                  isCreator={isCreator}
-                  userId={userId}
-                  username={currentUserMembership?.profiles?.username || ''}
-                  canManage={canManage}
-                />
-              )}
-
-              {!isMember ? (
-                <Button onClick={onJoinCommunity} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2">
-                  <Plus className="h-4 w-4" />
-                  Присоединиться
-                </Button>
-              ) : !isCreator && (
-                <Button onClick={onLeaveCommunity} variant="outline">
-                  Покинуть
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Create Post Section */}
-      {isMember && (
-        <Card>
-          <CardContent className="pt-6">
-            <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2">
-                  <Plus className="h-4 w-4" />
-                  Создать пост
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Создать пост в сообществе</DialogTitle>
-                </DialogHeader>
-                <CommunityPostForm 
-                  communityId={community.id}
-                  onPostCreated={handlePostSuccess}
-                />
-              </DialogContent>
-            </Dialog>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Posts Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Посты сообщества</CardTitle>
-            <Select value={sortBy} onValueChange={(value: 'newest' | 'oldest' | 'likes') => setSortBy(value)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Сначала новые</SelectItem>
-                <SelectItem value="oldest">Сначала старые</SelectItem>
-                <SelectItem value="likes">По лайкам</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {sortedPosts.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Пока нет постов в этом сообществе
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {sortedPosts.map((post) => (
-                <Link key={post.id} to={`/communities/${community.id}/posts/${post.id}`}>
-                  <div className="border rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 cursor-pointer hover:shadow-md">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-xl text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                        {post.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                        <Clock className="h-4 w-4" />
-                        {formatDate(post.created_at)}
-                      </div>
+                  
+                  <div className="flex items-center gap-6 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      <span>{community.members_count || 0} участников</span>
                     </div>
-                    
-                    <div className="flex items-center gap-3 mb-4">
-                      <UserProfileLink 
-                        username={post.profiles?.username}
-                        fullName={post.profiles?.full_name}
-                        avatarUrl={post.profiles?.avatar_url}
-                        userId={post.user_id}
-                        className="text-sm"
-                      />
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="h-4 w-4" />
+                      <span>{community.posts_count || 0} постов</span>
                     </div>
-                    
-                    <div 
-                      className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3"
-                      dangerouslySetInnerHTML={{ __html: post.content }}
-                    />
-                    
-                    <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-4 w-4" />
-                        <span>{post.likes_count || 0} лайков</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-4 w-4" />
-                        <span>{post.comments_count || 0} комментариев</span>
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        Создано {formatDistanceToNow(new Date(community.created_at), { 
+                          addSuffix: true, 
+                          locale: ru 
+                        })}
+                      </span>
                     </div>
                   </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  {userId && currentUserMembership ? (
+                    <>
+                      <Button
+                        onClick={() => setShowCreatePost(true)}
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Создать пост
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={onLeaveCommunity}
+                      >
+                        Покинуть
+                      </Button>
+                      {canManage && (
+                        <Button variant="outline" size="icon">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </>
+                  ) : userId ? (
+                    <Button
+                      onClick={onJoinCommunity}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      Присоединиться
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Контент сообщества */}
+      <Tabs defaultValue="posts" className="w-full">
+        <TabsList>
+          <TabsTrigger value="posts">Посты</TabsTrigger>
+          <TabsTrigger value="members">Участники</TabsTrigger>
+          <TabsTrigger value="about">О сообществе</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="posts" className="mt-6">
+          {posts.length > 0 ? (
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <Link 
+                  key={post.id} 
+                  to={`/communities/${community.id}/posts/${post.id}`}
+                >
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={post.profiles?.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {post.profiles?.full_name?.substring(0, 2) || 
+                             post.profiles?.username?.substring(0, 2) || 'UN'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold">
+                              {post.profiles?.full_name || post.profiles?.username || 'Пользователь'}
+                            </h4>
+                            <span className="text-gray-500 text-sm">
+                              {formatDistanceToNow(new Date(post.created_at), { 
+                                addSuffix: true, 
+                                locale: ru 
+                              })}
+                            </span>
+                          </div>
+                          <CardTitle className="text-lg mb-2">{post.title}</CardTitle>
+                          <p className="text-gray-600 dark:text-gray-300 line-clamp-2">
+                            {post.content}
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          <span>{post.likes_count || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="h-4 w-4" />
+                          <span>{post.comments_count || 0}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </Link>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Members Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Участники ({members.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {members.map((member) => (
-              <div key={member.id} className="flex items-center gap-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <UserProfileLink 
-                  username={member.profiles?.username}
-                  fullName={member.profiles?.full_name}
-                  avatarUrl={member.profiles?.avatar_url}
-                  userId={member.user_id}
-                  className="flex items-center gap-3"
-                />
-                <div className="ml-auto">
-                  <Badge 
-                    variant={
-                      member.user_id === community.creator_id ? "default" : 
-                      member.role === "admin" ? "destructive" : 
-                      member.role === "moderator" ? "secondary" : "outline"
-                    }
-                    className="text-xs"
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-500 mb-4">
+                  В сообществе пока нет постов
+                </p>
+                {currentUserMembership && (
+                  <Button
+                    onClick={() => setShowCreatePost(true)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
-                    {member.user_id === community.creator_id ? "Создатель" : 
-                     member.role === "admin" ? "Админ" : 
-                     member.role === "moderator" ? "Модератор" : "Участник"}
-                  </Badge>
-                </div>
-              </div>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Создать первый пост
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="members" className="mt-6">
+          <div className="grid gap-4">
+            {members.map((member) => (
+              <Card key={member.id}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={member.profiles?.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {member.profiles?.full_name?.substring(0, 2) || 
+                           member.profiles?.username?.substring(0, 2) || 'UN'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="font-semibold">
+                          {member.profiles?.full_name || member.profiles?.username || 'Пользователь'}
+                        </h4>
+                        {member.profiles?.username && (
+                          <p className="text-sm text-gray-500">@{member.profiles.username}</p>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                      {member.role === 'admin' ? 'Администратор' : 
+                       member.role === 'moderator' ? 'Модератор' : 'Участник'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+        
+        <TabsContent value="about" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>О сообществе</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Описание</h4>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {community.description || 'Описание не добавлено'}
+                  </p>
+                </div>
+                
+                {community.rules && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Правила</h4>
+                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                      {community.rules}
+                    </p>
+                  </div>
+                )}
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Создатель</h4>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={community.creator?.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {community.creator?.full_name?.substring(0, 2) || 
+                         community.creator?.username?.substring(0, 2) || 'UN'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">
+                        {community.creator?.full_name || community.creator?.username || 'Пользователь'}
+                      </p>
+                      {community.creator?.username && (
+                        <p className="text-sm text-gray-500">@{community.creator.username}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Статистика</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="text-2xl font-bold">{community.members_count || 0}</div>
+                      <div className="text-sm text-gray-500">Участников</div>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="text-2xl font-bold">{community.posts_count || 0}</div>
+                      <div className="text-sm text-gray-500">Постов</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Диалог создания поста */}
+      <CreateCommunityPostDialog
+        open={showCreatePost}
+        onClose={() => setShowCreatePost(false)}
+        communityId={community.id}
+        onPostCreated={handlePostCreated}
+      />
     </div>
   );
 };

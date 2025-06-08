@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,10 +20,20 @@ const ProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
   const [availableTechnologies, setAvailableTechnologies] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<string>('created_at');
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchProjects();
@@ -30,7 +41,7 @@ const ProjectsPage = () => {
 
   useEffect(() => {
     filterProjects();
-  }, [projects, searchTerm, selectedTechnologies]);
+  }, [projects, debouncedSearchTerm, selectedTechnologies, sortBy]);
 
   const fetchProjects = async () => {
     try {
@@ -77,10 +88,10 @@ const ProjectsPage = () => {
     let filtered = projects;
 
     // Поиск по названию и описанию
-    if (searchTerm) {
+    if (debouncedSearchTerm) {
       filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+        project.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        project.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       );
     }
 
@@ -91,6 +102,15 @@ const ProjectsPage = () => {
           project.technologies?.includes(tech)
         )
       );
+    }
+
+    // Сортировка
+    if (sortBy === 'views_count') {
+      filtered = filtered.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+    } else if (sortBy === 'title') {
+      filtered = filtered.sort((a, b) => a.title.localeCompare(b.title));
+    } else {
+      filtered = filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
     setFilteredProjects(filtered);
@@ -107,12 +127,15 @@ const ProjectsPage = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedTechnologies([]);
+    setSortBy('created_at');
   };
+
+  const hasActiveFilters = searchTerm || selectedTechnologies.length > 0 || sortBy !== 'created_at';
 
   if (loading) {
     return (
       <Layout>
-        <div className="container max-w-7xl py-24 mt-8">
+        <div className="container mx-auto px-4 py-8 mt-16">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
@@ -123,106 +146,155 @@ const ProjectsPage = () => {
 
   return (
     <Layout>
-      <div className="container max-w-7xl py-24 mt-8">
-        <div className="space-y-8">
-          {/* Заголовок и кнопка создания */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                Проекты
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Изучайте проекты разработчиков и делитесь своими идеями
-              </p>
-            </div>
-            {user && (
-              <Link to="/projects/create">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2">
-                  <Plus className="h-4 w-4" />
-                  Создать проект
-                </Button>
-              </Link>
-            )}
+      <div className="container mx-auto px-4 py-8 mt-16">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Проекты
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Изучайте проекты разработчиков и делитесь своими идеями
+            </p>
           </div>
+          {user && (
+            <Button 
+              onClick={() => window.location.href = '/projects/create'}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 mt-4 md:mt-0"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Создать проект
+            </Button>
+          )}
+        </div>
 
-          {/* Поиск и фильтры */}
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Поиск проектов..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="gap-2"
-                  >
-                    <Filter className="h-4 w-4" />
-                    Фильтры
-                  </Button>
-                  {(searchTerm || selectedTechnologies.length > 0) && (
-                    <Button variant="outline" onClick={clearFilters} className="gap-2">
-                      <X className="h-4 w-4" />
-                      Очистить
-                    </Button>
-                  )}
-                </div>
+        {/* Filters */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Поиск по названию или описанию..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </CardHeader>
-            
-            {showFilters && (
-              <CardContent className="border-t">
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900 dark:text-white">Технологии</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {availableTechnologies.map(tech => (
-                      <Badge
-                        key={tech}
-                        variant={selectedTechnologies.includes(tech) ? "default" : "outline"}
-                        className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
-                        onClick={() => toggleTechnology(tech)}
-                      >
-                        {tech}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            )}
-          </Card>
+            </div>
 
-          {/* Результаты поиска */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Найдено проектов: {filteredProjects.length}
-            </h2>
+            {/* Sort */}
+            <div className="w-full lg:w-48">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Сортировка" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">Новые</SelectItem>
+                  <SelectItem value="views_count">Популярные</SelectItem>
+                  <SelectItem value="title">По названию</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Список проектов */}
-          {filteredProjects.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  {projects.length === 0 
-                    ? 'Пока нет проектов' 
-                    : 'Проекты не найдены. Попробуйте изменить параметры поиска.'
-                  }
-                </p>
-                {user && projects.length === 0 && (
-                  <Link to="/projects/create">
-                    <Button>Создать первый проект</Button>
-                  </Link>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
+          {/* Technology Filter */}
+          <div className="mt-4">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Технологии</h3>
+            <div className="flex flex-wrap gap-2">
+              {availableTechnologies.slice(0, 15).map(tech => (
+                <Badge
+                  key={tech}
+                  variant={selectedTechnologies.includes(tech) ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                  onClick={() => toggleTechnology(tech)}
+                >
+                  {tech}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Filters */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                <Filter className="mr-1 h-3 w-3" />
+                Активные фильтры:
+              </span>
+              
+              {searchTerm && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Поиск: "{searchTerm}"
+                </Badge>
+              )}
+              
+              {selectedTechnologies.map(tech => (
+                <Badge key={tech} variant="secondary">
+                  {tech}
+                </Badge>
+              ))}
+              
+              {sortBy !== 'created_at' && (
+                <Badge variant="secondary">
+                  Сортировка: {sortBy === 'views_count' ? 'Популярные' : 'По названию'}
+                </Badge>
+              )}
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-xs h-6 px-2"
+              >
+                Очистить все
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Results */}
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="text-gray-400 mb-4">
+                <Search className="mx-auto h-12 w-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                Проекты не найдены
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                {hasActiveFilters 
+                  ? 'Попробуйте изменить фильтры поиска'
+                  : 'Станьте первым, кто поделится проектом!'
+                }
+              </p>
+              {hasActiveFilters ? (
+                <Button variant="outline" onClick={clearFilters}>
+                  Очистить фильтры
+                </Button>
+              ) : (
+                user && (
+                  <Button 
+                    onClick={() => window.location.href = '/projects/create'}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Создать проект
+                  </Button>
+                )
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Найдено проектов: {filteredProjects.length}
+              </h2>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProjects.map((project) => (
                 <ProjectCard
@@ -230,17 +302,17 @@ const ProjectsPage = () => {
                   id={project.id}
                   title={project.title}
                   description={project.description}
-                  technologies={project.technologies || []}
-                  author={project.profiles?.full_name || project.profiles?.username || 'Аноним'}
+                  imageUrl={project.image_url}
+                  technologies={project.technologies}
+                  authorName={project.profiles?.full_name || project.profiles?.username}
                   authorAvatar={project.profiles?.avatar_url}
                   authorId={project.user_id}
                   authorUsername={project.profiles?.username}
-                  imageUrl={project.image_url}
                 />
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

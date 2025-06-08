@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Community, CommunityMember, CommunityPost, CommunityComment } from '@/types/database';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Community, CommunityMember, CommunityPost, CommunityComment, Profile } from '@/types/database';
 import { incrementCounter, decrementCounter } from '@/utils/dbFunctions';
 
 // Function to fetch community details
@@ -327,7 +329,7 @@ export const addCommentToPost = async (postId: string, userId: string, content: 
 
     if (error) throw error;
 
-    // Обновляем счетчик комментариев в посте - use correct RPC function name
+    // Обновляем счетчик комментариев в посте
     const { error: rpcError } = await supabase.rpc('increment_post_comments', { post_id: postId });
     
     if (rpcError) {
@@ -377,11 +379,6 @@ export const useCommunityPosts = (communityId?: string) => {
             username,
             full_name,
             avatar_url
-          ),
-          community_post_images (
-            id,
-            image_url,
-            display_order
           )
         `)
         .eq('community_id', communityId)
@@ -390,11 +387,6 @@ export const useCommunityPosts = (communityId?: string) => {
       if (error) throw error;
       return data as (CommunityPost & {
         profiles: Profile;
-        community_post_images: Array<{
-          id: string;
-          image_url: string;
-          display_order: number;
-        }>;
       })[];
     },
     enabled: !!communityId

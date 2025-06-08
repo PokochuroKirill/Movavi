@@ -1,85 +1,62 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
-// Pages
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
 import HomePage from '@/pages/HomePage';
-import NotFound from '@/pages/NotFound';
+import ProjectsPage from '@/pages/ProjectsPage';
+import SnippetsPage from '@/pages/SnippetsPage';
 import AuthPage from '@/pages/AuthPage';
 import ProfilePage from '@/pages/ProfilePage';
-import SnippetsPage from '@/pages/SnippetsPage';
-import SnippetDetailPage from '@/pages/SnippetDetailPage';
-import CreateSnippetPage from '@/pages/CreateSnippetPage';
-import EditSnippetPage from '@/pages/EditSnippetPage';
-import ProjectsPage from '@/pages/ProjectsPage';
-import ProjectDetailPage from '@/pages/ProjectDetailPage';
-import CreateProjectPage from '@/pages/CreateProjectPage';
-import ContactPage from '@/pages/ContactPage';
-import AboutPage from '@/pages/AboutPage';
-import DocumentationPage from '@/pages/DocumentationPage';
-import FaqPage from '@/pages/FaqPage';
-import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
-import TermsOfServicePage from '@/pages/TermsOfServicePage';
-import SupportPage from '@/pages/SupportPage';
 import UserProfilePage from '@/pages/UserProfilePage';
-import SubscriptionPage from '@/pages/SubscriptionPage';
+import ProjectDetailPage from '@/pages/ProjectDetailPage';
+import SnippetDetailPage from '@/pages/SnippetDetailPage';
+import CreateProjectPage from '@/pages/CreateProjectPage';
+import CreateSnippetPage from '@/pages/CreateSnippetPage';
+import EditProjectPage from '@/pages/EditProjectPage';
+import EditSnippetPage from '@/pages/EditSnippetPage';
 import CommunitiesPage from '@/pages/CommunitiesPage';
-import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import CreateCommunityPage from '@/pages/CreateCommunityPage';
+import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import CommunityPostDetailPage from '@/pages/CommunityPostDetailPage';
-import CreateCommunityPostPage from '@/pages/CreateCommunityPostPage';
-import EditCommunityPostPage from '@/pages/EditCommunityPostPage';
 
-// Components
-import ProtectedRoute from '@/components/ProtectedRoute';
-
-// Contexts
-import { AuthProvider } from '@/contexts/AuthContext';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { Toaster } from '@/components/ui/toaster';
-
-// React Query
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Router>
-            <Toaster />
+        <Router>
+          <div className="min-h-screen bg-background">
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/home" element={<Navigate to="/" replace />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/snippets" element={<SnippetsPage />} />
-              <Route path="/snippets/:id" element={<SnippetDetailPage />} />
-              <Route path="/snippets/create" element={<ProtectedRoute><CreateSnippetPage /></ProtectedRoute>} />
-              <Route path="/snippets/:id/edit" element={<ProtectedRoute><EditSnippetPage /></ProtectedRoute>} />
               <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/create" element={<CreateProjectPage />} />
               <Route path="/projects/:id" element={<ProjectDetailPage />} />
-              <Route path="/projects/create" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/docs" element={<DocumentationPage />} />
-              <Route path="/faq" element={<FaqPage />} />
-              <Route path="/privacy" element={<PrivacyPolicyPage />} />
-              <Route path="/terms" element={<TermsOfServicePage />} />
-              <Route path="/support" element={<SupportPage />} />
-              <Route path="/user/:username" element={<UserProfilePage />} />
-              <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+              <Route path="/projects/:id/edit" element={<EditProjectPage />} />
+              <Route path="/snippets" element={<SnippetsPage />} />
+              <Route path="/snippets/create" element={<CreateSnippetPage />} />
+              <Route path="/snippets/:id" element={<SnippetDetailPage />} />
+              <Route path="/snippets/:id/edit" element={<EditSnippetPage />} />
               <Route path="/communities" element={<CommunitiesPage />} />
-              <Route path="/communities/:communityId" element={<CommunityDetailPage />} />
-              <Route path="/communities/create" element={<ProtectedRoute><CreateCommunityPage /></ProtectedRoute>} />
+              <Route path="/communities/create" element={<CreateCommunityPage />} />
+              <Route path="/communities/:id" element={<CommunityDetailPage />} />
               <Route path="/communities/:communityId/posts/:postId" element={<CommunityPostDetailPage />} />
-              <Route path="/communities/:communityId/post/create" element={<ProtectedRoute><CreateCommunityPostPage /></ProtectedRoute>} />
-              <Route path="/communities/:communityId/post/:postId/edit" element={<ProtectedRoute><EditCommunityPostPage /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/users/:username" element={<UserProfilePage />} />
             </Routes>
-          </Router>
-        </TooltipProvider>
+            <Toaster />
+          </div>
+        </Router>
       </AuthProvider>
     </QueryClientProvider>
   );
