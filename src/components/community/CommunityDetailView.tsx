@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -160,12 +161,11 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
         <TabsList>
           <TabsTrigger value="posts">Посты</TabsTrigger>
           <TabsTrigger value="members">Участники</TabsTrigger>
-          <TabsTrigger value="about">О сообществе</TabsTrigger>
         </TabsList>
         
         <TabsContent value="posts" className="mt-6">
           {posts.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-8">
               {posts.map((post) => (
                 <Link 
                   key={post.id} 
@@ -268,59 +268,6 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               </Card>
             ))}
           </div>
-        </TabsContent>
-        
-        <TabsContent value="about" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>О сообществе</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Описание</h4>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    {community.description || 'Описание не добавлено'}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Создатель</h4>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={community.creator?.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {community.creator?.full_name?.substring(0, 2) || 
-                         community.creator?.username?.substring(0, 2) || 'UN'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">
-                        {community.creator?.full_name || community.creator?.username || 'Пользователь'}
-                      </p>
-                      {community.creator?.username && (
-                        <p className="text-sm text-gray-500">@{community.creator.username}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Статистика</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <div className="text-2xl font-bold">{community.members_count || 0}</div>
-                      <div className="text-sm text-gray-500">Участников</div>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <div className="text-2xl font-bold">{community.posts_count || 0}</div>
-                      <div className="text-sm text-gray-500">Постов</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 
