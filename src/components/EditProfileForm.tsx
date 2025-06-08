@@ -11,14 +11,16 @@ import AvatarUpload from './AvatarUpload';
 import { Profile } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
 interface EditProfileFormProps {
   profile: Profile;
   onUpdate: (data: Partial<Profile>) => Promise<void>;
   onCancel?: () => void; // Added onCancel prop
 }
-
-const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) => {
+const EditProfileForm = ({
+  profile,
+  onUpdate,
+  onCancel
+}: EditProfileFormProps) => {
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     bio: profile.bio || '',
@@ -26,27 +28,28 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
     twitter: profile.twitter || '',
     github: profile.github || '',
     discord: profile.discord || '',
-    linkedin: profile.linkedin || '',
+    linkedin: profile.linkedin || ''
   });
-  
   const [avatar, setAvatar] = useState(profile.avatar_url);
   const [banner, setBanner] = useState(profile.banner_url);
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
+    const {
+      name,
+      value
+    } = e.target;
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdating(true);
-    
     try {
       await onUpdate({
         full_name: formData.full_name,
@@ -56,12 +59,11 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
         github: formData.github,
         discord: formData.discord,
         linkedin: formData.linkedin,
-        banner_url: banner,
+        banner_url: banner
       });
-      
       toast({
         title: "Профиль обновлен",
-        description: "Изменения были успешно сохранены",
+        description: "Изменения были успешно сохранены"
       });
     } catch (error) {
       console.error('Ошибка при обновлении профиля:', error);
@@ -74,37 +76,31 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
       setUpdating(false);
     }
   };
-
   const handleAvatarUpdate = (url: string) => {
     setAvatar(url);
   };
-
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
       return;
     }
-    
     const file = e.target.files[0];
     const fileExt = file.name.split('.').pop();
     const fileName = `banners/${profile.id}-${Date.now()}.${fileExt}`;
-    
     setUploading(true);
-    
     try {
       // Upload the file to Supabase storage in the profiles bucket
-      const { error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(fileName, file, { upsert: true });
-      
+      const {
+        error: uploadError
+      } = await supabase.storage.from('profiles').upload(fileName, file, {
+        upsert: true
+      });
       if (uploadError) throw uploadError;
-      
+
       // Get the public URL
-      const { data } = supabase.storage
-        .from('profiles')
-        .getPublicUrl(fileName);
-      
+      const {
+        data
+      } = supabase.storage.from('profiles').getPublicUrl(fileName);
       setBanner(data.publicUrl);
-      
       toast({
         title: "Баннер загружен",
         description: "Баннер профиля успешно обновлен"
@@ -120,26 +116,19 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
       setUploading(false);
     }
   };
-
   const handleRemoveBanner = async () => {
     setUploading(true);
-    
     try {
       // If the profile has a banner, attempt to delete it from storage
       if (banner) {
         // Extract filename from URL
         const bannerPath = banner.split('/').pop();
-        
         if (bannerPath) {
           // Remove file from storage
-          await supabase.storage
-            .from('profiles')
-            .remove([`banners/${bannerPath}`]);
+          await supabase.storage.from('profiles').remove([`banners/${bannerPath}`]);
         }
       }
-      
       setBanner(null);
-      
       toast({
         title: "Баннер удален",
         description: "Баннер профиля был успешно удален"
@@ -155,9 +144,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
       setUploading(false);
     }
   };
-
-  return (
-    <form onSubmit={handleSubmit}>
+  return <form onSubmit={handleSubmit}>
       <Card className="border-0 shadow-sm">
         <CardHeader className="pb-4">
           <CardTitle className="text-2xl">Редактирование профиля</CardTitle>
@@ -175,71 +162,11 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
 
             <TabsContent value="general" className="space-y-6">
               <div className="flex flex-col items-center space-y-4 mb-6">
-                <AvatarUpload 
-                  userId={profile.id} 
-                  avatarUrl={avatar || null} 
-                  onAvatarUpdate={handleAvatarUpdate}
-                  className="h-24 w-24" 
-                />
+                <AvatarUpload userId={profile.id} avatarUrl={avatar || null} onAvatarUpdate={handleAvatarUpdate} className="h-24 w-24" />
                 <p className="text-sm text-gray-500">Изменить фото профиля</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="banner" className="flex items-center">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Баннер профиля
-                </Label>
-                <div className="flex flex-col space-y-4">
-                  {banner && (
-                    <div className="w-full h-32 rounded-md overflow-hidden">
-                      <img 
-                        src={banner} 
-                        alt="Баннер профиля" 
-                        className="h-full w-full object-cover" 
-                      />
-                    </div>
-                  )}
-                  <div className="flex space-x-2">
-                    <Input
-                      id="banner"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('banner')?.click()}
-                      disabled={uploading}
-                      className="flex-1"
-                    >
-                      {uploading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Загрузка...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 h-4 w-4" />
-                          {banner ? "Изменить баннер" : "Загрузить баннер"}
-                        </>
-                      )}
-                    </Button>
-                    
-                    {banner && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleRemoveBanner}
-                        disabled={uploading}
-                      >
-                        Удалить баннер
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
+              
 
               <Separator />
 
@@ -248,15 +175,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <User className="h-4 w-4 mr-2" />
                   Имя пользователя
                 </Label>
-                <Input
-                  id="username"
-                  name="username"
-                  value={profile.username || ''}
-                  placeholder="username"
-                  className="bg-gray-100 dark:bg-gray-700"
-                  disabled
-                  readOnly
-                />
+                <Input id="username" name="username" value={profile.username || ''} placeholder="username" className="bg-gray-100 dark:bg-gray-700" disabled readOnly />
                 <p className="text-sm text-gray-500">Имя пользователя нельзя изменить</p>
               </div>
               
@@ -265,14 +184,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <User className="h-4 w-4 mr-2" />
                   Полное имя
                 </Label>
-                <Input
-                  id="full_name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  placeholder="Иван Иванов"
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Input id="full_name" name="full_name" value={formData.full_name} onChange={handleInputChange} placeholder="Иван Иванов" className="bg-gray-50 dark:bg-gray-800" />
               </div>
               
               <div className="space-y-2">
@@ -280,15 +192,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <MessageSquare className="h-4 w-4 mr-2" />
                   О себе
                 </Label>
-                <Textarea
-                  id="bio"
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  placeholder="Расскажите о себе"
-                  rows={3}
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Расскажите о себе" rows={3} className="bg-gray-50 dark:bg-gray-800" />
               </div>
             </TabsContent>
 
@@ -298,14 +202,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Личный сайт
                 </Label>
-                <Input
-                  id="website"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com"
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Input id="website" name="website" value={formData.website} onChange={handleInputChange} placeholder="https://example.com" className="bg-gray-50 dark:bg-gray-800" />
               </div>
               
               <div className="space-y-2">
@@ -313,14 +210,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <Github className="h-4 w-4 mr-2" />
                   GitHub
                 </Label>
-                <Input
-                  id="github"
-                  name="github"
-                  value={formData.github}
-                  onChange={handleInputChange}
-                  placeholder="username"
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Input id="github" name="github" value={formData.github} onChange={handleInputChange} placeholder="username" className="bg-gray-50 dark:bg-gray-800" />
               </div>
               
               <div className="space-y-2">
@@ -328,14 +218,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <Twitter className="h-4 w-4 mr-2" />
                   Twitter
                 </Label>
-                <Input
-                  id="twitter"
-                  name="twitter"
-                  value={formData.twitter}
-                  onChange={handleInputChange}
-                  placeholder="username (без @)"
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Input id="twitter" name="twitter" value={formData.twitter} onChange={handleInputChange} placeholder="username (без @)" className="bg-gray-50 dark:bg-gray-800" />
               </div>
               
               <div className="space-y-2">
@@ -343,14 +226,7 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <Linkedin className="h-4 w-4 mr-2" />
                   LinkedIn
                 </Label>
-                <Input
-                  id="linkedin"
-                  name="linkedin"
-                  value={formData.linkedin}
-                  onChange={handleInputChange}
-                  placeholder="username"
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Input id="linkedin" name="linkedin" value={formData.linkedin} onChange={handleInputChange} placeholder="username" className="bg-gray-50 dark:bg-gray-800" />
               </div>
               
               <div className="space-y-2">
@@ -358,47 +234,24 @@ const EditProfileForm = ({ profile, onUpdate, onCancel }: EditProfileFormProps) 
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Discord
                 </Label>
-                <Input
-                  id="discord"
-                  name="discord"
-                  value={formData.discord}
-                  onChange={handleInputChange}
-                  placeholder="username#0000 или ID"
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
+                <Input id="discord" name="discord" value={formData.discord} onChange={handleInputChange} placeholder="username#0000 или ID" className="bg-gray-50 dark:bg-gray-800" />
               </div>
             </TabsContent>
           </CardContent>
         </Tabs>
 
         <CardFooter className="flex justify-between pt-4">
-          {onCancel && (
-            <Button 
-              type="button" 
-              variant="outline"
-              onClick={onCancel}
-            >
+          {onCancel && <Button type="button" variant="outline" onClick={onCancel}>
               Отмена
-            </Button>
-          )}
-          <Button 
-            type="submit" 
-            className="gradient-bg text-white px-8" 
-            disabled={updating}
-          >
-            {updating ? (
-              <>
+            </Button>}
+          <Button type="submit" className="gradient-bg text-white px-8" disabled={updating}>
+            {updating ? <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Сохранение...
-              </>
-            ) : (
-              'Сохранить изменения'
-            )}
+              </> : 'Сохранить изменения'}
           </Button>
         </CardFooter>
       </Card>
-    </form>
-  );
+    </form>;
 };
-
 export default EditProfileForm;
