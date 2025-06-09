@@ -25,14 +25,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { CommunityPost } from '@/types/database';
 
 export interface CommunityPostActionsProps {
-  post: CommunityPost;
+  postId: string;
+  communityId: string;
   isAuthor: boolean;
   isModerator: boolean;
   onPostDeleted?: () => void;
 }
 
 const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
-  post,
+  postId,
+  communityId,
   isAuthor,
   isModerator,
   onPostDeleted
@@ -45,7 +47,7 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
   const [isReporting, setIsReporting] = useState(false);
 
   const handleEdit = () => {
-    navigate(`/communities/${post.community_id}/post/${post.id}/edit`);
+    navigate(`/communities/${communityId}/post/${postId}/edit`);
   };
 
   const handleDelete = async () => {
@@ -55,19 +57,19 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
       await supabase
         .from('community_post_likes')
         .delete()
-        .eq('post_id', post.id);
+        .eq('post_id', postId);
       
       // Then delete comments
       await supabase
         .from('community_comments')
         .delete()
-        .eq('post_id', post.id);
+        .eq('post_id', postId);
       
       // Finally delete the post
       const { error } = await supabase
         .from('community_posts')
         .delete()
-        .eq('id', post.id);
+        .eq('id', postId);
       
       if (error) throw error;
       
@@ -79,7 +81,7 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
       if (onPostDeleted) {
         onPostDeleted();
       } else {
-        navigate(`/communities/${post.community_id}`);
+        navigate(`/communities/${communityId}`);
       }
     } catch (error: any) {
       console.error('Error deleting post:', error);

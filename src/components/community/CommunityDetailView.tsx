@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -227,7 +228,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               
               {canManage && (
                 <CommunityManagementActions
-                  community={community}
+                  communityId={community.id}
                   onRefresh={onRefresh}
                 />
               )}
@@ -322,6 +323,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                           username={postAuthor?.username}
                           fullName={postAuthor?.full_name}
                           avatarUrl={postAuthor?.avatar_url}
+                          verificationType={postAuthor?.verification_type}
                         />
                         <span className="text-sm text-gray-500">
                           {new Date(post.created_at).toLocaleDateString('ru-RU')}
@@ -330,7 +332,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                       <div className="flex items-center gap-2">
                         {(userId === post.user_id || canManage) && (
                           <CommunityPostActions
-                            post={post}
+                            postId={post.id}
+                            communityId={post.community_id}
                             isAuthor={userId === post.user_id}
                             isModerator={canManage}
                             onPostDeleted={onRefresh}
@@ -380,6 +383,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                                       username={comment.profiles?.username}
                                       fullName={comment.profiles?.full_name}
                                       avatarUrl={comment.profiles?.avatar_url}
+                                      verificationType={comment.profiles?.verification_type}
                                       className="text-sm"
                                     />
                                     <div className="flex items-center gap-2">
@@ -471,7 +475,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
       {/* Create Post Dialog */}
       <CreateCommunityPostDialog
         open={showCreatePost}
-        onOpenChange={setShowCreatePost}
+        onClose={() => setShowCreatePost(false)}
         communityId={community.id}
         onPostCreated={onRefresh}
       />

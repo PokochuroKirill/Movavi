@@ -17,14 +17,14 @@ import { Loader2 } from 'lucide-react';
 
 interface CreateCommunityPostDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   communityId: string;
   onPostCreated: () => void;
 }
 
 const CreateCommunityPostDialog: React.FC<CreateCommunityPostDialogProps> = ({
   open,
-  onOpenChange,
+  onClose,
   communityId,
   onPostCreated
 }) => {
@@ -74,7 +74,7 @@ const CreateCommunityPostDialog: React.FC<CreateCommunityPostDialogProps> = ({
         
         setFormData({ title: '', content: '' });
         onPostCreated();
-        onOpenChange(false);
+        onClose();
       } else {
         throw new Error('Не удалось создать пост');
       }
@@ -91,11 +91,11 @@ const CreateCommunityPostDialog: React.FC<CreateCommunityPostDialogProps> = ({
 
   const handleClose = () => {
     setFormData({ title: '', content: '' });
-    onOpenChange(false);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Создать новый пост</DialogTitle>

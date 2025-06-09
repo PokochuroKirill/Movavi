@@ -22,19 +22,19 @@ import { useCommunityManagement } from '@/hooks/useCommunityManagement';
 import { Community } from '@/types/database';
 
 interface CommunityManagementActionsProps {
-  community: Community;
+  communityId: string;
   onRefresh: () => Promise<void>;
 }
 
 const CommunityManagementActions: React.FC<CommunityManagementActionsProps> = ({
-  community,
+  communityId,
   onRefresh
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBanDialog, setShowBanDialog] = useState(false);
   const [banReason, setBanReason] = useState('');
   
-  const { deleteCommunity, banUser, loading } = useCommunityManagement(community.id);
+  const { deleteCommunity, banUser, loading } = useCommunityManagement(communityId);
 
   const handleDeleteCommunity = async () => {
     const success = await deleteCommunity();
