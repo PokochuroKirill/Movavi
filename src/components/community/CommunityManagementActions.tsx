@@ -17,74 +17,56 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MoreVertical, Trash2, UserX } from 'lucide-react';
+import { MoreVertical, Trash2, UserX, Settings } from 'lucide-react';
 import { useCommunityManagement } from '@/hooks/useCommunityManagement';
+import { Community } from '@/types/database';
 
 interface CommunityManagementActionsProps {
-  communityId: string;
-  userId: string;
-  username: string;
-  isCreator: boolean;
-  canManage: boolean;
+  community: Community;
+  onRefresh: () => Promise<void>;
 }
 
 const CommunityManagementActions: React.FC<CommunityManagementActionsProps> = ({
-  communityId,
-  userId,
-  username,
-  isCreator,
-  canManage
+  community,
+  onRefresh
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBanDialog, setShowBanDialog] = useState(false);
   const [banReason, setBanReason] = useState('');
   
-  const { deleteCommunity, banUser, loading } = useCommunityManagement(communityId);
+  const { deleteCommunity, banUser, loading } = useCommunityManagement(community.id);
 
   const handleDeleteCommunity = async () => {
     const success = await deleteCommunity();
     if (success) {
       setShowDeleteDialog(false);
+      await onRefresh();
     }
   };
 
   const handleBanUser = async () => {
-    const success = await banUser(userId, banReason.trim() || undefined);
-    if (success) {
-      setShowBanDialog(false);
-      setBanReason('');
-    }
+    // This would need user context to ban a specific user
+    // For now, just close the dialog
+    setShowBanDialog(false);
+    setBanReason('');
   };
-
-  if (!canManage) return null;
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm">
-            <MoreVertical className="h-4 w-4" />
+            <Settings className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {isCreator && (
-            <DropdownMenuItem 
-              onClick={() => setShowDeleteDialog(true)}
-              className="text-red-600 dark:text-red-400"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Удалить сообщество
-            </DropdownMenuItem>
-          )}
-          {!isCreator && (
-            <DropdownMenuItem 
-              onClick={() => setShowBanDialog(true)}
-              className="text-red-600 dark:text-red-400"
-            >
-              <UserX className="h-4 w-4 mr-2" />
-              Заблокировать пользователя
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem 
+            onClick={() => setShowDeleteDialog(true)}
+            className="text-red-600 dark:text-red-400"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Удалить сообщество
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -108,43 +90,6 @@ const CommunityManagementActions: React.FC<CommunityManagementActionsProps> = ({
               disabled={loading}
             >
               {loading ? 'Удаление...' : 'Удалить сообщество'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Диалог блокировки пользователя */}
-      <Dialog open={showBanDialog} onOpenChange={setShowBanDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Заблокировать пользователя</DialogTitle>
-            <DialogDescription>
-              Вы уверены, что хотите заблокировать пользователя {username}? 
-              Он будет исключен из сообщества и больше не сможет присоединиться.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="ban-reason">Причина блокировки (необязательно)</Label>
-              <Textarea
-                id="ban-reason"
-                value={banReason}
-                onChange={(e) => setBanReason(e.target.value)}
-                placeholder="Укажите причину блокировки..."
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBanDialog(false)}>
-              Отмена
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleBanUser}
-              disabled={loading}
-            >
-              {loading ? 'Блокировка...' : 'Заблокировать'}
             </Button>
           </DialogFooter>
         </DialogContent>
