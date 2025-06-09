@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Pencil, Users, UserPlus, ExternalLink } from 'lucide-react';
 import { Profile } from '@/types/database';
 import VerificationBadge from './VerificationBadge';
+import SocialMediaLinks from './SocialMediaLinks';
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -30,15 +31,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   isFollowing = false,
   onFollowToggle
 }) => {
-  const socialLinks = [
-    { label: 'Сайт', value: profile.website, icon: '🌐' },
-    { label: 'GitHub', value: profile.github, icon: '💻' },
-    { label: 'Twitter', value: profile.twitter, icon: '🐦' },
-    { label: 'LinkedIn', value: profile.linkedin, icon: '💼' },
-    { label: 'Telegram', value: profile.telegram, icon: '📱' },
-    { label: 'Discord', value: profile.discord, icon: '🎮' },
-  ].filter(link => link.value);
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -83,23 +75,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <p className="text-gray-700 dark:text-gray-300 mb-4">{profile.bio}</p>
           )}
 
-          {socialLinks.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {socialLinks.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.value?.startsWith('http') ? link.value : `https://${link.value}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <span>{link.icon}</span>
-                  <span>{link.label}</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              ))}
-            </div>
-          )}
+          <SocialMediaLinks
+            github={profile.github}
+            twitter={profile.twitter}
+            linkedin={profile.linkedin}
+            telegram={profile.telegram}
+            discord={profile.discord}
+            website={profile.website}
+            className="mb-4"
+          />
           
           {profile.is_pro && (
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white mb-4">
