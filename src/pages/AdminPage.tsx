@@ -14,6 +14,7 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -22,21 +23,63 @@ const AdminPage = () => {
         return;
       }
       
-      // Skip admin verification - grant access to anyone who is logged in
-      setLoading(false);
+      try {
+        // Получаем профиль пользователя
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast({
+            title: 'Ошибка',
+            description: 'Не удалось проверить права доступа',
+            variant: 'destructive'
+          });
+          navigate('/');
+          return;
+        }
+
+        // Проверяем, что username = "devhub" (без @)
+        if (profile?.username === 'devhub') {
+          setHasAccess(true);
+        } else {
+          toast({
+            title: 'Доступ запрещен',
+            description: 'У вас нет прав для доступа к этой странице',
+            variant: 'destructive'
+          });
+          navigate('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
     };
 
     checkAdminAccess();
-  }, [user, navigate]);
+  }, [user, navigate, toast]);
 
   if (loading) {
     return (
       <Layout>
         <div className="container py-10 flex items-center justify-center">
-          <p>Загрузка...</p>
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p>Проверка доступа...</p>
+          </div>
         </div>
       </Layout>
     );
+  }
+
+  if (!hasAccess) {
+    return null; // Пользователь уже перенаправлен
   }
 
   return (

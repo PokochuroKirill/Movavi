@@ -71,7 +71,7 @@ const AboutPage = () => {
                 <div className="bg-gradient-to-br from-pink-500 to-pink-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 mx-auto">
                   <Users className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">Сообщество</h3>
+                <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">Сообщества</h3>
                 <p className="text-gray-600 dark:text-gray-300">
                   Присоединяйтесь к растущему сообществу разработчиков
                 </p>

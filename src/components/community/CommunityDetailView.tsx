@@ -173,32 +173,32 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const isCreator = userId === community.creator_id;
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 min-h-screen p-6">
-      {/* Community Header */}
-      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
-        <CardHeader>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Community Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
               {community.avatar_url && (
                 <img
                   src={community.avatar_url}
                   alt={community.name}
-                  className="w-20 h-20 rounded-xl object-cover shadow-lg"
+                  className="w-16 h-16 rounded-lg object-cover"
                 />
               )}
-              <div>
-                <CardTitle className="text-3xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                   {community.name}
-                </CardTitle>
-                <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg leading-relaxed">
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300 mb-3">
                   {community.description}
                 </p>
-                <div className="flex items-center gap-4 mt-4">
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                    <Users className="w-4 h-4 mr-1" />
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary">
+                    <Users className="w-3 h-3 mr-1" />
                     {community.members_count || 0} участников
                   </Badge>
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                  <Badge variant="secondary">
                     {community.posts_count || 0} постов
                   </Badge>
                   {!community.is_public && (
@@ -208,12 +208,12 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {isMember ? (
                 <>
                   <Button 
                     onClick={() => setShowCreatePost(true)}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Создать пост
@@ -227,52 +227,49 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               ) : (
                 <Button 
                   onClick={onJoinCommunity}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   Присоединиться
                 </Button>
               )}
               
               {isCreator && (
-                <Button variant="outline" size="icon">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              )}
-              
-              {isCreator && (
-                <CommunityManagementActions
-                  communityId={community.id}
-                  onRefresh={onRefresh}
-                />
+                <>
+                  <Button variant="outline" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <CommunityManagementActions
+                    communityId={community.id}
+                    onRefresh={onRefresh}
+                  />
+                </>
               )}
             </div>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
 
-      {/* Community Topics */}
-      {community.topics && community.topics.length > 0 && (
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle>Темы сообщества</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Topics */}
+        {community.topics && community.topics.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              Темы сообщества
+            </h3>
             <div className="flex flex-wrap gap-2">
               {community.topics.map((topic, index) => (
-                <Badge key={index} variant="outline" className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30">
+                <Badge key={index} variant="outline">
                   {topic}
                 </Badge>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* Members Section */}
-      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Участники ({members.length})</CardTitle>
+        {/* Members */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Участники ({members.length})
+            </h3>
             <Button
               variant="outline"
               size="sm"
@@ -281,9 +278,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               Показать всех
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {members.slice(0, 8).map((member) => (
               <UserProfileLink
                 key={member.id}
@@ -291,28 +286,27 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                 username={member.profiles?.username}
                 fullName={member.profiles?.full_name}
                 avatarUrl={member.profiles?.avatar_url}
-                className="flex items-center space-x-2 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:shadow-md transition-all"
+                className="flex items-center space-x-2 p-2 rounded-md bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
               />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Posts Section */}
-      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
-        <CardHeader>
-          <CardTitle>Посты сообщества</CardTitle>
-        </CardHeader>
-        <CardContent>
+        {/* Posts */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Посты сообщества
+          </h3>
+          
           {posts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400 text-lg mb-6">
+            <div className="text-center py-8">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Пока что здесь нет постов
               </p>
               {isMember && (
                 <Button
                   onClick={() => setShowCreatePost(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Создать первый пост
@@ -320,7 +314,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
               )}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {posts.map((post) => {
                 const postAuthor = post.profiles;
                 const isPostExpanded = expandedPosts.has(post.id);
@@ -328,141 +322,137 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                 const isLoadingPostComments = loadingComments[post.id];
                 
                 return (
-                  <Card key={post.id} className="bg-gradient-to-r from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-900/20 border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <UserProfileLink
-                            userId={post.user_id}
-                            username={postAuthor?.username}
-                            fullName={postAuthor?.full_name}
-                            avatarUrl={postAuthor?.avatar_url}
-                            verificationType={postAuthor?.verification_type}
-                          />
-                          <span className="text-sm text-gray-500">
-                            {new Date(post.created_at).toLocaleDateString('ru-RU')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {(userId === post.user_id || isCreator) && (
-                            <CommunityPostActions
-                              postId={post.id}
-                              communityId={post.community_id}
-                              isAuthor={userId === post.user_id}
-                              isModerator={isCreator}
-                              onPostDeleted={onRefresh}
-                            />
-                          )}
-                        </div>
+                  <div key={post.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <UserProfileLink
+                          userId={post.user_id}
+                          username={postAuthor?.username}
+                          fullName={postAuthor?.full_name}
+                          avatarUrl={postAuthor?.avatar_url}
+                          verificationType={postAuthor?.verification_type}
+                        />
+                        <span className="text-sm text-gray-500">
+                          {new Date(post.created_at).toLocaleDateString('ru-RU')}
+                        </span>
                       </div>
-                      
-                      <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">{post.title}</h3>
-                      <div className="prose prose-sm max-w-none dark:prose-invert mb-6">
-                        <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">{post.content}</p>
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center space-x-6">
-                          <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors">
-                            <Heart className="w-5 h-5" />
-                            <span>{post.likes_count || 0}</span>
-                          </button>
-                          <button
-                            onClick={() => togglePostExpansion(post.id)}
-                            className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
-                          >
-                            <MessageCircle className="w-5 h-5" />
-                            <span>{post.comments_count || 0}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Comments Section */}
-                      {isPostExpanded && (
-                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                          <h4 className="text-base font-medium mb-4">Комментарии</h4>
-                          
-                          {isLoadingPostComments ? (
-                            <div className="flex justify-center py-4">
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              {comments.map((comment) => (
-                                <div key={comment.id} className="flex items-start space-x-3 p-4 bg-white/60 dark:bg-gray-700/60 rounded-xl">
-                                  <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <UserProfileLink
-                                        userId={comment.user_id}
-                                        username={comment.profiles?.username}
-                                        fullName={comment.profiles?.full_name}
-                                        avatarUrl={comment.profiles?.avatar_url}
-                                        verificationType={comment.profiles?.verification_type}
-                                        className="text-sm"
-                                      />
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-500">
-                                          {new Date(comment.created_at).toLocaleDateString('ru-RU')}
-                                        </span>
-                                        {userId === comment.user_id && (
-                                          <CommentActions
-                                            commentId={comment.id}
-                                            isAuthor={userId === comment.user_id}
-                                            isModerator={false}
-                                            onCommentDeleted={() => handleCommentDelete(post.id, comment.id)}
-                                          />
-                                        )}
-                                      </div>
-                                    </div>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                      {comment.content}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                              
-                              {isMember && (
-                                <form
-                                  onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const formData = new FormData(e.currentTarget);
-                                    const content = formData.get('content') as string;
-                                    if (content.trim()) {
-                                      handleCommentSubmit(post.id, content.trim());
-                                      e.currentTarget.reset();
-                                    }
-                                  }}
-                                  className="mt-4"
-                                >
-                                  <div className="flex space-x-3">
-                                    <input
-                                      name="content"
-                                      placeholder="Написать комментарий..."
-                                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                      required
-                                    />
-                                    <Button 
-                                      type="submit" 
-                                      size="sm"
-                                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                                    >
-                                      Отправить
-                                    </Button>
-                                  </div>
-                                </form>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                      {(userId === post.user_id || isCreator) && (
+                        <CommunityPostActions
+                          postId={post.id}
+                          communityId={post.community_id}
+                          isAuthor={userId === post.user_id}
+                          isModerator={isCreator}
+                          onPostDeleted={onRefresh}
+                        />
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                    
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      {post.title}
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap">
+                      {post.content}
+                    </p>
+                    
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center space-x-4">
+                        <button className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors">
+                          <Heart className="w-4 h-4" />
+                          <span className="text-sm">{post.likes_count || 0}</span>
+                        </button>
+                        <button
+                          onClick={() => togglePostExpansion(post.id)}
+                          className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="text-sm">{post.comments_count || 0}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Comments Section */}
+                    {isPostExpanded && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        {isLoadingPostComments ? (
+                          <div className="flex justify-center py-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {comments.map((comment) => (
+                              <div key={comment.id} className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <UserProfileLink
+                                      userId={comment.user_id}
+                                      username={comment.profiles?.username}
+                                      fullName={comment.profiles?.full_name}
+                                      avatarUrl={comment.profiles?.avatar_url}
+                                      verificationType={comment.profiles?.verification_type}
+                                      className="text-sm"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(comment.created_at).toLocaleDateString('ru-RU')}
+                                      </span>
+                                      {userId === comment.user_id && (
+                                        <CommentActions
+                                          commentId={comment.id}
+                                          isAuthor={userId === comment.user_id}
+                                          isModerator={false}
+                                          onCommentDeleted={() => handleCommentDelete(post.id, comment.id)}
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                                    {comment.content}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {isMember && (
+                              <form
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const formData = new FormData(e.currentTarget);
+                                  const content = formData.get('content') as string;
+                                  if (content.trim()) {
+                                    handleCommentSubmit(post.id, content.trim());
+                                    e.currentTarget.reset();
+                                  }
+                                }}
+                                className="mt-3"
+                              >
+                                <div className="flex space-x-2">
+                                  <input
+                                    name="content"
+                                    placeholder="Написать комментарий..."
+                                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    required
+                                  />
+                                  <Button 
+                                    type="submit" 
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    Отправить
+                                  </Button>
+                                </div>
+                              </form>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Members Modal */}
       <Dialog open={showMembers} onOpenChange={setShowMembers}>

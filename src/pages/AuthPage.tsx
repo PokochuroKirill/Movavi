@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,7 +59,6 @@ const AuthPage = () => {
         }
         
         await signUp(email, password, fullName, username);
-        // После регистрации остаёмся на этой странице для возможного входа
         setMode('login');
         toast({
           title: "Проверьте почту",
@@ -75,15 +73,15 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       <Navbar />
       <div className="flex-grow flex items-center justify-center pt-20 pb-20 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">
+        <Card className="w-full max-w-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {mode === 'login' ? 'Вход' : 'Регистрация'} в DevHub
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription>
               {mode === 'login' 
                 ? 'Войдите в свой аккаунт чтобы продолжить'
                 : 'Создайте новый аккаунт, чтобы начать'
@@ -157,7 +155,7 @@ const AuthPage = () => {
               
               <Button
                 type="submit"
-                className="w-full gradient-bg text-white"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
                 disabled={loading}
               >
                 {loading 
@@ -170,23 +168,23 @@ const AuthPage = () => {
               
               <div className="text-center mt-4">
                 {mode === 'login' ? (
-                  <p>
+                  <p className="text-gray-600 dark:text-gray-400">
                     Нет аккаунта?{' '}
                     <button
                       type="button"
                       onClick={() => setMode('register')}
-                      className="text-devhub-purple hover:underline"
+                      className="text-blue-600 hover:text-purple-600 font-medium transition-colors"
                     >
                       Зарегистрироваться
                     </button>
                   </p>
                 ) : (
-                  <p>
+                  <p className="text-gray-600 dark:text-gray-400">
                     Уже есть аккаунт?{' '}
                     <button
                       type="button"
                       onClick={() => setMode('login')}
-                      className="text-devhub-purple hover:underline"
+                      className="text-blue-600 hover:text-purple-600 font-medium transition-colors"
                     >
                       Войти
                     </button>
