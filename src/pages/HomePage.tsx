@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,19 +6,16 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Code, Users, Lightbulb, Star, Rocket, Heart } from 'lucide-react';
 import RecommendationSystem from '@/components/RecommendationSystem';
-
 const HomePage = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
-
   if (!mounted) return null;
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
+  return <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       <Navbar />
       
       {/* Hero Section */}
@@ -34,10 +30,7 @@ const HomePage = () => {
         </div>
         
         <div className="max-w-5xl mx-auto pt-24 pb-20 relative z-10">
-          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-full text-sm font-medium text-blue-800 dark:text-blue-200 mb-8">
-            <Star className="w-4 h-4 mr-2" />
-            Присоединяйтесь к сообществу разработчиков
-          </div>
+          
           
           <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text">
@@ -71,20 +64,7 @@ const HomePage = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">10K+</div>
-              <div className="text-gray-600 dark:text-gray-300">Проектов</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">5K+</div>
-              <div className="text-gray-600 dark:text-gray-300">Разработчиков</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-pink-600 dark:text-pink-400">25K+</div>
-              <div className="text-gray-600 dark:text-gray-300">Сниппетов</div>
-            </div>
-          </div>
+          
         </div>
       </section>
 
@@ -165,8 +145,6 @@ const HomePage = () => {
       </section>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default HomePage;
