@@ -43,24 +43,30 @@ const UserProfilePage = () => {
     const loadProfile = async () => {
       setLoading(true);
       try {
-        // First try to find by username
         let profileData: Profile | null = null;
         
-        profileData = await fetchProfileByUsername(username);
-        
-        if (!profileData) {
-          // If username not found, try by ID
-          profileData = await fetchProfileById(username);
+        // Check if username is in format "id/userid"
+        if (username.startsWith('id/')) {
+          const userId = username.substring(3);
+          profileData = await fetchProfileById(userId);
+        } else {
+          // Try to find by username first
+          profileData = await fetchProfileByUsername(username);
           
           if (!profileData) {
-            toast({
-              title: 'Error',
-              description: 'User profile not found',
-              variant: 'destructive'
-            });
-            navigate('/');
-            return;
+            // If username not found, try by ID
+            profileData = await fetchProfileById(username);
           }
+        }
+        
+        if (!profileData) {
+          toast({
+            title: 'Error',
+            description: 'User profile not found',
+            variant: 'destructive'
+          });
+          navigate('/');
+          return;
         }
         
         setProfile(profileData);

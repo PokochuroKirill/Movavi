@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Users, Sparkles } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { useCommunityCreationLimit } from '@/hooks/useCommunityCreationLimit';
 
@@ -77,7 +77,7 @@ const CreateCommunityPage = () => {
       return;
     }
 
-    // Проверяем лимит создания сообществ
+    // Check community creation limit
     const canCreate = await checkCommunityLimit(user.id);
     if (!canCreate) {
       return;
@@ -99,7 +99,7 @@ const CreateCommunityPage = () => {
       let avatarUrl = null;
       let bannerUrl = null;
 
-      // Загружаем файлы если они есть
+      // Upload files if present
       if (avatar) {
         avatarUrl = await uploadFile(avatar, 'community-avatars');
       }
@@ -110,13 +110,13 @@ const CreateCommunityPage = () => {
 
       setUploading(false);
 
-      // Обрабатываем темы
+      // Process topics
       const topics = formData.topics
         .split(',')
         .map(topic => topic.trim())
         .filter(topic => topic.length > 0);
 
-      // Создаем сообщество
+      // Create community
       const { data: communityData, error: communityError } = await supabase
         .from('communities')
         .insert({
@@ -126,7 +126,7 @@ const CreateCommunityPage = () => {
           avatar_url: avatarUrl,
           banner_url: bannerUrl,
           topics: topics.length > 0 ? topics : null,
-          is_public: true, // Всегда публичное
+          is_public: true,
           members_count: 1,
           posts_count: 0
         })
@@ -135,7 +135,7 @@ const CreateCommunityPage = () => {
 
       if (communityError) throw communityError;
 
-      // Добавляем создателя как администратора
+      // Add creator as admin
       const { error: memberError } = await supabase
         .from('community_members')
         .insert({
@@ -167,124 +167,150 @@ const CreateCommunityPage = () => {
 
   return (
     <Layout>
-      <div className="container max-w-2xl py-24 mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Создать новое сообщество</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="avatar">Аватар сообщества</Label>
-                  <Input
-                    id="avatar"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'avatar')}
-                    disabled={submitting}
-                  />
-                  {avatar && (
-                    <div className="mt-2">
-                      <img 
-                        src={URL.createObjectURL(avatar)} 
-                        alt="Превью аватара" 
-                        className="w-16 h-16 rounded-full object-cover" 
-                      />
-                    </div>
-                  )}
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 py-24">
+        <div className="container max-w-3xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-full text-sm font-medium text-blue-800 dark:text-blue-200 mb-4">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Создание сообщества
+            </div>
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
+              Создать новое сообщество
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 text-lg">
+              Объедините разработчиков вокруг общих интересов
+            </p>
+          </div>
+
+          <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+              <CardTitle className="text-2xl flex items-center">
+                <Users className="w-6 h-6 mr-2" />
+                Детали сообщества
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="avatar" className="text-gray-700 dark:text-gray-300">Аватар сообщества</Label>
+                    <Input
+                      id="avatar"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'avatar')}
+                      disabled={submitting}
+                      className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                    />
+                    {avatar && (
+                      <div className="mt-3">
+                        <img 
+                          src={URL.createObjectURL(avatar)} 
+                          alt="Превью аватара" 
+                          className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" 
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="banner" className="text-gray-700 dark:text-gray-300">Баннер сообщества</Label>
+                    <Input
+                      id="banner"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'banner')}
+                      disabled={submitting}
+                      className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                    />
+                    {banner && (
+                      <div className="mt-3">
+                        <img 
+                          src={URL.createObjectURL(banner)} 
+                          alt="Превью баннера" 
+                          className="w-full h-24 rounded-lg object-cover border-4 border-white shadow-lg" 
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="banner">Баннер сообщества</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Название сообщества</Label>
                   <Input
-                    id="banner"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'banner')}
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Введите название сообщества"
                     disabled={submitting}
+                    required
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                   />
-                  {banner && (
-                    <div className="mt-2">
-                      <img 
-                        src={URL.createObjectURL(banner)} 
-                        alt="Превью баннера" 
-                        className="w-full h-20 rounded-md object-cover" 
-                      />
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="name">Название сообщества</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Введите название сообщества"
-                  disabled={submitting}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">Описание</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Опишите ваше сообщество"
+                    className="min-h-[120px] bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
+                    disabled={submitting}
+                    required
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="description">Описание</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Опишите ваше сообщество"
-                  className="min-h-[100px]"
-                  disabled={submitting}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="topics" className="text-gray-700 dark:text-gray-300">Темы (через запятую)</Label>
+                  <Input
+                    id="topics"
+                    name="topics"
+                    value={formData.topics}
+                    onChange={handleInputChange}
+                    placeholder="JavaScript, React, Web Development"
+                    disabled={submitting}
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Укажите основные темы вашего сообщества для лучшего поиска
+                  </p>
+                </div>
 
-              <div>
-                <Label htmlFor="topics">Темы (через запятую)</Label>
-                <Input
-                  id="topics"
-                  name="topics"
-                  value={formData.topics}
-                  onChange={handleInputChange}
-                  placeholder="JavaScript, React, Web Development"
-                  disabled={submitting}
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Укажите основные темы вашего сообщества для лучшего поиска
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate('/communities')}
-                  disabled={submitting}
-                >
-                  Отмена
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={submitting || limitLoading}
-                  className="gradient-bg text-white"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {uploading ? 'Загрузка файлов...' : 'Создание...'}
-                    </>
-                  ) : (
-                    'Создать сообщество'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="flex justify-end gap-4 pt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => navigate('/communities')}
+                    disabled={submitting}
+                    className="border-gray-300 dark:border-gray-600"
+                  >
+                    Отмена
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={submitting || limitLoading}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {uploading ? 'Загрузка файлов...' : 'Создание...'}
+                      </>
+                    ) : (
+                      <>
+                        <Users className="mr-2 h-4 w-4" />
+                        Создать сообщество
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );
