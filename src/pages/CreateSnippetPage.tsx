@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, Save, ArrowLeft } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const languageOptions = [
@@ -116,19 +116,39 @@ const CreateSnippetPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       <Navbar />
       
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
-          <h1 className="text-3xl font-bold mb-6">Создать фрагмент кода</h1>
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/snippets')}
+              className="mb-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Назад к сниппетам
+            </Button>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Создать фрагмент кода
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Поделитесь полезным фрагментом кода с сообществом
+            </p>
+          </div>
           
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-2xl">Новый сниппет</CardTitle>
+            </CardHeader>
+            <CardContent>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="title">Название (макс. 100 символов)</Label>
+                    <Label htmlFor="title" className="text-base font-medium">
+                      Название (макс. 100 символов)
+                    </Label>
                     <Input 
                       id="title" 
                       value={title} 
@@ -136,12 +156,15 @@ const CreateSnippetPage = () => {
                       placeholder="Введите название фрагмента кода"
                       maxLength={100}
                       required
+                      className="mt-2"
                     />
                     <p className="text-xs text-gray-500 mt-1">{title.length}/100</p>
                   </div>
                   
                   <div>
-                    <Label htmlFor="description">Описание (макс. 500 символов)</Label>
+                    <Label htmlFor="description" className="text-base font-medium">
+                      Описание (макс. 500 символов)
+                    </Label>
                     <Textarea 
                       id="description" 
                       value={description} 
@@ -149,14 +172,17 @@ const CreateSnippetPage = () => {
                       placeholder="Опишите фрагмент кода и его использование"
                       maxLength={500}
                       required
+                      className="mt-2"
                     />
                     <p className="text-xs text-gray-500 mt-1">{description.length}/500</p>
                   </div>
                   
                   <div>
-                    <Label htmlFor="language">Язык программирования</Label>
+                    <Label htmlFor="language" className="text-base font-medium">
+                      Язык программирования
+                    </Label>
                     <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger id="language">
+                      <SelectTrigger id="language" className="mt-2">
                         <SelectValue placeholder="Выберите язык программирования" />
                       </SelectTrigger>
                       <SelectContent>
@@ -170,40 +196,44 @@ const CreateSnippetPage = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="code">Код</Label>
+                    <Label htmlFor="code" className="text-base font-medium">
+                      Код
+                    </Label>
                     <Textarea 
                       id="code" 
                       value={code} 
                       onChange={(e) => setCode(e.target.value)}
-                      className="font-mono min-h-[200px]"
+                      className="font-mono min-h-[200px] mt-2"
                       placeholder="// Вставьте ваш код здесь"
                       required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="tags">Теги (через запятую)</Label>
+                    <Label htmlFor="tags" className="text-base font-medium">
+                      Теги (через запятую)
+                    </Label>
                     <Input 
                       id="tags" 
                       value={tags} 
                       onChange={(e) => setTags(e.target.value)} 
                       placeholder="react, hooks, typescript"
+                      className="mt-2"
                     />
                   </div>
                   
-                  <div className="flex justify-end pt-4">
+                  <div className="flex justify-end pt-6 space-x-4">
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={() => navigate('/snippets')}
-                      className="mr-2"
                       disabled={isSubmitting}
                     >
                       Отмена
                     </Button>
                     <Button 
                       type="submit"
-                      className="gradient-bg"
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
