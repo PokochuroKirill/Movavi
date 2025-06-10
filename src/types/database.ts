@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -211,6 +212,7 @@ export interface CommunityPost {
     username?: string | null;
     full_name?: string | null;
     avatar_url?: string | null;
+    verification_type?: number | null;
   };
 }
 
@@ -224,6 +226,7 @@ export interface CommunityComment {
     username?: string | null;
     full_name?: string | null;
     avatar_url?: string | null;
+    verification_type?: number | null;
   };
 }
 
