@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar, Heart, Eye, ArrowLeft } from 'lucide-react';
 import Layout from '@/components/Layout';
-import SnippetCommentSection from '@/components/SnippetCommentSection';
 import { supabase } from '@/integrations/supabase/client';
 import { Snippet } from '@/types/database';
 import { formatDate } from '@/utils/dateUtils';
@@ -15,14 +13,18 @@ import SnippetActions from '@/components/SnippetActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
-
 const SnippetDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const [snippet, setSnippet] = useState<Snippet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-
+  const {
+    user
+  } = useAuth();
   useEffect(() => {
     const fetchSnippet = async () => {
       if (!id) {
@@ -30,21 +32,18 @@ const SnippetDetailPage = () => {
         setLoading(false);
         return;
       }
-
       try {
-        const { data, error } = await supabase
-          .from('snippets')
-          .select(`
+        const {
+          data,
+          error
+        } = await supabase.from('snippets').select(`
             *,
             profiles:user_id (
               username,
               full_name,
               avatar_url
             )
-          `)
-          .eq('id', id)
-          .single();
-
+          `).eq('id', id).single();
         if (error) throw error;
         setSnippet(data);
       } catch (err: any) {
@@ -54,25 +53,19 @@ const SnippetDetailPage = () => {
         setLoading(false);
       }
     };
-
     fetchSnippet();
   }, [id]);
-
   if (loading) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-
   if (error || !snippet) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -89,12 +82,9 @@ const SnippetDetailPage = () => {
             </Link>
           </div>
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="container max-w-4xl py-24 mt-8">
         <div className="space-y-6">
           {/* Кнопка назад */}
@@ -125,15 +115,11 @@ const SnippetDetailPage = () => {
                   </div>
 
                   {/* Теги */}
-                  {snippet.tags && snippet.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {snippet.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary">
+                  {snippet.tags && snippet.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-4">
+                      {snippet.tags.map((tag, index) => <Badge key={index} variant="secondary">
                           {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                        </Badge>)}
+                    </div>}
 
                   {/* Информация об авторе и дате */}
                   <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -165,31 +151,23 @@ const SnippetDetailPage = () => {
             <CardContent>
               {/* Код сниппета */}
               <div className="mb-6">
-                <SyntaxHighlighter
-                  language={snippet.language.toLowerCase()}
-                  style={tomorrow}
-                  customStyle={{
-                    margin: 0,
-                    borderRadius: '0.5rem',
-                    fontSize: '0.875rem'
-                  }}
-                >
+                <SyntaxHighlighter language={snippet.language.toLowerCase()} style={tomorrow} customStyle={{
+                margin: 0,
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem'
+              }}>
                   {snippet.code}
                 </SyntaxHighlighter>
               </div>
             </CardContent>
           </Card>
 
-          {/* Секция комментариев */}
+          {/* Статистика */}
           <Card>
-            <CardContent className="pt-6">
-              <SnippetCommentSection snippetId={snippet.id} />
-            </CardContent>
+            
           </Card>
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default SnippetDetailPage;
