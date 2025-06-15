@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
+
 const Footer = () => {
   return <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-12">
       <div className="container mx-auto px-4">
@@ -29,6 +31,9 @@ const Footer = () => {
               <Link to="/communities" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 Сообщества
               </Link>
+              <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                О нас
+              </Link>
             </div>
           </div>
           
@@ -42,8 +47,6 @@ const Footer = () => {
             </div>
           </div>
         </div>
-        
-        
       </div>
     </footer>;
 };
