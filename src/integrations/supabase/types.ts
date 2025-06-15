@@ -1210,6 +1210,10 @@ export type Database = {
         Args: { snippet_id: string; user_id?: string; ip_address?: unknown }
         Returns: undefined
       }
+      nullify_account: {
+        Args: { target_user_id: string; reason?: string }
+        Returns: boolean
+      }
       send_mass_notification: {
         Args: {
           notification_title: string
