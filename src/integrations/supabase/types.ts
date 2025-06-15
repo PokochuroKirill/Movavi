@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           author_id: string
@@ -346,9 +373,51 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          ban_reason: string | null
+          banned_at: string | null
+          banned_by: string | null
           banner_url: string | null
           bio: string | null
           birthdate: string | null
@@ -358,11 +427,14 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_banned: boolean | null
           is_pro: boolean | null
           is_verified: boolean
+          last_login: string | null
           last_username_change: string | null
           linkedin: string | null
           location: string | null
+          login_count: number | null
           telegram: string | null
           twitter: string | null
           updated_at: string
@@ -374,6 +446,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           banner_url?: string | null
           bio?: string | null
           birthdate?: string | null
@@ -383,11 +458,14 @@ export type Database = {
           github?: string | null
           id: string
           is_admin?: boolean | null
+          is_banned?: boolean | null
           is_pro?: boolean | null
           is_verified?: boolean
+          last_login?: string | null
           last_username_change?: string | null
           linkedin?: string | null
           location?: string | null
+          login_count?: number | null
           telegram?: string | null
           twitter?: string | null
           updated_at?: string
@@ -399,6 +477,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           banner_url?: string | null
           bio?: string | null
           birthdate?: string | null
@@ -408,11 +489,14 @@ export type Database = {
           github?: string | null
           id?: string
           is_admin?: boolean | null
+          is_banned?: boolean | null
           is_pro?: boolean | null
           is_verified?: boolean
+          last_login?: string | null
           last_username_change?: string | null
           linkedin?: string | null
           location?: string | null
+          login_count?: number | null
           telegram?: string | null
           twitter?: string | null
           updated_at?: string
@@ -937,6 +1021,10 @@ export type Database = {
       }
     }
     Functions: {
+      ban_user: {
+        Args: { target_user_id: string; reason?: string }
+        Returns: boolean
+      }
       ban_user_from_community: {
         Args: { p_community_id: string; p_user_id: string; p_reason?: string }
         Returns: boolean
@@ -952,6 +1040,17 @@ export type Database = {
       count_following: {
         Args: { user_id: string }
         Returns: number
+      }
+      create_notification: {
+        Args: {
+          target_user_id: string
+          notification_title: string
+          notification_message: string
+          notification_type?: string
+          action_url?: string
+          expires_hours?: number
+        }
+        Returns: string
       }
       decrement_community_members: {
         Args: { community_id: string }
@@ -973,6 +1072,9 @@ export type Database = {
         Args: { user_id: string }
         Returns: {
           avatar_url: string | null
+          ban_reason: string | null
+          banned_at: string | null
+          banned_by: string | null
           banner_url: string | null
           bio: string | null
           birthdate: string | null
@@ -982,11 +1084,14 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_banned: boolean | null
           is_pro: boolean | null
           is_verified: boolean
+          last_login: string | null
           last_username_change: string | null
           linkedin: string | null
           location: string | null
+          login_count: number | null
           telegram: string | null
           twitter: string | null
           updated_at: string
@@ -1001,6 +1106,9 @@ export type Database = {
         Args: { user_id: string }
         Returns: {
           avatar_url: string | null
+          ban_reason: string | null
+          banned_at: string | null
+          banned_by: string | null
           banner_url: string | null
           bio: string | null
           birthdate: string | null
@@ -1010,11 +1118,14 @@ export type Database = {
           github: string | null
           id: string
           is_admin: boolean | null
+          is_banned: boolean | null
           is_pro: boolean | null
           is_verified: boolean
+          last_login: string | null
           last_username_change: string | null
           linkedin: string | null
           location: string | null
+          login_count: number | null
           telegram: string | null
           twitter: string | null
           updated_at: string
@@ -1098,6 +1209,20 @@ export type Database = {
       increment_snippet_views: {
         Args: { snippet_id: string; user_id?: string; ip_address?: unknown }
         Returns: undefined
+      }
+      send_mass_notification: {
+        Args: {
+          notification_title: string
+          notification_message: string
+          notification_type?: string
+          target_verified_only?: boolean
+          target_pro_only?: boolean
+        }
+        Returns: number
+      }
+      unban_user: {
+        Args: { target_user_id: string }
+        Returns: boolean
       }
       unban_user_from_community: {
         Args: { p_community_id: string; p_user_id: string }
