@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
-import AvatarUpload from '@/components/AvatarUpload'; // добавлено
+import AvatarUpload from '@/components/AvatarUpload';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface EditProfileFormProps {
   profile: Profile | null;
@@ -25,9 +27,13 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
     twitter: '',
     discord: '',
     website: '',
-    avatar_url: '', // чтобы одновременнно обновлять поле с аватаром
+    avatar_url: '',
   });
   const { toast } = useToast();
+
+  // --- Username change logic
+  const [canChangeUsername, setCanChangeUsername] = useState(true);
+  const [nextChangeDate, setNextChangeDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -42,10 +48,25 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
         website: profile.website || '',
         avatar_url: profile.avatar_url || '',
       });
+
+      const lastChange = profile.last_username_change ? new Date(profile.last_username_change) : null;
+      if (lastChange) {
+        const now = new Date();
+        const diff = now.getTime() - lastChange.getTime();
+        if (diff < 14 * DAY_MS) {
+          setCanChangeUsername(false);
+          setNextChangeDate(new Date(lastChange.getTime() + 14 * DAY_MS));
+        } else {
+          setCanChangeUsername(true);
+          setNextChangeDate(null);
+        }
+      } else {
+        setCanChangeUsername(true);
+        setNextChangeDate(null);
+      }
     }
   }, [profile]);
 
-  // обработчик обновления аватара
   const handleAvatarUpdate = (url: string) => {
     setFormData(prev => ({
       ...prev,
@@ -53,9 +74,16 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
     }));
   };
 
+  // New: Helper to compare usernames
+  const isUsernameChanged = () =>
+    profile &&
+    formData.username.trim() !== (profile.username ?? '').trim();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+
+    // username может быть изменён, только если доступно изменение
+    let payload: any = {
       ...profile,
       username: formData.username,
       full_name: formData.full_name,
@@ -66,13 +94,45 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
       discord: formData.discord,
       website: formData.website,
       avatar_url: formData.avatar_url || null,
-    } as Profile);
+    };
+
+    // Если попытка изменить username когда нельзя — игнорируем и возвращаем прошлое значение
+    if (!canChangeUsername && isUsernameChanged()) {
+      toast({
+        title: "Изменение имени пользователя недоступно",
+        description: "Вы можете менять имя пользователя только раз в 14 дней.",
+        variant: "destructive"
+      });
+      setFormData(prev => ({
+        ...prev,
+        username: profile?.username || ''
+      }));
+      return;
+    }
+
+    // Если username меняется, добавим last_username_change = now
+    if (canChangeUsername && isUsernameChanged()) {
+      payload.last_username_change = new Date().toISOString();
+    }
+
+    onSave(payload as Profile);
 
     toast({
       title: "Профиль обновлен",
       description: "Ваш профиль был успешно обновлен.",
     });
   };
+
+  // Форматирование даты для подсказки
+  const formatDate = (date?: Date | null) =>
+    date
+      ? date
+          .toLocaleDateString('ru-RU', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+      : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
@@ -111,7 +171,15 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
                     placeholder="username"
                     className="mt-2 h-12 border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 rounded-lg"
                     required
+                    disabled={!canChangeUsername}
                   />
+                  {!canChangeUsername && (
+                    <div className="text-xs text-orange-600 mt-1">
+                      Имя пользователя можно менять 1 раз в 14 дней.
+                      <br />
+                      Следующая возможность &mdash; <span className="font-bold">{formatDate(nextChangeDate)}</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="full_name" className="text-base font-semibold text-gray-700 dark:text-gray-200">
