@@ -1,13 +1,17 @@
-# Welcome to DevHub!
+# DevHub
 
-## Project info
+## Описание
 
-**URL**: 
+Платформа для разработчиков
 
-This project is built with .
+## Демонстрация
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- [Демо](https://devhub-ten.vercel.app) 
+## Языки и технологии
+
+- **TypeScript** — основной язык приложения
+- **JavaScript** — для конфигов и вспомогательных файлов
+- **CSS** — Tailwind CSS и обычные стили
+- **HTML** — шаблоны страниц
+- **PLpgSQL** — для работы с базой данных (supabase)
+  
