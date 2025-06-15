@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import SnippetCard from './SnippetCard';
 import ProfileHeader from './ProfileHeader';
 import FollowersModal from './FollowersModal';
 import { useNavigate } from 'react-router-dom';
+import LoaderSpinner from "@/components/ui/LoaderSpinner";
 
 interface UserProfileViewProps {
   profile: Profile;
@@ -109,7 +109,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <TabsContent value="projects" className="mt-6">
           {projectsLoading ? (
             <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <LoaderSpinner size={48} />
             </div>
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -144,7 +144,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <TabsContent value="snippets" className="mt-6">
           {snippetsLoading ? (
             <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <LoaderSpinner size={48} />
             </div>
           ) : snippets.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
@@ -179,7 +179,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <TabsContent value="saved" className="mt-6">
           {savedLoading ? (
             <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <LoaderSpinner size={48} />
             </div>
           ) : (savedProjects.length > 0 || savedSnippets.length > 0) ? (
             <div className="space-y-6">

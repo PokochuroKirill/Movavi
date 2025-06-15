@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Project, Snippet } from '@/types/database';
+import LoaderSpinner from "@/components/ui/LoaderSpinner";
 
 interface RecommendedProject extends Project {
   relevance_score: number;
@@ -74,7 +74,7 @@ const RecommendationSystem = () => {
           <TabsContent value="projects" className="mt-4">
             {projectsLoading ? (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <LoaderSpinner size={32} />
               </div>
             ) : recommendedProjects && recommendedProjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -100,7 +100,7 @@ const RecommendationSystem = () => {
           <TabsContent value="snippets" className="mt-4">
             {snippetsLoading ? (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <LoaderSpinner size={32} />
               </div>
             ) : recommendedSnippets && recommendedSnippets.length > 0 ? (
               <div className="space-y-4">

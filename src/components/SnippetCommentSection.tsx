@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -8,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import LoaderSpinner from "@/components/ui/LoaderSpinner";
 
 interface SnippetCommentSectionProps {
   snippetId: string;
@@ -246,8 +246,8 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       </form>
       
       {isLoading ? (
-        <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
+        <div className="text-center py-8 flex flex-col items-center">
+          <LoaderSpinner size={32} className="mb-2" />
           <p className="text-gray-500">Загрузка комментариев...</p>
         </div>
       ) : comments.length > 0 ? (
