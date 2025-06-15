@@ -23,9 +23,9 @@ const UserProfileLink = ({
 }: UserProfileLinkProps) => {
   const displayName = fullName || username || 'Неизвестный пользователь';
   
-  // Use userId for navigation if username is not available
+  // Исправляем маршрутизацию: теперь ссылки всегда на /users/...
   const linkPath = userId 
-    ? (username ? `/user/${username}` : `/user/id/${userId}`) 
+    ? (username ? `/users/${username}` : `/users/id/${userId}`) 
     : '#';
   
   return (
