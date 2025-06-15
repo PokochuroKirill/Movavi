@@ -17,7 +17,6 @@ const NotificationCenter: React.FC = () => {
   const [type, setType] = useState("info");
   const [targetVerified, setTargetVerified] = useState(false);
   const [targetPro, setTargetPro] = useState(false);
-  const [sendToAll, setSendToAll] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -162,43 +161,27 @@ const NotificationCenter: React.FC = () => {
                 
                 <div className="flex items-center space-x-2">
                   <Checkbox 
-                    id="sendToAll" 
-                    checked={sendToAll}
-                    onCheckedChange={(checked) => setSendToAll(checked === true)}
+                    id="verified" 
+                    checked={targetVerified}
+                    onCheckedChange={handleVerifiedChange}
                   />
-                  <label htmlFor="sendToAll" className="flex items-center gap-2 text-sm font-medium">
-                    <Users className="w-4 h-4" />
-                    Отправить всем пользователям
+                  <label htmlFor="verified" className="flex items-center gap-2 text-sm">
+                    <Star className="w-4 h-4" />
+                    Только верифицированные пользователи
                   </label>
                 </div>
-                
-                {!sendToAll && (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="verified" 
-                        checked={targetVerified}
-                        onCheckedChange={handleVerifiedChange}
-                      />
-                      <label htmlFor="verified" className="flex items-center gap-2 text-sm">
-                        <Star className="w-4 h-4" />
-                        Только верифицированные пользователи
-                      </label>
-                    </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="pro" 
-                        checked={targetPro}
-                        onCheckedChange={handleProChange}
-                      />
-                      <label htmlFor="pro" className="flex items-center gap-2 text-sm">
-                        <Users className="w-4 h-4" />
-                        Только PRO пользователи
-                      </label>
-                    </div>
-                  </>
-                )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="pro" 
+                    checked={targetPro}
+                    onCheckedChange={handleProChange}
+                  />
+                  <label htmlFor="pro" className="flex items-center gap-2 text-sm">
+                    <Users className="w-4 h-4" />
+                    Только PRO пользователи
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -214,13 +197,7 @@ const NotificationCenter: React.FC = () => {
               </div>
 
               <Button 
-                onClick={() => sendNotificationMutation.mutate({
-                  title,
-                  message,
-                  type,
-                  targetVerified: sendToAll ? false : targetVerified,
-                  targetPro: sendToAll ? false : targetPro
-                })}
+                onClick={handleSendNotification}
                 disabled={sendNotificationMutation.isPending || !title.trim() || !message.trim()}
                 className="w-full"
               >
