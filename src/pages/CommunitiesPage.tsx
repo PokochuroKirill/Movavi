@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -15,18 +14,23 @@ import { Users, Calendar, MessageCircle, Search, Plus, Hash } from 'lucide-react
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Community } from '@/types/database';
-
 const CommunitiesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-  const { toast } = useToast();
-
-  const { data: communities, isLoading, error } = useQuery({
+  const {
+    toast
+  } = useToast();
+  const {
+    data: communities,
+    isLoading,
+    error
+  } = useQuery({
     queryKey: ['communities'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('communities')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('communities').select(`
           *,
           creator:creator_id (
             id,
@@ -34,30 +38,25 @@ const CommunitiesPage = () => {
             full_name,
             avatar_url
           )
-        `)
-        .order('created_at', { ascending: false });
-
+        `).order('created_at', {
+        ascending: false
+      });
       if (error) {
         throw error;
       }
-
       return data as Community[];
     }
   });
-
   const filteredCommunities = React.useMemo(() => {
     if (!communities) {
       return [];
     }
-
     let filtered = communities.filter(community => {
       if (searchTerm) {
-        return community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               community.description.toLowerCase().includes(searchTerm.toLowerCase());
+        return community.name.toLowerCase().includes(searchTerm.toLowerCase()) || community.description.toLowerCase().includes(searchTerm.toLowerCase());
       }
       return true;
     });
-
     if (sortBy === 'name') {
       filtered.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === 'members') {
@@ -67,12 +66,9 @@ const CommunitiesPage = () => {
     } else if (sortBy === 'oldest') {
       filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     }
-
     return filtered;
   }, [communities, searchTerm, sortBy]);
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="container py-24 mt-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
@@ -94,12 +90,7 @@ const CommunitiesPage = () => {
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Input
-            type="text"
-            placeholder="Поиск сообществ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <Input type="text" placeholder="Поиск сообществ..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
 
           <div></div>
 
@@ -117,24 +108,14 @@ const CommunitiesPage = () => {
         </div>
 
         {/* Communities Grid */}
-        {isLoading ? (
-          <div className="flex justify-center items-center min-h-[200px]">
+        {isLoading ? <div className="flex justify-center items-center min-h-[200px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredCommunities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCommunities.map((community) => (
-              <Link key={community.id} to={`/communities/${community.id}`}>
+          </div> : filteredCommunities.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCommunities.map(community => <Link key={community.id} to={`/communities/${community.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                  {community.banner_url && (
-                    <div className="h-32 overflow-hidden rounded-t-lg">
-                      <img 
-                        src={community.banner_url} 
-                        alt={community.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
+                  {community.banner_url && <div className="h-32 overflow-hidden rounded-t-lg">
+                      <img src={community.banner_url} alt={community.name} className="w-full h-full object-cover" />
+                    </div>}
                   
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4 mb-4">
@@ -158,20 +139,14 @@ const CommunitiesPage = () => {
                       {community.description}
                     </p>
                     
-                    {community.topics && community.topics.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {community.topics.slice(0, 3).map((topic, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                    {community.topics && community.topics.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
+                        {community.topics.slice(0, 3).map((topic, index) => <Badge key={index} variant="outline" className="text-xs">
                             {topic}
-                          </Badge>
-                        ))}
-                        {community.topics.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
+                          </Badge>)}
+                        {community.topics.length > 3 && <Badge variant="outline" className="text-xs">
                             +{community.topics.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
+                          </Badge>}
+                      </div>}
                     
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
@@ -185,35 +160,25 @@ const CommunitiesPage = () => {
                         </div>
                       </div>
                       <span className="text-gray-400 text-xs">
-                        {formatDistanceToNow(new Date(community.created_at), { 
-                          addSuffix: true, 
-                          locale: ru 
-                        })}
+                        {formatDistanceToNow(new Date(community.created_at), {
+                    addSuffix: true,
+                    locale: ru
+                  })}
                       </span>
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
+              </Link>)}
+          </div> : <div className="text-center py-12">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
               {communities && communities.length === 0 ? 'Сообществ пока нет' : 'Сообщества не найдены'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              {communities && communities.length === 0 
-                ? 'Будьте первым, кто создаст сообщество!' 
-                : 'Попробуйте изменить параметры поиска'}
+              {communities && communities.length === 0 ? 'Будьте первым, кто создаст сообщество!' : 'Попробуйте изменить параметры поиска'}
             </p>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              <Link to="/communities/create">Создать сообщество</Link>
-            </Button>
-          </div>
-        )}
+            
+          </div>}
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default CommunitiesPage;
