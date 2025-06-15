@@ -3,19 +3,6 @@ import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkle, Users, Rocket, Lightbulb } from 'lucide-react';
-const TEAM = [{
-  name: "Алексей Петров",
-  role: "Основатель & Backend",
-  avatar: "https://randomuser.me/api/portraits/men/32.jpg"
-}, {
-  name: "Полина Смирнова",
-  role: "Frontend & UI/UX",
-  avatar: "https://randomuser.me/api/portraits/women/56.jpg"
-}, {
-  name: "Артём Захаров",
-  role: "Community & Support",
-  avatar: "https://randomuser.me/api/portraits/men/76.jpg"
-}];
 const AboutPage = () => {
   return <div className="min-h-screen flex flex-col bg-gradient-to-b from-indigo-100 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
       <Navbar />
