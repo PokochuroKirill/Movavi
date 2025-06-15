@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Profile } from "@/types/database";
 import AdvancedUserManagement from "./AdvancedUserManagement";
 import NotificationCenter from "./NotificationCenter";
-import AdminLogs from "./AdminLogs";
 
 const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,11 +97,10 @@ const UserManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="verification" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="verification">Верификация</TabsTrigger>
           <TabsTrigger value="advanced">Управление</TabsTrigger>
           <TabsTrigger value="notifications">Уведомления</TabsTrigger>
-          <TabsTrigger value="logs">Журнал</TabsTrigger>
         </TabsList>
 
         <TabsContent value="verification" className="space-y-6">
@@ -228,10 +226,6 @@ const UserManagement: React.FC = () => {
 
         <TabsContent value="notifications">
           <NotificationCenter />
-        </TabsContent>
-
-        <TabsContent value="logs">
-          <AdminLogs />
         </TabsContent>
       </Tabs>
     </div>

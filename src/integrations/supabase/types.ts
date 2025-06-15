@@ -373,6 +373,27 @@ export type Database = {
           },
         ]
       }
+      dismissed_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          notification_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -1064,9 +1085,24 @@ export type Database = {
         Args: { community_id: string }
         Returns: boolean
       }
+      delete_user_account: {
+        Args: { target_user_id: string; reason?: string }
+        Returns: boolean
+      }
       follow_user: {
         Args: { follower: string; following: string }
         Returns: boolean
+      }
+      get_active_notifications_for_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          id: string
+          title: string
+          message: string
+          type: string
+          action_url: string
+          created_at: string
+        }[]
       }
       get_followers: {
         Args: { user_id: string }
@@ -1209,6 +1245,10 @@ export type Database = {
       increment_snippet_views: {
         Args: { snippet_id: string; user_id?: string; ip_address?: unknown }
         Returns: undefined
+      }
+      nullify_account: {
+        Args: { target_user_id: string; reason?: string }
+        Returns: boolean
       }
       send_mass_notification: {
         Args: {

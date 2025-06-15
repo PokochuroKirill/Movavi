@@ -1,21 +1,26 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import NotificationBanner from '@/components/NotificationBanner';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Code, Users, Lightbulb, Star, Rocket, Heart } from 'lucide-react';
 import RecommendationSystem from '@/components/RecommendationSystem';
+
 const HomePage = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
   if (!mounted) return null;
-  return <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       <Navbar />
       
       {/* Hero Section */}
@@ -30,7 +35,8 @@ const HomePage = () => {
         </div>
         
         <div className="max-w-5xl mx-auto pt-24 pb-20 relative z-10">
-          
+          {/* Notification Banner */}
+          {user && <NotificationBanner />}
           
           <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text">
@@ -62,9 +68,6 @@ const HomePage = () => {
               </Link>
             </Button>
           </div>
-
-          {/* Stats */}
-          
         </div>
       </section>
 
@@ -145,6 +148,8 @@ const HomePage = () => {
       </section>
       
       <Footer />
-    </div>;
+    </div>
+  );
 };
+
 export default HomePage;
