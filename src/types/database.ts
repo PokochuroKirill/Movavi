@@ -1,4 +1,3 @@
-
 export interface Profile {
   id: string;
   username: string | null;
@@ -22,6 +21,12 @@ export interface Profile {
   verification_type?: number | null;
   verification_granted_at?: string | null;
   verification_granted_by?: string | null;
+  is_banned?: boolean | null;
+  ban_reason?: string | null;
+  banned_at?: string | null;
+  banned_by?: string | null;
+  last_login?: string | null;
+  login_count?: number | null;
 }
 
 export interface Project {

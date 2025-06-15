@@ -92,6 +92,14 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
+  const handleVerifiedChange = (checked: boolean | "indeterminate") => {
+    setTargetVerified(checked === true);
+  };
+
+  const handleProChange = (checked: boolean | "indeterminate") => {
+    setTargetPro(checked === true);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -155,7 +163,7 @@ const NotificationCenter: React.FC = () => {
                   <Checkbox 
                     id="verified" 
                     checked={targetVerified}
-                    onCheckedChange={setTargetVerified}
+                    onCheckedChange={handleVerifiedChange}
                   />
                   <label htmlFor="verified" className="flex items-center gap-2 text-sm">
                     <Star className="w-4 h-4" />
@@ -167,7 +175,7 @@ const NotificationCenter: React.FC = () => {
                   <Checkbox 
                     id="pro" 
                     checked={targetPro}
-                    onCheckedChange={setTargetPro}
+                    onCheckedChange={handleProChange}
                   />
                   <label htmlFor="pro" className="flex items-center gap-2 text-sm">
                     <Users className="w-4 h-4" />
