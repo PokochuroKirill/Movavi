@@ -279,7 +279,7 @@ const ProfilePage = () => {
         {isEditing ? (
           <EditProfileForm 
             profile={profile}
-            onUpdate={handleProfileUpdate}
+            onSave={handleProfileUpdate}
             onCancel={handleCancel}
           />
         ) : (

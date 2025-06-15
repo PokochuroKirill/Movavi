@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,11 +17,11 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
     username: '',
     full_name: '',
     bio: '',
-    github_url: '',
-    linkedin_url: '',
-    twitter_url: '',
-    discord_url: '',
-    website_url: '',
+    github: '',
+    linkedin: '',
+    twitter: '',
+    discord: '',
+    website: '',
   });
   const { toast } = useToast();
 
@@ -30,11 +31,11 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
         username: profile.username || '',
         full_name: profile.full_name || '',
         bio: profile.bio || '',
-        github_url: profile.github_url || '',
-        linkedin_url: profile.linkedin_url || '',
-        twitter_url: profile.twitter_url || '',
-        discord_url: profile.discord_url || '',
-        website_url: profile.website_url || '',
+        github: profile.github || '',
+        linkedin: profile.linkedin || '',
+        twitter: profile.twitter || '',
+        discord: profile.discord || '',
+        website: profile.website || '',
       });
     }
   }, [profile]);
@@ -46,11 +47,11 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
       username: formData.username,
       full_name: formData.full_name,
       bio: formData.bio,
-      github_url: formData.github_url,
-      linkedin_url: formData.linkedin_url,
-      twitter_url: formData.twitter_url,
-      discord_url: formData.discord_url,
-      website_url: formData.website_url,
+      github: formData.github,
+      linkedin: formData.linkedin,
+      twitter: formData.twitter,
+      discord: formData.discord,
+      website: formData.website,
     } as Profile);
     toast({
       title: "Профиль обновлен",
@@ -99,51 +100,51 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
         <Label className="text-base font-medium">Социальные сети</Label>
         
         <div className="space-y-2">
-          <Label htmlFor="github_url" className="text-sm">GitHub</Label>
+          <Label htmlFor="github" className="text-sm">GitHub</Label>
           <Input
-            id="github_url"
-            value={formData.github_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, github_url: e.target.value }))}
+            id="github"
+            value={formData.github}
+            onChange={(e) => setFormData(prev => ({ ...prev, github: e.target.value }))}
             placeholder="https://github.com/username"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="linkedin_url" className="text-sm">LinkedIn</Label>
+          <Label htmlFor="linkedin" className="text-sm">LinkedIn</Label>
           <Input
-            id="linkedin_url"
-            value={formData.linkedin_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, linkedin_url: e.target.value }))}
+            id="linkedin"
+            value={formData.linkedin}
+            onChange={(e) => setFormData(prev => ({ ...prev, linkedin: e.target.value }))}
             placeholder="https://linkedin.com/in/username"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="twitter_url" className="text-sm">X</Label>
+          <Label htmlFor="twitter" className="text-sm">X</Label>
           <Input
-            id="twitter_url"
-            value={formData.twitter_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, twitter_url: e.target.value }))}
+            id="twitter"
+            value={formData.twitter}
+            onChange={(e) => setFormData(prev => ({ ...prev, twitter: e.target.value }))}
             placeholder="https://x.com/username"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="discord_url" className="text-sm">Discord</Label>
+          <Label htmlFor="discord" className="text-sm">Discord</Label>
           <Input
-            id="discord_url"
-            value={formData.discord_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, discord_url: e.target.value }))}
+            id="discord"
+            value={formData.discord}
+            onChange={(e) => setFormData(prev => ({ ...prev, discord: e.target.value }))}
             placeholder="https://discord.gg/invite или username#1234"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="website_url" className="text-sm">Веб-сайт</Label>
+          <Label htmlFor="website" className="text-sm">Веб-сайт</Label>
           <Input
-            id="website_url"
-            value={formData.website_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
+            id="website"
+            value={formData.website}
+            onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
             placeholder="https://yourwebsite.com"
           />
         </div>
