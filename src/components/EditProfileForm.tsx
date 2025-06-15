@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import AvatarUpload from '@/components/AvatarUpload'; // добавлено
 
 interface EditProfileFormProps {
   profile: Profile | null;
@@ -24,6 +25,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
     twitter: '',
     discord: '',
     website: '',
+    avatar_url: '', // чтобы одновременнно обновлять поле с аватаром
   });
   const { toast } = useToast();
 
@@ -38,9 +40,18 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
         twitter: profile.twitter || '',
         discord: profile.discord || '',
         website: profile.website || '',
+        avatar_url: profile.avatar_url || '',
       });
     }
   }, [profile]);
+
+  // обработчик обновления аватара
+  const handleAvatarUpdate = (url: string) => {
+    setFormData(prev => ({
+      ...prev,
+      avatar_url: url || '',
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +65,9 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
       twitter: formData.twitter,
       discord: formData.discord,
       website: formData.website,
+      avatar_url: formData.avatar_url || null,
     } as Profile);
+
     toast({
       title: "Профиль обновлен",
       description: "Ваш профиль был успешно обновлен.",
@@ -71,6 +84,19 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* AVATAR BLOCK */}
+            <div className="flex justify-center mb-8">
+              {profile && (
+                <AvatarUpload
+                  userId={profile.id}
+                  avatarUrl={formData.avatar_url}
+                  onAvatarUpdate={handleAvatarUpdate}
+                  className="w-32 h-32"
+                />
+              )}
+            </div>
+            {/* END AVATAR BLOCK */}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-6">
@@ -87,7 +113,6 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
                     required
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="full_name" className="text-base font-semibold text-gray-700 dark:text-gray-200">
                     Полное имя
@@ -100,7 +125,6 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
                     className="mt-2 h-12 border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 rounded-lg"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="bio" className="text-base font-semibold text-gray-700 dark:text-gray-200">
                     О себе
@@ -189,7 +213,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSave, onCa
                   </div>
                 </div>
               </div>
-
+              
               {/* Action Buttons */}
               <div className="flex justify-end space-x-4 pt-8 border-t border-gray-200 dark:border-gray-600">
                 <Button 

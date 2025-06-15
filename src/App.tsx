@@ -20,6 +20,8 @@ import CommunitiesPage from '@/pages/CommunitiesPage';
 import CreateCommunityPage from '@/pages/CreateCommunityPage';
 import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import CommunityPostDetailPage from '@/pages/CommunityPostDetailPage';
+// добавляем импорт AboutPage
+import AboutPage from '@/pages/AboutPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +55,8 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/users/:username" element={<UserProfilePage />} />
+              {/* добавляем маршрут /about */}
+              <Route path="/about" element={<AboutPage />} />
             </Routes>
             <Toaster />
           </div>
