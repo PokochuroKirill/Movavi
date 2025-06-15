@@ -1,31 +1,23 @@
-
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkle, Users, Rocket, Lightbulb } from 'lucide-react';
-
-const TEAM = [
-  {
-    name: "Алексей Петров",
-    role: "Основатель & Backend",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg"
-  },
-  {
-    name: "Полина Смирнова",
-    role: "Frontend & UI/UX",
-    avatar: "https://randomuser.me/api/portraits/women/56.jpg"
-  },
-  {
-    name: "Артём Захаров",
-    role: "Community & Support",
-    avatar: "https://randomuser.me/api/portraits/men/76.jpg"
-  },
-];
-
+const TEAM = [{
+  name: "Алексей Петров",
+  role: "Основатель & Backend",
+  avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+}, {
+  name: "Полина Смирнова",
+  role: "Frontend & UI/UX",
+  avatar: "https://randomuser.me/api/portraits/women/56.jpg"
+}, {
+  name: "Артём Захаров",
+  role: "Community & Support",
+  avatar: "https://randomuser.me/api/portraits/men/76.jpg"
+}];
 const AboutPage = () => {
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-indigo-100 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
+  return <div className="min-h-screen flex flex-col bg-gradient-to-b from-indigo-100 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
       <Navbar />
       <main className="flex-grow pt-24">
         {/* История */}
@@ -43,11 +35,7 @@ const AboutPage = () => {
                   Проект запустился весной 2024 года и сразу стал больше, чем просто витриной проектов. Это место для совместного развития, обмена опытом, поиска вдохновения, нетворкинга и поддержки друг друга.
                 </p>
               </div>
-              <img
-                src="/public/lovable-uploads/f7db2694-e5eb-4d36-99f3-0602d895c5bd.png"
-                alt="DevHub логотип"
-                className="w-48 h-48 rounded-2xl shadow-xl object-cover bg-white dark:bg-gray-800"
-              />
+              
             </div>
           </div>
         </section>
@@ -105,29 +93,7 @@ const AboutPage = () => {
         </section>
 
         {/* Команда */}
-        <section className="py-12 bg-indigo-50 dark:bg-indigo-900/40">
-          <div className="container mx-auto px-4 max-w-4xl">
-            <h3 className="text-2xl md:text-3xl font-bold text-center text-indigo-800 dark:text-indigo-100 mb-10">
-              Команда DevHub
-            </h3>
-            <div className="flex flex-col md:flex-row justify-center items-center gap-8">
-              {TEAM.map(member => (
-                <div
-                  key={member.name}
-                  className="bg-white dark:bg-gray-800 shadow-xl rounded-xl p-6 flex flex-col items-center w-full md:w-1/3"
-                >
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="w-20 h-20 rounded-full mb-3 border-4 border-indigo-200 dark:border-indigo-600 object-cover"
-                  />
-                  <span className="font-semibold text-indigo-700 dark:text-indigo-200">{member.name}</span>
-                  <div className="text-sm text-gray-500 dark:text-gray-300">{member.role}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        
 
         {/* CTA */}
         <section className="py-12">
@@ -147,9 +113,6 @@ const AboutPage = () => {
         </section>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default AboutPage;
-
