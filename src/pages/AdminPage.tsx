@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import UserManagement from "@/components/admin/UserManagement";
 
+// Градиент применяется на главный контейнер через gradient-bg. При этом card чуть прозрачней.
+
 const HARD_CODED_PASSWORD = "1467";
 
 const AdminPage: React.FC = () => {
@@ -27,14 +29,16 @@ const AdminPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col gradient-bg">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8">
         {!isAuthed ? (
           <div className="max-w-md mx-auto mt-20">
-            <Card className="shadow-lg">
+            <Card className="shadow-lg bg-white/80 dark:bg-zinc-900/80 backdrop-blur">
               <CardHeader>
-                <CardTitle className="text-center text-2xl">Админ-панель</CardTitle>
+                <CardTitle className="text-center text-2xl text-gradient bg-clip-text">
+                  Админ-панель
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -64,8 +68,12 @@ const AdminPage: React.FC = () => {
         ) : (
           <div className="space-y-8">
             <div className="text-center">
-              <h1 className="text-3xl font-bold mb-2">Добро пожаловать в админ-панель!</h1>
-              <p className="text-muted-foreground">Управление пользователями и верификацией</p>
+              <h1 className="text-3xl font-bold mb-2 text-gradient bg-clip-text">
+                Добро пожаловать в админ-панель!
+              </h1>
+              <p className="text-muted-foreground">
+                Управление пользователями и верификацией
+              </p>
             </div>
             
             <UserManagement />
@@ -78,3 +86,4 @@ const AdminPage: React.FC = () => {
 };
 
 export default AdminPage;
+
