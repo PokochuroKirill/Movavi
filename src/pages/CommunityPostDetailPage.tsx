@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +18,7 @@ import { ArrowLeft, Heart, MessageCircle, Share2, Send } from 'lucide-react';
 import { CommunityPost, CommunityComment } from '@/types/database';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import CommunityPostActions from '@/components/community/CommunityPostActions';
 
 const CommunityPostDetailPage = () => {
   const { communityId, postId } = useParams<{ communityId: string; postId: string }>();
@@ -31,6 +31,9 @@ const CommunityPostDetailPage = () => {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Новый стейт для ID создателя сообщества
+  const [communityCreatorId, setCommunityCreatorId] = useState<string | undefined>(undefined);
   
   const {
     likesCount,
@@ -49,16 +52,29 @@ const CommunityPostDetailPage = () => {
 
   const loadPostData = async () => {
     if (!postId) return;
-    
     setLoading(true);
     try {
       const [postData, commentsData] = await Promise.all([
         fetchPostById(postId),
         fetchPostComments(postId)
       ]);
-      
+
       setPost(postData);
       setComments(commentsData);
+
+      // Получим ID создателя сообщества (один раз)
+      if (postData?.community_id) {
+        const { data: commData, error } = await import('@/integrations/supabase/client').then(({ supabase }) =>
+          supabase
+            .from('communities')
+            .select('creator_id')
+            .eq('id', postData.community_id)
+            .single()
+        );
+        if (!error && commData?.creator_id) {
+          setCommunityCreatorId(commData.creator_id);
+        }
+      }
     } catch (error) {
       console.error('Error loading post data:', error);
       toast({
@@ -112,7 +128,6 @@ const CommunityPostDetailPage = () => {
         url: window.location.href
       });
     } catch (error) {
-      // Fallback для браузеров без поддержки Web Share API
       navigator.clipboard.writeText(window.location.href);
       toast({
         title: 'Ссылка скопирована',
@@ -152,10 +167,15 @@ const CommunityPostDetailPage = () => {
     );
   }
 
+  // определим: автор, модератор, пользователь
+  const isAuthor = user && user.id === post.user_id;
+  // для простоты оставим isModerator = false (реальных ролей модераторов нет)
+  // поддерживаем только автора и владельца
+  const currentUserId = user?.id;
+
   return (
     <Layout>
       <div className="container max-w-4xl py-24 mt-8">
-        {/* Кнопка возврата */}
         <Button
           variant="ghost"
           onClick={() => navigate(`/communities/${communityId}`)}
@@ -200,8 +220,8 @@ const CommunityPostDetailPage = () => {
             <div className="prose dark:prose-invert max-w-none mb-6">
               <p className="whitespace-pre-wrap">{post.content}</p>
             </div>
-            
-            {/* Действия с постом */}
+
+            {/* === Действия с постом (like/share/delete/edit/report) ==== */}
             <div className="flex items-center gap-6 pt-4 border-t">
               <Button
                 variant="ghost"
@@ -228,6 +248,19 @@ const CommunityPostDetailPage = () => {
                 <Share2 className="h-4 w-4" />
                 Поделиться
               </Button>
+
+              {/* ВАЖНО: Действия управления постом — только если user есть*/}
+              {user && (
+                <CommunityPostActions
+                  postId={post.id}
+                  communityId={post.community_id}
+                  isAuthor={isAuthor}
+                  isModerator={false}
+                  communityCreatorId={communityCreatorId}
+                  currentUserId={currentUserId}
+                  onPostDeleted={() => navigate(`/communities/${communityId}`)}
+                />
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,124 +1,70 @@
 
-import React, { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
-import { ShieldAlert } from 'lucide-react';
+import React, { useState } from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-const AdminPage = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
+const HARD_CODED_PASSWORD = "1467";
 
-  useEffect(() => {
-    const checkAdminAccess = async () => {
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-      
-      try {
-        // Получаем профиль пользователя
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .single();
+const AdminPage: React.FC = () => {
+  const [password, setPassword] = useState("");
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [error, setError] = useState("");
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-          toast({
-            title: 'Ошибка',
-            description: 'Не удалось проверить права доступа',
-            variant: 'destructive'
-          });
-          navigate('/');
-          return;
-        }
-
-        // Проверяем, что username = "devhub" (без @)
-        if (profile?.username === 'devhub') {
-          setHasAccess(true);
-        } else {
-          toast({
-            title: 'Доступ запрещен',
-            description: 'У вас нет прав для доступа к этой странице',
-            variant: 'destructive'
-          });
-          navigate('/');
-          return;
-        }
-      } catch (error) {
-        console.error('Error checking admin access:', error);
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminAccess();
-  }, [user, navigate, toast]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="container py-10 flex items-center justify-center">
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p>Проверка доступа...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!hasAccess) {
-    return null; // Пользователь уже перенаправлен
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === HARD_CODED_PASSWORD) {
+      setIsAuthed(true);
+      setError("");
+    } else {
+      setError("Неверный пароль");
+    }
+  };
 
   return (
-    <Layout>
-      <div className="container max-w-5xl py-10">
-        <div className="flex items-center mb-8">
-          <ShieldAlert className="h-8 w-8 mr-3 text-red-500" />
-          <h1 className="text-3xl font-bold">Панель администратора</h1>
-        </div>
-
-        <Tabs defaultValue="subscriptions">
-          <TabsList className="mb-6">
-            <TabsTrigger value="subscriptions">Подписки</TabsTrigger>
-            <TabsTrigger value="users">Пользователи</TabsTrigger>
-            <TabsTrigger value="content">Контент</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="subscriptions">
-            <SubscriptionManagement />
-          </TabsContent>
-          
-          <TabsContent value="users">
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-10 text-center">
-              <p className="text-gray-500 dark:text-gray-400">
-                Управление пользователями будет доступно в ближайшем обновлении
-              </p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="content">
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-10 text-center">
-              <p className="text-gray-500 dark:text-gray-400">
-                Управление контентом будет доступно в ближайшем обновлении
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
+    <div className="min-h-screen flex flex-col bg-indigo-50 dark:bg-gray-900">
+      <Navbar />
+      <main className="flex-grow flex items-center justify-center">
+        <Card className="max-w-lg w-full shadow-xl mt-16 mb-24">
+          <CardHeader>
+            <CardTitle className="text-center">Админ-панель</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!isAuthed ? (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="password" className="block mb-2 text-sm font-medium">
+                    Пароль:
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full"
+                    autoFocus
+                  />
+                </div>
+                {error && (
+                  <div className="text-red-500 text-sm mb-2">{error}</div>
+                )}
+                <Button type="submit" className="w-full">
+                  Войти
+                </Button>
+              </form>
+            ) : (
+              <div className="py-6 text-center">
+                <div className="text-2xl font-bold mb-3 text-indigo-700 dark:text-indigo-200">Добро пожаловать, администратор!</div>
+                <div className="text-gray-700 dark:text-gray-300 mb-2">Здесь будут появляться функции админ-панели.</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <Footer />
+    </div>
   );
 };
 

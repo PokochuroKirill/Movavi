@@ -29,6 +29,8 @@ export interface CommunityPostActionsProps {
   communityId: string;
   isAuthor: boolean;
   isModerator: boolean;
+  communityCreatorId?: string;
+  currentUserId?: string;
   onPostDeleted?: () => void;
 }
 
@@ -37,6 +39,8 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
   communityId,
   isAuthor,
   isModerator,
+  communityCreatorId,
+  currentUserId,
   onPostDeleted
 }) => {
   const navigate = useNavigate();
@@ -46,38 +50,47 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
 
+  // Только автор поста или создатель сообщества
+  const canDelete = (currentUserId && (isAuthor || currentUserId === communityCreatorId));
+
   const handleEdit = () => {
     navigate(`/communities/${communityId}/post/${postId}/edit`);
   };
 
   const handleDelete = async () => {
+    if (!canDelete) {
+      toast({
+        title: "Ошибка",
+        description: "Только автор или создатель сообщества может удалить пост",
+        variant: "destructive"
+      });
+      setShowDeleteDialog(false);
+      return;
+    }
     setIsDeleting(true);
     try {
-      // First delete likes
       await supabase
         .from('community_post_likes')
         .delete()
         .eq('post_id', postId);
-      
-      // Then delete comments
+
       await supabase
         .from('community_comments')
         .delete()
         .eq('post_id', postId);
-      
-      // Finally delete the post
+
       const { error } = await supabase
         .from('community_posts')
         .delete()
         .eq('id', postId);
-      
+
       if (error) throw error;
-      
+
       toast({
         title: 'Пост удален',
         description: 'Пост был успешно удален',
       });
-      
+
       if (onPostDeleted) {
         onPostDeleted();
       } else {
@@ -99,8 +112,6 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
   const handleReport = async () => {
     setIsReporting(true);
     try {
-      // Here you would implement the report logic
-      // For now, let's just show a toast
       toast({
         title: 'Жалоба отправлена',
         description: 'Администраторы рассмотрят вашу жалобу',
@@ -136,10 +147,12 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
                   Редактировать
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-500">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Удалить
-              </DropdownMenuItem>
+              {canDelete && (
+                <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-500">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Удалить
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
             </>
           )}
@@ -219,3 +232,4 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
 };
 
 export default CommunityPostActions;
+
