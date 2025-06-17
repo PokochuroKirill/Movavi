@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,19 +7,16 @@ import NotificationBanner from '@/components/NotificationBanner';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Code, Users, Lightbulb, Star, Rocket, Heart } from 'lucide-react';
 import RecommendationSystem from '@/components/RecommendationSystem';
-
 const HomePage = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
-
   if (!mounted) return null;
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
+  return <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       <Navbar />
       
       {/* Hero Section */}
@@ -116,7 +112,7 @@ const HomePage = () => {
               <div className="bg-gradient-to-br from-pink-500 to-pink-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Users className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Сообщество</h3>
+              <h3 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Сообщества</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
                 Присоединяйтесь к растущему сообществу разработчиков, находите единомышленников и стройте свою сеть.
               </p>
@@ -148,8 +144,6 @@ const HomePage = () => {
       </section>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default HomePage;
