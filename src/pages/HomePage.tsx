@@ -88,7 +88,7 @@ const HomePage = () => {
               <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
                 Просматривайте, публикуйте и получайте обратную связь по вашим проектам от сообщества разработчиков.
               </p>
-              <Link to="/projects" className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold group-hover:translate-x-1 transition-all">
+              <Link to="/projects" className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold group-hover:translate-x-1 transition-all px-0 mx-0">
                 Перейти к проектам
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -102,7 +102,7 @@ const HomePage = () => {
               <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
                 Делитесь полезными фрагментами кода, решениями типичных задач и изучайте лучшие практики.
               </p>
-              <Link to="/snippets" className="inline-flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold group-hover:translate-x-1 transition-all">
+              <Link to="/snippets" className="inline-flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold group-hover:translate-x-1 transition-all my-[25px]">
                 Перейти к сниппетам
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
