@@ -113,9 +113,7 @@ const HomePage = () => {
                 <Users className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Сообщества</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-                Присоединяйтесь к растущему сообществу разработчиков, находите единомышленников и стройте свою сеть.
-              </p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">Присоединяйтесь к растущим сообществам разработчиков, находите единомышленников и стройте свои сообщества.</p>
               <Link to="/communities" className="inline-flex items-center text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 font-semibold group-hover:translate-x-1 transition-all">
                 Присоединиться
                 <ArrowRight className="ml-2 h-4 w-4" />
