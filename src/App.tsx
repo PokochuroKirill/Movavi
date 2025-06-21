@@ -60,7 +60,7 @@ function App() {
               {/* добавляем маршрут /about и /admin */}
               <Route path="/about" element={<AboutPage />} />
               <Route path="/admin" element={<AdminPage />} />
-              <Route path="/Verification" element={<VerificationTermsPage />} />
+              <Route path="/verification" element={<VerificationTermsPage />} />
             </Routes>
             <Toaster />
           </div>
