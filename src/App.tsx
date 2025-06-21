@@ -23,6 +23,7 @@ import CommunityPostDetailPage from '@/pages/CommunityPostDetailPage';
 // добавляем импорт AboutPage и AdminPage
 import AboutPage from '@/pages/AboutPage';
 import AdminPage from '@/pages/AdminPage';
+import VerificationTermsPage from '@/pages/VerificationTerms';
 
 const queryClient = new QueryClient({
   defaultOptions: {
