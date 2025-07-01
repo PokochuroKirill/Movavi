@@ -75,7 +75,7 @@ const CommunityDetailPage = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="container max-w-4xl py-24 mt-8">
+        <div className="container max-w-4xl mx-auto px-4 py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <LoaderSpinner size={32} />
           </div>
@@ -88,18 +88,20 @@ const CommunityDetailPage = () => {
 
   return (
     <Layout>
-      <CommunityDetailView
-        community={community}
-        currentUserMembership={currentUserMembership}
-        members={members}
-        posts={posts}
-        loading={loading}
-        onJoinCommunity={handleJoinCommunity}
-        onLeaveCommunity={handleLeaveCommunity}
-        onRefresh={loadCommunityData}
-        canManage={!!canManage}
-        userId={user?.id}
-      />
+      <div className="container max-w-4xl mx-auto px-4 py-24 mt-8">
+        <CommunityDetailView
+          community={community}
+          currentUserMembership={currentUserMembership}
+          members={members}
+          posts={posts}
+          loading={loading}
+          onJoinCommunity={handleJoinCommunity}
+          onLeaveCommunity={handleLeaveCommunity}
+          onRefresh={loadCommunityData}
+          canManage={!!canManage}
+          userId={user?.id}
+        />
+      </div>
     </Layout>
   );
 };

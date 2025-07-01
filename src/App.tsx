@@ -24,6 +24,9 @@ import EditCommunityPostPage from '@/pages/EditCommunityPostPage';
 import AboutPage from '@/pages/AboutPage';
 import AdminPage from '@/pages/AdminPage';
 import VerificationTermsPage from '@/pages/VerificationTermsPage';
+import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
+import TermsOfServicePage from '@/pages/TermsOfServicePage';
+import VerificationPage from '@/pages/VerificationPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,7 +63,10 @@ function App() {
               <Route path="/users/:username" element={<UserProfilePage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/admin" element={<AdminPage />} />
-              <Route path="/verification" element={<VerificationTermsPage />} />
+              <Route path="/verification" element={<VerificationPage />} />
+              <Route path="/verification-terms" element={<VerificationTermsPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             </Routes>
             <Toaster />
           </div>

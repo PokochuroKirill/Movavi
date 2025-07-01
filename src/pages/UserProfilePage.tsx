@@ -18,6 +18,10 @@ const UserProfilePage = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
+  const [followers, setFollowers] = useState<Profile[]>([]);
+  const [following, setFollowing] = useState<Profile[]>([]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -73,6 +77,26 @@ const UserProfilePage = () => {
     fetchUserProfile();
   }, [username, currentUser]);
 
+  const handleEditProfile = () => {
+    // This is not own profile, so no edit functionality
+  };
+
+  const handleFollowersClick = () => {
+    setShowFollowers(true);
+  };
+
+  const handleFollowingClick = () => {
+    setShowFollowing(true);
+  };
+
+  const handleCloseFollowers = () => {
+    setShowFollowers(false);
+  };
+
+  const handleCloseFollowing = () => {
+    setShowFollowing(false);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -104,19 +128,32 @@ const UserProfilePage = () => {
 
   return (
     <Layout>
-      <UserProfileView
-        profile={profile}
-        projects={projects}
-        snippets={snippets}
-        isFollowing={isFollowing}
-        followersCount={followersCount}
-        followingCount={followingCount}
-        onFollowToggle={async () => {
-          setIsFollowing(!isFollowing);
-          setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
-        }}
-        isOwnProfile={currentUser?.id === profile.id}
-      />
+      <div className="container mx-auto px-4 py-24">
+        <UserProfileView
+          profile={profile}
+          projects={projects}
+          snippets={snippets}
+          isFollowing={isFollowing}
+          followersCount={followersCount}
+          followingCount={followingCount}
+          onFollowToggle={async () => {
+            setIsFollowing(!isFollowing);
+            setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
+          }}
+          isOwnProfile={currentUser?.id === profile.id}
+          onEditProfile={handleEditProfile}
+          onFollowersClick={handleFollowersClick}
+          onFollowingClick={handleFollowingClick}
+          showFollowers={showFollowers}
+          showFollowing={showFollowing}
+          followers={followers}
+          following={following}
+          onCloseFollowers={handleCloseFollowers}
+          onCloseFollowing={handleCloseFollowing}
+          projectsLoading={false}
+          snippetsLoading={false}
+        />
+      </div>
     </Layout>
   );
 };
