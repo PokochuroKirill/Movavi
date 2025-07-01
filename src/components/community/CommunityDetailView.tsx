@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Users, Plus, MessageCircle, Heart, Settings, Edit3 } from 'lucide-react';
+import { Users, Plus, MessageCircle, Heart, Settings, Edit3 } from 'lucide-react';
 import { Community, CommunityMember, CommunityPost } from '@/types/database';
 import UserProfileLink from '@/components/UserProfileLink';
 import CommunityManagementActions from './CommunityManagementActions';
@@ -14,6 +14,7 @@ import CommentActions from './CommentActions';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 interface CommunityDetailViewProps {
   community: Community | null;
@@ -45,6 +46,9 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [postComments, setPostComments] = useState<{
     [key: string]: any[];
+  }>({});
+  const [commentCounts, setCommentCounts] = useState<{
+    [key: string]: number;
   }>({});
   const [loadingComments, setLoadingComments] = useState<{
     [key: string]: boolean;
@@ -140,9 +144,9 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
 
       if (error) throw error;
       
-      setPostComments(prev => ({
+      setCommentCounts(prev => ({
         ...prev,
-        [`${postId}_count`]: count || 0
+        [postId]: count || 0
       }));
     } catch (error) {
       console.error('Error loading comments count:', error);
@@ -233,8 +237,12 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
 
       setPostComments(prev => ({
         ...prev,
-        [postId]: [...(prev[postId] || []), data],
-        [`${postId}_count`]: (prev[`${postId}_count`] || 0) + 1
+        [postId]: [...(prev[postId] || []), data]
+      }));
+      
+      setCommentCounts(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || 0) + 1
       }));
 
       toast({
@@ -254,8 +262,12 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const handleCommentDelete = (postId: string, commentId: string) => {
     setPostComments(prev => ({
       ...prev,
-      [postId]: prev[postId]?.filter(comment => comment.id !== commentId) || [],
-      [`${postId}_count`]: Math.max(0, (prev[`${postId}_count`] || 0) - 1)
+      [postId]: prev[postId]?.filter(comment => comment.id !== commentId) || []
+    }));
+    
+    setCommentCounts(prev => ({
+      ...prev,
+      [postId]: Math.max(0, (prev[postId] || 0) - 1)
     }));
   };
 
@@ -270,7 +282,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <LoaderSpinner size={32} />
       </div>
     );
   }
@@ -399,7 +411,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                       const postAuthor = post.profiles;
                       const isPostExpanded = expandedPosts.has(post.id);
                       const comments = postComments[post.id] || [];
-                      const commentsCount = postComments[`${post.id}_count`] || 0;
+                      const commentsCount = commentCounts[post.id] || 0;
                       const isLoadingPostComments = loadingComments[post.id];
                       const likes = postLikes[post.id] || { count: 0, userLiked: false };
 
@@ -426,6 +438,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                                   communityId={post.community_id} 
                                   isAuthor={userId === post.user_id} 
                                   isModerator={isCreator} 
+                                  communityCreatorId={community.creator_id}
+                                  currentUserId={userId}
                                   onPostDeleted={onRefresh} 
                                 />
                               )}
@@ -470,7 +484,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                 {isLoadingPostComments ? (
                                   <div className="flex justify-center py-4">
-                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                    <LoaderSpinner size={24} />
                                   </div>
                                 ) : (
                                   <div className="space-y-4">

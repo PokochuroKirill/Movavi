@@ -4,9 +4,9 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
-import UserProfileView from '@/components/profile/UserProfileView';
+import UserProfileView from '@/components/UserProfileView';
 import { Profile, Project, Snippet } from '@/types/database';
-import { Loader2 } from 'lucide-react';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 const UserProfilePage = () => {
   const { username } = useParams<{ username: string }>();
@@ -78,7 +78,7 @@ const UserProfilePage = () => {
       <Layout>
         <div className="container mx-auto px-4 py-24">
           <div className="flex justify-center items-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <LoaderSpinner size={32} />
           </div>
         </div>
       </Layout>

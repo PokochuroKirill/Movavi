@@ -13,7 +13,7 @@ import {
 import { Community, CommunityMember, CommunityPost } from '@/types/database';
 import Layout from '@/components/Layout';
 import CommunityDetailView from '@/components/community/CommunityDetailView';
-import { Loader2 } from 'lucide-react';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 const CommunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,7 +77,7 @@ const CommunityDetailPage = () => {
       <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <LoaderSpinner size={32} />
           </div>
         </div>
       </Layout>
