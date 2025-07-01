@@ -111,7 +111,7 @@ const UserProfilePage = () => {
         isFollowing={isFollowing}
         followersCount={followersCount}
         followingCount={followingCount}
-        onFollowToggle={() => {
+        onFollowToggle={async () => {
           setIsFollowing(!isFollowing);
           setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
         }}
