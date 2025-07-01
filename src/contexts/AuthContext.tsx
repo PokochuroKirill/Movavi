@@ -24,9 +24,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Устанавливаем обработчик изменения состояния аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.id);
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Обрабатываем OAuth вход (включая Discord)
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          // Создаем или обновляем профиль при OAuth входе
+          if (currentSession.user.app_metadata?.provider && currentSession.user.app_metadata.provider !== 'email') {
+            setTimeout(async () => {
+              try {
+                const { data: existingProfile } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', currentSession.user.id)
+                  .single();
+
+                if (!existingProfile) {
+                  // Создаем новый профиль для OAuth пользователя
+                  const username = currentSession.user.user_metadata?.preferred_username 
+                    || currentSession.user.user_metadata?.username 
+                    || currentSession.user.email?.split('@')[0]?.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+                    || `user_${currentSession.user.id.slice(0, 8)}`;
+
+                  const fullName = currentSession.user.user_metadata?.full_name 
+                    || currentSession.user.user_metadata?.name 
+                    || '';
+
+                  await supabase
+                    .from('profiles')
+                    .insert({
+                      id: currentSession.user.id,
+                      username: username,
+                      full_name: fullName,
+                      avatar_url: currentSession.user.user_metadata?.avatar_url || null
+                    });
+
+                  toast({
+                    title: "Добро пожаловать!",
+                    description: "Ваш профиль успешно создан.",
+                  });
+                }
+              } catch (error) {
+                console.error('Error creating OAuth profile:', error);
+              }
+            }, 0);
+          }
+        }
+
+        setLoading(false);
       }
     );
 
@@ -38,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signUp = async (email: string, password: string, fullName: string, username?: string) => {
     try {
@@ -68,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             full_name: fullName,
             username: username
           },
+          emailRedirectTo: `${window.location.origin}/`
         },
       });
 

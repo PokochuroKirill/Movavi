@@ -1,6 +1,8 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -11,7 +13,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, MessageCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/components/ui/use-toast';
@@ -37,6 +39,34 @@ const AuthPage = () => {
   const validateUsername = (username: string): boolean => {
     const usernameRegex = /^[a-z0-9_]{3,20}$/;
     return usernameRegex.test(username);
+  };
+
+  const handleDiscordLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Ошибка входа через Discord",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Ошибка входа через Discord",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,6 +119,27 @@ const AuthPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Discord OAuth Button */}
+            <Button
+              onClick={handleDiscordLogin}
+              disabled={loading}
+              className="w-full mb-4 bg-[#5865F2] hover:bg-[#4752C4] text-white shadow-lg"
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Войти через Discord
+            </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Или
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <>
