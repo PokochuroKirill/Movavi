@@ -96,7 +96,7 @@ const AuthPage = () => {
                 </>}
               
               <div className="space-y-2">
-                <Label htmlFor="email">Войти через Discord (НЕДОСТУПНО)</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required />
               </div>
               
