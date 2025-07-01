@@ -1,25 +1,11 @@
-
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Sparkle, 
-  Users, 
-  Rocket, 
-  Lightbulb, 
-  Code2, 
-  Heart, 
-  Shield,
-  Trophy,
-  Zap,
-  Globe
-} from 'lucide-react';
-
+import { Sparkle, Users, Rocket, Lightbulb, Code2, Heart, Shield, Trophy, Zap, Globe } from 'lucide-react';
 const AboutPage = () => {
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-indigo-100 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
+  return <div className="min-h-screen flex flex-col bg-gradient-to-b from-indigo-100 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
       <Navbar />
       
       {/* Animated background elements */}
@@ -33,9 +19,7 @@ const AboutPage = () => {
         {/* Hero Section */}
         <section className="py-20">
           <div className="container mx-auto px-4 text-center">
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 w-24 h-24 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-2xl">
-              <Sparkle className="text-white w-12 h-12 animate-pulse" />
-            </div>
+            
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text">
                 DevHub
@@ -206,63 +190,12 @@ const AboutPage = () => {
         </section>
 
         {/* Статистика */}
-        <section className="py-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-blue-600 mb-2">50K+</div>
-                  <div className="text-gray-600 dark:text-gray-300 font-medium">Разработчиков</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-purple-600 mb-2">12K+</div>
-                  <div className="text-gray-600 dark:text-gray-300 font-medium">Проектов</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-pink-600 mb-2">8K+</div>
-                  <div className="text-gray-600 dark:text-gray-300 font-medium">Сообществ</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-green-600 mb-2">100K+</div>
-                  <div className="text-gray-600 dark:text-gray-300 font-medium">Сниппетов</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        
 
         {/* CTA */}
-        <section className="py-20">
-          <div className="container mx-auto px-4 text-center">
-            <div className="max-w-4xl mx-auto">
-              <h3 className="text-4xl md:text-5xl font-bold mb-6 text-indigo-800 dark:text-indigo-100">
-                Готовы присоединиться?
-              </h3>
-              <p className="text-xl text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
-                Постройте свою карьеру вместе с единомышленниками — участвуйте в жизни сообщества, 
-                делитесь опытом и растите c DevHub!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/auth">
-                  <Button className="bg-gradient-to-r from-indigo-600 to-pink-500 text-white px-10 py-4 text-xl rounded-2xl shadow-lg hover:scale-105 transition-all duration-300">
-                    <Sparkle className="mr-2 h-6 w-6" />
-                    Стать частью DevHub
-                  </Button>
-                </Link>
-                <Link to="/communities">
-                  <Button variant="outline" className="px-10 py-4 text-xl rounded-2xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300">
-                    <Users className="mr-2 h-6 w-6" />
-                    Исследовать сообщества
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default AboutPage;
