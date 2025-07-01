@@ -57,7 +57,7 @@ function App() {
               <Route path="/communities/create" element={<CreateCommunityPage />} />
               <Route path="/communities/:id" element={<CommunityDetailPage />} />
               <Route path="/communities/:communityId/posts/:postId" element={<CommunityPostDetailPage />} />
-              <Route path="/communities/:id/post/:postId/edit" element={<EditCommunityPostPage />} />
+              <Route path="/communities/:id/posts/:postId/edit" element={<EditCommunityPostPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/users/:username" element={<UserProfilePage />} />

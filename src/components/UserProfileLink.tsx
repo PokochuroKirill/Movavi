@@ -23,10 +23,8 @@ const UserProfileLink = ({
 }: UserProfileLinkProps) => {
   const displayName = fullName || username || 'Неизвестный пользователь';
   
-  // Исправляем маршрутизацию: теперь ссылки всегда на /users/...
-  const linkPath = userId 
-    ? (username ? `/users/${username}` : `/users/id/${userId}`) 
-    : '#';
+  // Исправляем маршрутизацию: если есть username, используем его, иначе используем userId
+  const linkPath = username ? `/users/${username}` : (userId ? `/users/id/${userId}` : '#');
   
   return (
     <Link 

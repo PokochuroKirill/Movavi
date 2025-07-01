@@ -29,13 +29,25 @@ const UserProfilePage = () => {
 
       setLoading(true);
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('username', username)
-          .single();
+        // Проверяем, является ли параметр ID или username
+        let query = supabase.from('profiles').select('*');
+        
+        if (username.startsWith('id/')) {
+          // Если параметр начинается с 'id/', извлекаем UUID
+          const userId = username.replace('id/', '');
+          query = query.eq('id', userId);
+        } else {
+          // Иначе ищем по username
+          query = query.eq('username', username);
+        }
 
-        if (profileError) throw profileError;
+        const { data: profileData, error: profileError } = await query.single();
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          throw profileError;
+        }
+        
         setProfile(profileData);
 
         if (profileData) {
@@ -100,7 +112,7 @@ const UserProfilePage = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-24">
+        <div className="container mx-auto px-4 py-28">
           <div className="flex justify-center items-center min-h-[400px]">
             <LoaderSpinner size={32} />
           </div>
@@ -112,7 +124,7 @@ const UserProfilePage = () => {
   if (!profile) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-24">
+        <div className="container mx-auto px-4 py-28">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Пользователь не найден
@@ -128,7 +140,7 @@ const UserProfilePage = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-24">
+      <div className="container mx-auto px-4 py-28">
         <UserProfileView
           profile={profile}
           projects={projects}
