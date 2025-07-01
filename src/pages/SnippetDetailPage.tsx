@@ -163,9 +163,7 @@ const SnippetDetailPage = () => {
           </Card>
 
           {/* Статистика */}
-          <Card>
-            
-          </Card>
+          
         </div>
       </div>
     </Layout>;
