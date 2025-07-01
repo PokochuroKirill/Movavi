@@ -1,300 +1,122 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
-import UserProfileView from '@/components/UserProfileView';
+import UserProfileView from '@/components/profile/UserProfileView';
 import { Profile, Project, Snippet } from '@/types/database';
-import { fetchProfileById, fetchProfileByUsername, fetchUserProjects, fetchUserSnippets, isFollowingUser, followUser, unfollowUser, fetchFollowers, fetchFollowing, fetchFollowCounts } from '@/hooks/useProfileQueries';
+import { Loader2 } from 'lucide-react';
 
 const UserProfilePage = () => {
   const { username } = useParams<{ username: string }>();
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
+  const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [userProjects, setUserProjects] = useState<Project[]>([]);
-  const [userSnippets, setUserSnippets] = useState<Snippet[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [snippetsLoading, setSnippetsLoading] = useState(true);
-
-  // Follow functionality
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [showFollowers, setShowFollowers] = useState(false);
-  const [showFollowing, setShowFollowing] = useState(false);
-  const [followers, setFollowers] = useState<Profile[]>([]);
-  const [following, setFollowing] = useState<Profile[]>([]);
-  const [savedProjects, setSavedProjects] = useState<Project[]>([]);
-  const [savedSnippets, setSavedSnippets] = useState<Snippet[]>([]);
-  const [savedLoading, setSavedLoading] = useState(false);
 
   useEffect(() => {
-    if (!username) {
-      navigate('/');
-      return;
-    }
-    
-    const loadProfile = async () => {
+    const fetchUserProfile = async () => {
+      if (!username) return;
+
       setLoading(true);
       try {
-        let profileData: Profile | null = null;
-        
-        // Check if username is in format "id/userid"
-        if (username.startsWith('id/')) {
-          const userId = username.substring(3);
-          profileData = await fetchProfileById(userId);
-        } else {
-          // Try to find by username first
-          profileData = await fetchProfileByUsername(username);
-          
-          if (!profileData) {
-            // If username not found, try by ID
-            profileData = await fetchProfileById(username);
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', username)
+          .single();
+
+        if (profileError) throw profileError;
+        setProfile(profileData);
+
+        if (profileData) {
+          const [projectsData, snippetsData, followersData, followingData] = await Promise.all([
+            supabase
+              .from('projects')
+              .select('*')
+              .eq('user_id', profileData.id)
+              .order('created_at', { ascending: false }),
+            supabase
+              .from('snippets')
+              .select('*')
+              .eq('user_id', profileData.id)
+              .order('created_at', { ascending: false }),
+            supabase.rpc('count_followers', { user_id: profileData.id }),
+            supabase.rpc('count_following', { user_id: profileData.id })
+          ]);
+
+          setProjects(projectsData.data || []);
+          setSnippets(snippetsData.data || []);
+          setFollowersCount(followersData.data || 0);
+          setFollowingCount(followingData.data || 0);
+
+          if (currentUser) {
+            const { data: followData } = await supabase.rpc('check_if_following', {
+              follower: currentUser.id,
+              following: profileData.id
+            });
+            setIsFollowing(followData || false);
           }
         }
-        
-        if (!profileData) {
-          toast({
-            title: 'Error',
-            description: 'User profile not found',
-            variant: 'destructive'
-          });
-          navigate('/');
-          return;
-        }
-        
-        setProfile(profileData);
-        await loadUserData(profileData.id);
-      } catch (error: any) {
-        console.error('Error loading profile:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load user profile',
-          variant: 'destructive'
-        });
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
       } finally {
         setLoading(false);
       }
     };
-    
-    loadProfile();
-  }, [username, navigate, toast]);
 
-  const loadUserData = async (profileId: string) => {
-    setProjectsLoading(true);
-    setSnippetsLoading(true);
-    
-    try {
-      // Check if current user is following this profile
-      if (user) {
-        const following = await isFollowingUser(user.id, profileId);
-        setIsFollowing(following);
-      }
-
-      // Get follow counts
-      const counts = await fetchFollowCounts(profileId);
-      setFollowersCount(counts.followers);
-      setFollowingCount(counts.following);
-
-      // Get projects
-      const projects = await fetchUserProjects(profileId);
-      setUserProjects(projects);
-
-      // Get snippets
-      const snippets = await fetchUserSnippets(profileId);
-      setUserSnippets(snippets);
-      
-      // Load saved/favorite items if viewing own profile
-      if (user && user.id === profileId) {
-        await loadSavedItems(profileId);
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    } finally {
-      setProjectsLoading(false);
-      setSnippetsLoading(false);
-    }
-  };
-
-  const loadSavedItems = async (userId: string) => {
-    setSavedLoading(true);
-    try {
-      // Get saved projects
-      const { data: savedProjectsData } = await supabase
-        .from('saved_projects')
-        .select(`
-          project_id,
-          projects:project_id (
-            *,
-            profiles:user_id (
-              username,
-              full_name,
-              avatar_url
-            )
-          )
-        `)
-        .eq('user_id', userId);
-        
-      // Get saved snippets
-      const { data: savedSnippetsData } = await supabase
-        .from('saved_snippets')
-        .select(`
-          snippet_id,
-          snippets:snippet_id (
-            *,
-            profiles:user_id (
-              username,
-              full_name,
-              avatar_url
-            )
-          )
-        `)
-        .eq('user_id', userId);
-      
-      const projects = savedProjectsData?.map(item => item.projects) || [];
-      const snippets = savedSnippetsData?.map(item => item.snippets) || [];
-      
-      setSavedProjects(projects as Project[]);
-      setSavedSnippets(snippets as Snippet[]);
-    } catch (error) {
-      console.error("Error loading saved items:", error);
-    } finally {
-      setSavedLoading(false);
-    }
-  };
-  
-  const handleFollowToggle = async () => {
-    if (!user || !profile) {
-      toast({
-        title: 'Authentication required',
-        description: 'Please log in to follow users',
-        variant: 'destructive'
-      });
-      navigate('/auth');
-      return;
-    }
-    
-    try {
-      let success;
-      
-      if (isFollowing) {
-        success = await unfollowUser(user.id, profile.id);
-        if (success) {
-          setIsFollowing(false);
-          setFollowersCount(prev => prev - 1);
-          toast({
-            title: 'Unfollowed',
-            description: `You are no longer following ${profile.username || 'this user'}`
-          });
-        }
-      } else {
-        success = await followUser(user.id, profile.id);
-        if (success) {
-          setIsFollowing(true);
-          setFollowersCount(prev => prev + 1);
-          toast({
-            title: 'Following',
-            description: `You are now following ${profile.username || 'this user'}`
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update follow status',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  const loadFollowers = async () => {
-    if (!profile) return;
-    
-    try {
-      const followersList = await fetchFollowers(profile.id);
-      setFollowers(followersList);
-      setShowFollowers(true);
-      setShowFollowing(false);
-    } catch (error) {
-      console.error('Error loading followers:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load followers',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  const loadFollowing = async () => {
-    if (!profile) return;
-    
-    try {
-      const followingList = await fetchFollowing(profile.id);
-      setFollowing(followingList);
-      setShowFollowing(true);
-      setShowFollowers(false);
-    } catch (error) {
-      console.error('Error loading following:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load following',
-        variant: 'destructive'
-      });
-    }
-  };
+    fetchUserProfile();
+  }, [username, currentUser]);
 
   if (loading) {
     return (
       <Layout>
-        <div className="container max-w-4xl py-24 mt-8">
+        <div className="container mx-auto px-4 py-24">
           <div className="flex justify-center items-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mr-2" />
-            <span className="text-lg">Загрузка профиля...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         </div>
       </Layout>
     );
   }
 
-  const isOwnProfile = user && profile && user.id === profile.id;
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-24">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Пользователь не найден
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Пользователь с таким именем не существует.
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="container max-w-4xl py-24 mt-8">
-        {profile && (
-          <UserProfileView 
-            profile={profile}
-            isOwnProfile={isOwnProfile}
-            onEditProfile={() => navigate('/profile')}
-            onFollowToggle={handleFollowToggle}
-            isFollowing={isFollowing}
-            followersCount={followersCount}
-            followingCount={followingCount}
-            onFollowersClick={loadFollowers}
-            onFollowingClick={loadFollowing}
-            showFollowers={showFollowers}
-            showFollowing={showFollowing}
-            followers={followers}
-            following={following}
-            onCloseFollowers={() => setShowFollowers(false)}
-            onCloseFollowing={() => setShowFollowing(false)}
-            projects={userProjects}
-            snippets={userSnippets}
-            projectsLoading={projectsLoading}
-            snippetsLoading={snippetsLoading}
-            savedProjects={savedProjects}
-            savedSnippets={savedSnippets}
-            savedLoading={savedLoading}
-          />
-        )}
-      </div>
+      <UserProfileView
+        profile={profile}
+        projects={projects}
+        snippets={snippets}
+        isFollowing={isFollowing}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        onFollowToggle={() => {
+          setIsFollowing(!isFollowing);
+          setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
+        }}
+        isOwnProfile={currentUser?.id === profile.id}
+      />
     </Layout>
   );
 };

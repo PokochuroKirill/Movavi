@@ -131,6 +131,24 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     }
   };
 
+  const loadCommentsCount = async (postId: string) => {
+    try {
+      const { count, error } = await supabase
+        .from('community_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', postId);
+
+      if (error) throw error;
+      
+      setPostComments(prev => ({
+        ...prev,
+        [`${postId}_count`]: count || 0
+      }));
+    } catch (error) {
+      console.error('Error loading comments count:', error);
+    }
+  };
+
   const togglePostLike = async (postId: string) => {
     if (!user) {
       toast({
@@ -215,7 +233,8 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
 
       setPostComments(prev => ({
         ...prev,
-        [postId]: [...(prev[postId] || []), data]
+        [postId]: [...(prev[postId] || []), data],
+        [`${postId}_count`]: (prev[`${postId}_count`] || 0) + 1
       }));
 
       toast({
@@ -235,14 +254,16 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const handleCommentDelete = (postId: string, commentId: string) => {
     setPostComments(prev => ({
       ...prev,
-      [postId]: prev[postId]?.filter(comment => comment.id !== commentId) || []
+      [postId]: prev[postId]?.filter(comment => comment.id !== commentId) || [],
+      [`${postId}_count`]: Math.max(0, (prev[`${postId}_count`] || 0) - 1)
     }));
   };
 
-  // Load likes for all posts when component mounts
+  // Load likes and comments count for all posts when component mounts
   React.useEffect(() => {
     posts.forEach(post => {
       loadPostLikes(post.id);
+      loadCommentsCount(post.id);
     });
   }, [posts, user]);
 
@@ -378,6 +399,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                       const postAuthor = post.profiles;
                       const isPostExpanded = expandedPosts.has(post.id);
                       const comments = postComments[post.id] || [];
+                      const commentsCount = postComments[`${post.id}_count`] || 0;
                       const isLoadingPostComments = loadingComments[post.id];
                       const likes = postLikes[post.id] || { count: 0, userLiked: false };
 
@@ -438,7 +460,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                                   className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
                                 >
                                   <MessageCircle className="w-5 h-5" />
-                                  <span className="font-medium">{comments.length}</span>
+                                  <span className="font-medium">{commentsCount}</span>
                                 </button>
                               </div>
                             </div>

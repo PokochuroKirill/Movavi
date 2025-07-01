@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Pencil, Trash2, Flag, AlertTriangle, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CommunityPost } from '@/types/database';
 
 export interface CommunityPostActionsProps {
   postId: string;
@@ -46,11 +45,8 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showReportDialog, setShowReportDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isReporting, setIsReporting] = useState(false);
 
-  // Только автор поста или создатель сообщества
   const canDelete = (currentUserId && (isAuthor || currentUserId === communityCreatorId));
 
   const handleEdit = () => {
@@ -109,26 +105,6 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
     }
   };
 
-  const handleReport = async () => {
-    setIsReporting(true);
-    try {
-      toast({
-        title: 'Жалоба отправлена',
-        description: 'Администраторы рассмотрят вашу жалобу',
-      });
-    } catch (error) {
-      console.error('Error reporting post:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось отправить жалобу',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsReporting(false);
-      setShowReportDialog(false);
-    }
-  };
-
   return (
     <>
       <DropdownMenu>
@@ -153,17 +129,11 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
                   Удалить
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator />
             </>
           )}
-          <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-            <Flag className="h-4 w-4 mr-2" />
-            Пожаловаться
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -194,42 +164,8 @@ const CommunityPostActions: React.FC<CommunityPostActionsProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Report Dialog */}
-      <AlertDialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Пожаловаться на пост</AlertDialogTitle>
-            <AlertDialogDescription>
-              <AlertTriangle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
-              Жалоба будет отправлена модераторам сообщества для рассмотрения.
-              Если пост нарушает правила сообщества, он будет удален или скрыт.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isReporting}>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleReport();
-              }}
-              disabled={isReporting}
-            >
-              {isReporting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Отправка...
-                </>
-              ) : (
-                'Отправить жалобу'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };
 
 export default CommunityPostActions;
-

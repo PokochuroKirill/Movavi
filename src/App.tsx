@@ -20,7 +20,7 @@ import CommunitiesPage from '@/pages/CommunitiesPage';
 import CreateCommunityPage from '@/pages/CreateCommunityPage';
 import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import CommunityPostDetailPage from '@/pages/CommunityPostDetailPage';
-// добавляем импорт AboutPage и AdminPage
+import EditCommunityPostPage from '@/pages/EditCommunityPostPage';
 import AboutPage from '@/pages/AboutPage';
 import AdminPage from '@/pages/AdminPage';
 import VerificationTermsPage from '@/pages/VerificationTermsPage';
@@ -54,10 +54,10 @@ function App() {
               <Route path="/communities/create" element={<CreateCommunityPage />} />
               <Route path="/communities/:id" element={<CommunityDetailPage />} />
               <Route path="/communities/:communityId/posts/:postId" element={<CommunityPostDetailPage />} />
+              <Route path="/communities/:id/post/:postId/edit" element={<EditCommunityPostPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/users/:username" element={<UserProfilePage />} />
-              {/* добавляем маршрут /about и /admin */}
               <Route path="/about" element={<AboutPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/verification" element={<VerificationTermsPage />} />
