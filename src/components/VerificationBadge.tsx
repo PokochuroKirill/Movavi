@@ -40,6 +40,11 @@ const VerificationBadge: React.FC<VerificationBadgeProps> = ({
           gradient: 'bg-gradient-to-r from-orange-500 to-red-500',
           text: 'Эта учетная запись имеет статус подтвержденной, так как принадлежит почетному участнику команды DevHub'
         };
+      case 5:
+        return {
+          gradient: 'bg-gradient-to-r from-red-500 to-violet-500',
+          text: 'Эта учетная запись имеет статус подтвержденной, так как принадлежит мопасу'
+        };
       default:
         return null;
     }
