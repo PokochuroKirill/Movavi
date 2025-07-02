@@ -109,7 +109,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <TabsContent value="projects" className="mt-6">
           {projectsLoading ? (
             <div className="flex justify-center items-center min-h-[200px]">
-              <LoaderSpinner size={48} />
+              <LoaderSpinner size="lg" />
             </div>
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -144,7 +144,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <TabsContent value="snippets" className="mt-6">
           {snippetsLoading ? (
             <div className="flex justify-center items-center min-h-[200px]">
-              <LoaderSpinner size={48} />
+              <LoaderSpinner size="lg" />
             </div>
           ) : snippets.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
@@ -179,7 +179,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <TabsContent value="saved" className="mt-6">
           {savedLoading ? (
             <div className="flex justify-center items-center min-h-[200px]">
-              <LoaderSpinner size={48} />
+              <LoaderSpinner size="lg" />
             </div>
           ) : (savedProjects.length > 0 || savedSnippets.length > 0) ? (
             <div className="space-y-6">

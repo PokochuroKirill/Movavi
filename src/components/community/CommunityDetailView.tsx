@@ -282,7 +282,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <LoaderSpinner size={32} />
+        <LoaderSpinner size="md" />
       </div>
     );
   }
@@ -484,7 +484,7 @@ const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                 {isLoadingPostComments ? (
                                   <div className="flex justify-center py-4">
-                                    <LoaderSpinner size={24} />
+                                    <LoaderSpinner size="sm" />
                                   </div>
                                 ) : (
                                   <div className="space-y-4">

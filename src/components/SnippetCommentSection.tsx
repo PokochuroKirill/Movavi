@@ -247,7 +247,7 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       
       {isLoading ? (
         <div className="text-center py-8 flex flex-col items-center">
-          <LoaderSpinner size={32} className="mb-2" />
+          <LoaderSpinner size="md" className="mb-2" />
           <p className="text-gray-500">Загрузка комментариев...</p>
         </div>
       ) : comments.length > 0 ? (

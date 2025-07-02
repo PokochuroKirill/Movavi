@@ -204,7 +204,7 @@ const UserProfilePage = () => {
       <Layout>
         <div className="container mx-auto px-4 py-28">
           <div className="flex justify-center items-center min-h-[400px]">
-            <LoaderSpinner size={32} />
+            <LoaderSpinner size="md" />
           </div>
         </div>
       </Layout>

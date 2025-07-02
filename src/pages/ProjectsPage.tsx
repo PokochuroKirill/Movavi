@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 const ProjectsPage = () => {
   const { user } = useAuth();
@@ -205,7 +206,7 @@ const ProjectsPage = () => {
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center min-h-[200px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div>
         )}
       </div>

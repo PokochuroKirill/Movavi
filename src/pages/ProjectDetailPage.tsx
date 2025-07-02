@@ -13,6 +13,7 @@ import ProjectActions from '@/components/ProjectActions';
 import { useAuth } from '@/contexts/AuthContext';
 import CommentSection from '@/components/CommentSection';
 import ProjectFilesList from '@/components/ProjectFilesList';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 const ProjectDetailPage = () => {
   const {
     id
@@ -59,7 +60,7 @@ const ProjectDetailPage = () => {
     return <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div>
         </div>
       </Layout>;

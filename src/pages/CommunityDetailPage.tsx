@@ -77,7 +77,7 @@ const CommunityDetailPage = () => {
       <Layout>
         <div className="container max-w-4xl mx-auto px-4 py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <LoaderSpinner size={32} />
+            <LoaderSpinner size="md" />
           </div>
         </div>
       </Layout>

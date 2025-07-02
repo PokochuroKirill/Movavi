@@ -8,6 +8,7 @@ import UserProfileView from '@/components/UserProfileView';
 import EditProfileForm from '@/components/EditProfileForm';
 import { fetchProfileById, fetchUserProjects, fetchUserSnippets, fetchFollowers, fetchFollowing, fetchFollowCounts } from '@/hooks/useProfileQueries';
 import { Profile, Project, Snippet } from '@/types/database';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -253,7 +254,7 @@ const ProfilePage = () => {
       <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div>
         </div>
       </Layout>

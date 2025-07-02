@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, File, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 interface ProjectFile {
   id: string;
@@ -85,7 +86,7 @@ const ProjectFilesList: React.FC<ProjectFilesListProps> = ({ projectId }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-4">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <LoaderSpinner size="sm" />
       </div>
     );
   }

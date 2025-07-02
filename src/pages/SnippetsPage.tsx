@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react';
 import Layout from '@/components/Layout';
 import SnippetCard from '@/components/SnippetCard';
 import { Snippet } from '@/types/database';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 const SnippetsPage = () => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +141,7 @@ const SnippetsPage = () => {
 
         {/* Snippets Grid */}
         {loading ? <div className="flex justify-center items-center min-h-[200px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div> : filteredSnippets.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSnippets.map(snippet => <SnippetCard key={snippet.id} snippet={snippet} />)}
           </div> : <div className="text-center py-12">

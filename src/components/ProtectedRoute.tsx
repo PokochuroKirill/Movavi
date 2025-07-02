@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <LoaderSpinner size={40} className="mb-4" />
+        <LoaderSpinner size="lg" className="mb-4" />
         <p className="text-lg">Загрузка...</p>
       </div>
     );

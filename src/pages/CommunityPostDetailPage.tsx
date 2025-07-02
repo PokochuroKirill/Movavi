@@ -19,6 +19,7 @@ import { CommunityPost, CommunityComment } from '@/types/database';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import CommunityPostActions from '@/components/community/CommunityPostActions';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 const CommunityPostDetailPage = () => {
   const { communityId, postId } = useParams<{ communityId: string; postId: string }>();
@@ -141,7 +142,7 @@ const CommunityPostDetailPage = () => {
       <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div>
         </div>
       </Layout>
@@ -290,7 +291,7 @@ const CommunityPostDetailPage = () => {
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     {submittingComment ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      <LoaderSpinner size="sm" className="mr-2 border-white" />
                     ) : (
                       <Send className="h-4 w-4 mr-2" />
                     )}

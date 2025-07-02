@@ -74,7 +74,7 @@ const RecommendationSystem = () => {
           <TabsContent value="projects" className="mt-4">
             {projectsLoading ? (
               <div className="flex justify-center py-8">
-                <LoaderSpinner size={32} />
+                <LoaderSpinner size="md" />
               </div>
             ) : recommendedProjects && recommendedProjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -100,7 +100,7 @@ const RecommendationSystem = () => {
           <TabsContent value="snippets" className="mt-4">
             {snippetsLoading ? (
               <div className="flex justify-center py-8">
-                <LoaderSpinner size={32} />
+                <LoaderSpinner size="md" />
               </div>
             ) : recommendedSnippets && recommendedSnippets.length > 0 ? (
               <div className="space-y-4">

@@ -14,6 +14,7 @@ import { Users, Calendar, MessageCircle, Search, Plus, Hash } from 'lucide-react
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Community } from '@/types/database';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 const CommunitiesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -109,7 +110,7 @@ const CommunitiesPage = () => {
 
         {/* Communities Grid */}
         {isLoading ? <div className="flex justify-center items-center min-h-[200px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div> : filteredCommunities.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCommunities.map(community => <Link key={community.id} to={`/communities/${community.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">

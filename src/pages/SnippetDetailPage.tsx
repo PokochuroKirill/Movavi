@@ -13,6 +13,7 @@ import SnippetActions from '@/components/SnippetActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 const SnippetDetailPage = () => {
   const {
     id
@@ -59,7 +60,7 @@ const SnippetDetailPage = () => {
     return <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <LoaderSpinner />
           </div>
         </div>
       </Layout>;
