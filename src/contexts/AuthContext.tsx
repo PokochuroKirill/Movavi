@@ -10,6 +10,7 @@ type AuthContextType = {
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, username?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithDiscord: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -24,9 +25,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Устанавливаем обработчик изменения состояния аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Обновляем или создаем профиль при входе
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          await handleUserSignIn(currentSession.user);
+        }
       }
     );
 
@@ -39,6 +45,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleUserSignIn = async (user: User) => {
+    try {
+      // Проверяем, существует ли профиль
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!existingProfile) {
+        // Создаем новый профиль
+        const displayName = user.user_metadata?.full_name || user.user_metadata?.name || 'Пользователь';
+        let username = user.user_metadata?.username || user.user_metadata?.preferred_username;
+        
+        // Если username не указан или это email, генерируем уникальный
+        if (!username || username.includes('@')) {
+          username = `user_${user.id.substring(0, 8)}`;
+        }
+
+        // Проверяем уникальность username
+        const { data: existingUsername } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('username', username)
+          .single();
+
+        if (existingUsername) {
+          username = `${username}_${Date.now()}`;
+        }
+
+        const { error } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            username: username,
+            full_name: displayName,
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture
+          });
+
+        if (error) {
+          console.error('Error creating profile:', error);
+        }
+      } else {
+        // Обновляем avatar_url если он изменился
+        const newAvatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        if (newAvatarUrl && newAvatarUrl !== existingProfile.avatar_url) {
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: newAvatarUrl })
+            .eq('id', user.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling user sign in:', error);
+    }
+  };
 
   const signUp = async (email: string, password: string, fullName: string, username?: string) => {
     try {
@@ -108,6 +171,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithDiscord = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Ошибка входа",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -131,6 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signUp,
     signIn,
+    signInWithDiscord,
     signOut,
   };
 

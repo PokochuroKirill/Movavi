@@ -27,6 +27,7 @@ import VerificationTermsPage from '@/pages/VerificationTermsPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import VerificationPage from '@/pages/VerificationPage';
+import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,7 @@ function App() {
               <Route path="/verification-terms" element={<VerificationTermsPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
           </div>

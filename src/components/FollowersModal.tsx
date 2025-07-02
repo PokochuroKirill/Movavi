@@ -110,7 +110,7 @@ const FollowersModal: React.FC<FollowersModalProps> = ({
               {users.map((user) => (
                 <Link
                   key={user.id}
-                  to={`/user/${user.username || user.id}`}
+                  to={user.username ? `/users/${user.username}` : `/users/id/${user.id}`}
                   onClick={onClose}
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
