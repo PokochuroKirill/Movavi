@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, ArrowLeft } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import FileUpload from '@/components/ui/file-upload';
 const CreateProjectPage = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -20,6 +22,8 @@ const CreateProjectPage = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [liveUrl, setLiveUrl] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [projectFiles, setProjectFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     user
@@ -66,9 +70,11 @@ const CreateProjectPage = () => {
     try {
       setIsSubmitting(true);
       const techArray = technologies.split(',').map(tech => tech.trim()).filter(tech => tech !== '');
+      
+      // Создаем проект
       const {
-        data,
-        error
+        data: projectData,
+        error: projectError
       } = await supabase.from('projects').insert({
         title,
         description,
@@ -77,14 +83,44 @@ const CreateProjectPage = () => {
         image_url: imageUrl || null,
         github_url: githubUrl || null,
         live_url: liveUrl || null,
+        is_private: isPrivate,
         user_id: user!.id
       }).select().single();
-      if (error) throw error;
+      
+      if (projectError) throw projectError;
+
+      // Загружаем файлы, если есть
+      if (projectFiles.length > 0) {
+        const uploadPromises = projectFiles.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user!.id}/${projectData.id}/${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('project-files')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          // Сохраняем информацию о файле в базе данных
+          const { error: dbError } = await supabase
+            .from('project_files')
+            .insert({
+              project_id: projectData.id,
+              file_url: fileName,
+              file_name: file.name,
+              file_size: file.size
+            });
+
+          if (dbError) throw dbError;
+        });
+
+        await Promise.all(uploadPromises);
+      }
       toast({
         title: "Проект создан",
         description: "Ваш проект успешно опубликован"
       });
-      navigate(`/projects/${data.id}`);
+      navigate(`/projects/${projectData.id}`);
     } catch (error: any) {
       toast({
         title: "Ошибка",
@@ -173,6 +209,32 @@ const CreateProjectPage = () => {
                       <Input id="liveUrl" value={liveUrl} onChange={e => setLiveUrl(e.target.value)} placeholder="https://myproject.com" type="url" className="mt-2" />
                     </div>
                   </div>
+
+                  {/* Приватность проекта */}
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isPrivate"
+                      checked={isPrivate}
+                      onCheckedChange={setIsPrivate}
+                    />
+                    <Label htmlFor="isPrivate" className="text-base font-medium">
+                      Приватный проект
+                    </Label>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Приватные проекты видны только вам и вашим подписчикам
+                  </p>
+
+                  {/* Загрузка файлов */}
+                  <FileUpload
+                    label="Файлы проекта"
+                    accept=".zip,.rar,.7z,.tar,.gz,.exe,.msi,.dmg,.apk,.ipa,.pdf,.doc,.docx,.txt"
+                    multiple={true}
+                    maxFiles={5}
+                    maxSize={50 * 1024 * 1024} // 50MB
+                    onFilesChange={setProjectFiles}
+                    preview={true}
+                  />
                   
                   <div className="flex justify-end pt-6 space-x-4">
                     

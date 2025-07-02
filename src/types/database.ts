@@ -39,6 +39,8 @@ export interface Project {
   image_url?: string;
   github_url?: string;
   live_url?: string;
+  is_private?: boolean;
+  attachment_files?: any;
   created_at: string;
   updated_at: string;
   author?: string;
@@ -65,6 +67,7 @@ export interface Snippet {
   language: string;
   user_id: string;
   tags?: string[];
+  is_private?: boolean;
   created_at: string;
   updated_at: string;
   author?: string;
@@ -292,4 +295,13 @@ export interface SubscriptionPayment {
   receipt_url?: string;
   admin_notes?: string;
   status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  created_at: string;
 }

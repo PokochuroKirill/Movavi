@@ -11,6 +11,8 @@ import { Project } from '@/types/database';
 import { formatDate } from '@/utils/dateUtils';
 import ProjectActions from '@/components/ProjectActions';
 import { useAuth } from '@/contexts/AuthContext';
+import CommentSection from '@/components/CommentSection';
+import ProjectFilesList from '@/components/ProjectFilesList';
 const ProjectDetailPage = () => {
   const {
     id
@@ -172,9 +174,18 @@ const ProjectDetailPage = () => {
             </CardContent>
           </Card>
 
-          {/* Статистика */}
+          {/* Файлы проекта */}
           <Card>
-            
+            <CardContent className="pt-6">
+              <ProjectFilesList projectId={project.id} />
+            </CardContent>
+          </Card>
+
+          {/* Комментарии */}
+          <Card>
+            <CardContent className="pt-6">
+              <CommentSection projectId={project.id} />
+            </CardContent>
           </Card>
         </div>
       </div>

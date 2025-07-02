@@ -7,6 +7,7 @@ import { Pencil, Users, UserPlus, ExternalLink } from 'lucide-react';
 import { Profile } from '@/types/database';
 import VerificationBadge from './VerificationBadge';
 import SocialMediaLinks from './SocialMediaLinks';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -31,6 +32,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   isFollowing = false,
   onFollowToggle
 }) => {
+  const { user } = useAuth();
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -57,18 +59,32 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           )}
           
           <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={onFollowersClick}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              <span className="font-semibold">{followersCount}</span> подписчиков
-            </button>
-            <button
-              onClick={onFollowingClick}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              <span className="font-semibold">{followingCount}</span> подписок
-            </button>
+            {/* Показываем списки подписчиков только владельцу профиля */}
+            {isCurrentUser ? (
+              <>
+                <button
+                  onClick={onFollowersClick}
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <span className="font-semibold">{followersCount}</span> подписчиков
+                </button>
+                <button
+                  onClick={onFollowingClick}
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <span className="font-semibold">{followingCount}</span> подписок
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-4">
+                <span className="text-gray-600 dark:text-gray-400">
+                  <span className="font-semibold">{followersCount}</span> подписчиков
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  <span className="font-semibold">{followingCount}</span> подписок
+                </span>
+              </div>
+            )}
           </div>
           
           {profile.bio && (
@@ -98,7 +114,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <Pencil className="mr-2 h-4 w-4" />
               Редактировать профиль
             </Button>
-          ) : (
+          ) : user ? (
             <Button 
               onClick={onFollowToggle}
               variant={isFollowing ? "outline" : "default"}
@@ -116,7 +132,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 </>
               )}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import Layout from '@/components/Layout';
 import UserProfileView from '@/components/UserProfileView';
 import { Profile, Project, Snippet } from '@/types/database';
 import LoaderSpinner from '@/components/ui/LoaderSpinner';
+import { useToast } from '@/hooks/use-toast';
 
 const UserProfilePage = () => {
   const { username } = useParams<{ username: string }>();
@@ -22,6 +23,7 @@ const UserProfilePage = () => {
   const [showFollowing, setShowFollowing] = useState(false);
   const [followers, setFollowers] = useState<Profile[]>([]);
   const [following, setFollowing] = useState<Profile[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -114,6 +116,16 @@ const UserProfilePage = () => {
   };
 
   const handleFollowersClick = async () => {
+    // Только владелец профиля может видеть список подписчиков
+    if (!currentUser || currentUser.id !== profile?.id) {
+      toast({
+        title: "Доступ ограничен",
+        description: "Только владелец профиля может просматривать список подписчиков",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { data: followersData } = await supabase
         .from('user_follows')
@@ -133,10 +145,25 @@ const UserProfilePage = () => {
       setShowFollowers(true);
     } catch (error) {
       console.error('Error loading followers:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить список подписчиков",
+        variant: "destructive"
+      });
     }
   };
 
   const handleFollowingClick = async () => {
+    // Только владелец профиля может видеть список подписок
+    if (!currentUser || currentUser.id !== profile?.id) {
+      toast({
+        title: "Доступ ограничен",
+        description: "Только владелец профиля может просматривать список подписок",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { data: followingData } = await supabase
         .from('user_follows')
@@ -156,6 +183,11 @@ const UserProfilePage = () => {
       setShowFollowing(true);
     } catch (error) {
       console.error('Error loading following:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить список подписок",
+        variant: "destructive"
+      });
     }
   };
 
@@ -207,8 +239,36 @@ const UserProfilePage = () => {
           followersCount={followersCount}
           followingCount={followingCount}
           onFollowToggle={async () => {
-            setIsFollowing(!isFollowing);
-            setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
+            if (!currentUser) {
+              toast({
+                title: "Требуется авторизация",
+                description: "Войдите в систему, чтобы подписаться на пользователя",
+                variant: "destructive"
+              });
+              return;
+            }
+
+            try {
+              const { data, error } = await supabase.rpc('toggle_follow', {
+                target_user_id: profile.id
+              });
+
+              if (error) throw error;
+
+              setIsFollowing(data);
+              setFollowersCount(prev => data ? prev + 1 : prev - 1);
+              
+              toast({
+                description: data ? "Вы подписались на пользователя" : "Вы отписались от пользователя"
+              });
+            } catch (error: any) {
+              console.error('Error toggling follow:', error);
+              toast({
+                title: "Ошибка",
+                description: error.message || "Не удалось изменить статус подписки",
+                variant: "destructive"
+              });
+            }
           }}
           isOwnProfile={currentUser?.id === profile.id}
           onEditProfile={handleEditProfile}

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 const languageOptions = [
   "javascript", "typescript", "python", "java", "c", "cpp", "csharp", "go", "ruby", "php", 
@@ -29,6 +30,7 @@ const CreateSnippetPage = () => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [tags, setTags] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -69,6 +71,7 @@ const CreateSnippetPage = () => {
         code,
         language,
         tags: tagsArray.length ? tagsArray : null,
+        is_private: isPrivate,
         user_id: user!.id
       }).select().single();
       if (error) throw error;
@@ -191,6 +194,21 @@ const CreateSnippetPage = () => {
                       className="mt-2" 
                     />
                   </div>
+
+                  {/* Приватность сниппета */}
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isPrivate"
+                      checked={isPrivate}
+                      onCheckedChange={setIsPrivate}
+                    />
+                    <Label htmlFor="isPrivate" className="text-base font-medium">
+                      Приватный сниппет
+                    </Label>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Приватные сниппеты видны только вам и вашим подписчикам
+                  </p>
                   
                   <div className="flex justify-end pt-6 space-x-4">
                     <Button 

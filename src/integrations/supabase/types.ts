@@ -1304,6 +1304,10 @@ export type Database = {
         }
         Returns: number
       }
+      toggle_follow: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       unban_user: {
         Args: { target_user_id: string }
         Returns: boolean
