@@ -529,6 +529,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number
+          file_url: string
+          id: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_url: string
+          id?: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_url?: string
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_likes: {
         Row: {
           created_at: string | null
@@ -584,6 +619,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          attachment_files: Json | null
           comments_count: number | null
           content: string
           created_at: string
@@ -591,6 +627,7 @@ export type Database = {
           github_url: string | null
           id: string
           image_url: string | null
+          is_private: boolean
           likes_count: number | null
           live_url: string | null
           technologies: string[] | null
@@ -600,6 +637,7 @@ export type Database = {
           views_count: number | null
         }
         Insert: {
+          attachment_files?: Json | null
           comments_count?: number | null
           content: string
           created_at?: string
@@ -607,6 +645,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           image_url?: string | null
+          is_private?: boolean
           likes_count?: number | null
           live_url?: string | null
           technologies?: string[] | null
@@ -616,6 +655,7 @@ export type Database = {
           views_count?: number | null
         }
         Update: {
+          attachment_files?: Json | null
           comments_count?: number | null
           content?: string
           created_at?: string
@@ -623,6 +663,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           image_url?: string | null
+          is_private?: boolean
           likes_count?: number | null
           live_url?: string | null
           technologies?: string[] | null
@@ -797,6 +838,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          is_private: boolean
           language: string
           tags: string[] | null
           title: string
@@ -809,6 +851,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          is_private?: boolean
           language: string
           tags?: string[] | null
           title: string
@@ -821,6 +864,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          is_private?: boolean
           language?: string
           tags?: string[] | null
           title?: string
