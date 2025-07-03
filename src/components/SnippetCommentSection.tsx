@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Send, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import LoaderSpinner from "@/components/ui/LoaderSpinner";
 
@@ -46,25 +46,22 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
           created_at,
           snippet_id,
           user_id,
-          profiles!snippet_comments_user_id_fkey(username, full_name, avatar_url)
+          profiles!inner(username, full_name, avatar_url)
         `)
         .eq('snippet_id', snippetId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Обработка данных и их форматирование
       const formattedComments: Comment[] = (data || []).map(item => {
         let profileData = null;
         
-        // Проверяем, содержит ли profiles массив объектов или одиночный объект
         if (Array.isArray(item.profiles)) {
-          profileData = item.profiles[0]; // Берем первый профиль, если это массив
+          profileData = item.profiles[0];
         } else if (item.profiles) {
-          profileData = item.profiles; // Используем объект напрямую
+          profileData = item.profiles;
         }
         
-        // Устанавливаем значения по умолчанию, если профиль не найден
         profileData = profileData || { username: null, full_name: null, avatar_url: null };
         
         return {
@@ -78,7 +75,6 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       });
       
       setComments(formattedComments);
-      console.log("Loaded snippet comments:", formattedComments);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
@@ -98,7 +94,6 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
   useEffect(() => {
     loadComments();
     
-    // Set up real-time subscription for new comments
     const channel = supabase
       .channel('public:snippet_comments')
       .on('postgres_changes', 
@@ -157,7 +152,8 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       loadComments();
       
       toast({
-        description: 'Комментарий успешно добавлен'
+        title: 'Успешно!',
+        description: 'Комментарий добавлен'
       });
     } catch (error: any) {
       console.error('Error adding comment:', error);
@@ -183,11 +179,11 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
         
       if (error) throw error;
       
-      // Update local state
       setComments(comments.filter(comment => comment.id !== commentId));
       
       toast({
-        description: 'Комментарий успешно удален'
+        title: 'Успешно!',
+        description: 'Комментарий удален'
       });
       
       if (onCommentsChange) {
@@ -215,73 +211,95 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
   };
 
   return (
-    <div className="mt-8">
-      <h3 className="text-xl font-bold mb-4">Комментарии</h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 mb-6">
+        <MessageCircle className="h-5 w-5 text-primary" />
+        <h3 className="text-xl font-semibold">Комментарии</h3>
+        <span className="text-sm text-muted-foreground">({comments.length})</span>
+      </div>
       
-      <form onSubmit={handleSubmitComment} className="mb-6">
-        <Textarea
-          placeholder="Напишите комментарий..."
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          className="mb-2"
-          disabled={isSubmitting || !user}
-        />
-        {!user && (
-          <p className="text-sm text-gray-500 mb-2">Войдите в систему, чтобы оставить комментарий</p>
-        )}
-        <Button 
-          type="submit" 
-          className="bg-primary hover:bg-primary/90"
-          disabled={isSubmitting || !user || !newComment.trim()}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Отправка...
-            </>
-          ) : (
-            'Отправить'
+      <form onSubmit={handleSubmitComment} className="space-y-4">
+        <div className="space-y-2">
+          <Textarea
+            placeholder="Напишите ваш комментарий..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="min-h-[100px] resize-none"
+            disabled={isSubmitting || !user}
+          />
+          {!user && (
+            <p className="text-sm text-muted-foreground">
+              Войдите в систему, чтобы оставить комментарий
+            </p>
           )}
-        </Button>
+        </div>
+        <div className="flex justify-end">
+          <Button 
+            type="submit" 
+            size="sm"
+            disabled={isSubmitting || !user || !newComment.trim()}
+            className="gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <LoaderSpinner size="sm" />
+                Отправка...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                Отправить
+              </>
+            )}
+          </Button>
+        </div>
       </form>
       
-      {isLoading ? (
-        <div className="text-center py-8 flex flex-col items-center">
-          <LoaderSpinner size="md" className="mb-2" />
-          <p className="text-muted-foreground">Загрузка комментариев...</p>
-        </div>
-      ) : comments.length > 0 ? (
-        <div className="space-y-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="border border-border rounded-lg p-4 bg-card">
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex flex-col items-center py-8">
+            <LoaderSpinner size="md" className="mb-2" />
+            <p className="text-muted-foreground">Загрузка комментариев...</p>
+          </div>
+        ) : comments.length > 0 ? (
+          comments.map((comment) => (
+            <div key={comment.id} className="bg-muted/30 rounded-lg p-4 border border-border/50">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={comment.profiles?.avatar_url || undefined} alt={comment.profiles?.username || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
                       {(comment.profiles?.full_name || comment.profiles?.username || 'U')
                         .substring(0, 2)
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold text-foreground text-sm">{comment.profiles?.full_name || comment.profiles?.username || 'Неизвестный пользователь'}</h4>
-                    <p className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</p>
+                    <p className="font-medium text-sm">
+                      {comment.profiles?.full_name || comment.profiles?.username || 'Пользователь'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(comment.created_at)}
+                    </p>
                   </div>
                 </div>
                 
                 {user && user.id === comment.user_id && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Удаление комментария</AlertDialogTitle>
+                        <AlertDialogTitle>Удалить комментарий?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Вы уверены, что хотите удалить этот комментарий? Это действие невозможно отменить.
+                          Это действие нельзя отменить. Комментарий будет удален навсегда.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -297,16 +315,19 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
                   </AlertDialog>
                 )}
               </div>
-              <p className="text-foreground leading-relaxed">{comment.content}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {comment.content}
+              </p>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 border border-dashed border-border rounded-lg">
-          <p className="text-muted-foreground text-lg">Нет комментариев</p>
-          <p className="text-muted-foreground text-sm mt-1">Будьте первым кто оставит комментарий!</p>
-        </div>
-      )}
+          ))
+        ) : (
+          <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+            <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground font-medium">Пока нет комментариев</p>
+            <p className="text-sm text-muted-foreground">Будьте первым, кто оставит комментарий!</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
