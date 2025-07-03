@@ -15,7 +15,7 @@ export const fetchComments = async (projectId: string): Promise<Comment[]> => {
       created_at,
       user_id,
       project_id,
-      profiles:user_id(username, full_name, avatar_url)
+      profiles!comments_user_id_fkey(username, full_name, avatar_url)
     `)
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
@@ -39,7 +39,7 @@ export const postComment = async (projectId: string, userId: string, content: st
       created_at,
       user_id,
       project_id,
-      profiles:user_id(username, full_name, avatar_url)
+      profiles!comments_user_id_fkey(username, full_name, avatar_url)
     `)
     .single();
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,7 +28,7 @@ const UserProfileLink = ({
   return (
     <Link 
       to={linkPath}
-      className={`flex items-center hover:text-devhub-purple transition-colors ${className}`}
+      className={`flex items-center hover:text-primary transition-colors ${className}`}
     >
       <Avatar className="h-8 w-8 mr-2">
         <AvatarImage src={avatarUrl || undefined} alt={displayName} />

@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
 
 interface CommentSectionProps {
   projectId: string;
@@ -46,7 +47,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
           created_at,
           project_id,
           user_id,
-          profiles(username, full_name, avatar_url)
+          profiles!comments_user_id_fkey(username, full_name, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
@@ -156,7 +157,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
           created_at,
           project_id,
           user_id,
-          profiles(username, full_name, avatar_url)
+          profiles!comments_user_id_fkey(username, full_name, avatar_url)
         `)
         .single();
         
@@ -243,7 +244,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
         )}
         <Button 
           type="submit" 
-          className="bg-gradient-to-r from-blue-500 to-devhub-purple text-white"
+          className="bg-primary hover:bg-primary/90"
           disabled={isSubmitting || !user || !newComment.trim()}
         >
           {isSubmitting ? (
@@ -258,34 +259,34 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       </form>
       
       {isLoading ? (
-        <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-devhub-purple mx-auto mb-2" />
-          <p className="text-gray-500">Загрузка комментариев...</p>
+        <div className="text-center py-8 flex flex-col items-center">
+          <LoaderSpinner size="md" className="mb-2" />
+          <p className="text-muted-foreground">Загрузка комментариев...</p>
         </div>
       ) : comments.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {comments.map((comment) => (
-            <div key={comment.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <Avatar className="h-8 w-8 mr-2">
+            <div key={comment.id} className="border border-border rounded-lg p-4 bg-card">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={comment.profiles?.avatar_url || undefined} alt={comment.profiles?.username || ''} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary">
                       {(comment.profiles?.full_name || comment.profiles?.username || 'U')
                         .substring(0, 2)
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-medium text-sm">{comment.profiles?.full_name || comment.profiles?.username || 'Неизвестный пользователь'}</h4>
-                    <p className="text-xs text-gray-500">{formatDate(comment.created_at)}</p>
+                    <h4 className="font-semibold text-foreground text-sm">{comment.profiles?.full_name || comment.profiles?.username || 'Неизвестный пользователь'}</h4>
+                    <p className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</p>
                   </div>
                 </div>
                 
                 {user && user.id === comment.user_id && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-500">
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
@@ -300,7 +301,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
                         <AlertDialogAction 
                           onClick={() => handleDeleteComment(comment.id)}
-                          className="bg-red-500 hover:bg-red-600"
+                          className="bg-destructive hover:bg-destructive/90"
                         >
                           Удалить
                         </AlertDialogAction>
@@ -309,13 +310,14 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
                   </AlertDialog>
                 )}
               </div>
-              <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
+              <p className="text-foreground leading-relaxed">{comment.content}</p>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-500">
-          Нет комментариев. Будьте первым кто оставит комментарий!
+        <div className="text-center py-12 border border-dashed border-border rounded-lg">
+          <p className="text-muted-foreground text-lg">Нет комментариев</p>
+          <p className="text-muted-foreground text-sm mt-1">Будьте первым кто оставит комментарий!</p>
         </div>
       )}
     </div>

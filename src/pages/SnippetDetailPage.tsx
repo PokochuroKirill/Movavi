@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LoaderSpinner from '@/components/ui/LoaderSpinner';
+import SnippetCommentSection from '@/components/SnippetCommentSection';
 const SnippetDetailPage = () => {
   const {
     id
@@ -163,8 +164,12 @@ const SnippetDetailPage = () => {
             </CardContent>
           </Card>
 
-          {/* Статистика */}
-          
+          {/* Комментарии */}
+          <Card>
+            <CardContent className="pt-6">
+              <SnippetCommentSection snippetId={snippet.id} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>;
