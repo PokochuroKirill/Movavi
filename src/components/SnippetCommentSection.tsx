@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +19,6 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  snippet_id: string;
   user_id: string;
   profiles?: {
     username: string | null;
@@ -27,7 +27,7 @@ interface Comment {
   };
 }
 
-const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSectionProps) => {
+export const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSectionProps) => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -38,41 +38,34 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
   const loadComments = async () => {
     setIsLoading(true);
     try {
+      console.log('Loading comments for snippet:', snippetId);
+      
       const { data, error } = await supabase
         .from('snippet_comments')
         .select(`
           id,
           content,
           created_at,
-          snippet_id,
           user_id,
-          profiles!inner(username, full_name, avatar_url)
+          profiles!snippet_comments_user_id_fkey(username, full_name, avatar_url)
         `)
         .eq('snippet_id', snippetId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading snippet comments:', error);
+        throw error;
+      }
       
-      const formattedComments: Comment[] = (data || []).map(item => {
-        let profileData = null;
-        
-        if (Array.isArray(item.profiles)) {
-          profileData = item.profiles[0];
-        } else if (item.profiles) {
-          profileData = item.profiles;
-        }
-        
-        profileData = profileData || { username: null, full_name: null, avatar_url: null };
-        
-        return {
-          id: item.id,
-          content: item.content,
-          created_at: item.created_at,
-          snippet_id: item.snippet_id,
-          user_id: item.user_id,
-          profiles: profileData
-        };
-      });
+      console.log('Snippet comments loaded:', data);
+      
+      const formattedComments: Comment[] = (data || []).map(item => ({
+        id: item.id,
+        content: item.content,
+        created_at: item.created_at,
+        user_id: item.user_id,
+        profiles: item.profiles
+      }));
       
       setComments(formattedComments);
       
@@ -92,26 +85,28 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
   };
 
   useEffect(() => {
-    loadComments();
-    
-    const channel = supabase
-      .channel('public:snippet_comments')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'snippet_comments',
-          filter: `snippet_id=eq.${snippetId}`
-        }, 
-        () => {
-          loadComments();
-        }
-      )
-      .subscribe();
+    if (snippetId) {
+      loadComments();
       
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      const channel = supabase
+        .channel('snippet-comments-changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'snippet_comments',
+            filter: `snippet_id=eq.${snippetId}`
+          }, 
+          () => {
+            loadComments();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [snippetId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -149,12 +144,13 @@ const SnippetCommentSection = ({ snippetId, onCommentsChange }: SnippetCommentSe
       if (error) throw error;
       
       setNewComment('');
-      loadComments();
       
       toast({
         title: 'Успешно!',
         description: 'Комментарий добавлен'
       });
+      
+      loadComments();
     } catch (error: any) {
       console.error('Error adding comment:', error);
       toast({

@@ -1,32 +1,30 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Heart, Eye, ArrowLeft } from 'lucide-react';
+import { Calendar, ArrowLeft } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Snippet } from '@/types/database';
 import { formatDate } from '@/utils/dateUtils';
 import SnippetActions from '@/components/SnippetActions';
 import { useAuth } from '@/contexts/AuthContext';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import LoaderSpinner from '@/components/ui/LoaderSpinner';
 import SnippetCommentSection from '@/components/SnippetCommentSection';
+import CopyCodeButton from '@/components/CopyCodeButton';
+import LoaderSpinner from '@/components/ui/LoaderSpinner';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 const SnippetDetailPage = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<{ id: string }>();
   const [snippet, setSnippet] = useState<Snippet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+
   useEffect(() => {
     const fetchSnippet = async () => {
       if (!id) {
@@ -34,19 +32,23 @@ const SnippetDetailPage = () => {
         setLoading(false);
         return;
       }
+
       try {
-        const {
-          data,
-          error
-        } = await supabase.from('snippets').select(`
+        const { data, error } = await supabase
+          .from('snippets')
+          .select(`
             *,
             profiles:user_id (
               username,
               full_name,
               avatar_url
             )
-          `).eq('id', id).single();
+          `)
+          .eq('id', id)
+          .single();
+
         if (error) throw error;
+
         setSnippet(data);
       } catch (err: any) {
         console.error('Error fetching snippet:', err);
@@ -55,19 +57,25 @@ const SnippetDetailPage = () => {
         setLoading(false);
       }
     };
+
     fetchSnippet();
   }, [id]);
+
   if (loading) {
-    return <Layout>
+    return (
+      <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <LoaderSpinner />
           </div>
         </div>
-      </Layout>;
+      </Layout>
+    );
   }
+
   if (error || !snippet) {
-    return <Layout>
+    return (
+      <Layout>
         <div className="container max-w-4xl py-24 mt-8">
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -84,9 +92,12 @@ const SnippetDetailPage = () => {
             </Link>
           </div>
         </div>
-      </Layout>;
+      </Layout>
+    );
   }
-  return <Layout>
+
+  return (
+    <Layout>
       <div className="container max-w-4xl py-24 mt-8">
         <div className="space-y-6">
           {/* Кнопка назад */}
@@ -110,18 +121,20 @@ const SnippetDetailPage = () => {
                   </CardDescription>
                   
                   {/* Язык программирования */}
-                  <div className="mb-4">
-                    <Badge variant="outline" className="text-sm">
-                      {snippet.language}
-                    </Badge>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge variant="secondary">{snippet.language}</Badge>
                   </div>
 
                   {/* Теги */}
-                  {snippet.tags && snippet.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-4">
-                      {snippet.tags.map((tag, index) => <Badge key={index} variant="secondary">
+                  {snippet.tags && snippet.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {snippet.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline">
                           {tag}
-                        </Badge>)}
-                    </div>}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Информация об авторе и дате */}
                   <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -151,15 +164,25 @@ const SnippetDetailPage = () => {
             </CardHeader>
 
             <CardContent>
-              {/* Код сниппета */}
-              <div className="mb-6">
-                <SyntaxHighlighter language={snippet.language.toLowerCase()} style={tomorrow} customStyle={{
-                margin: 0,
-                borderRadius: '0.5rem',
-                fontSize: '0.875rem'
-              }}>
-                  {snippet.code}
-                </SyntaxHighlighter>
+              {/* Блок кода с кнопкой копирования */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Код</h3>
+                  <CopyCodeButton code={snippet.code} />
+                </div>
+                
+                <div className="relative">
+                  <SyntaxHighlighter
+                    language={snippet.language.toLowerCase()}
+                    style={oneDark}
+                    customStyle={{
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {snippet.code}
+                  </SyntaxHighlighter>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -172,6 +195,8 @@ const SnippetDetailPage = () => {
           </Card>
         </div>
       </div>
-    </Layout>;
+    </Layout>
+  );
 };
+
 export default SnippetDetailPage;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +19,6 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  project_id: string;
   user_id: string;
   profiles?: {
     username: string | null;
@@ -27,7 +27,7 @@ interface Comment {
   };
 }
 
-const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) => {
+export const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -38,48 +38,41 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
   const loadComments = async () => {
     setIsLoading(true);
     try {
+      console.log('Loading comments for project:', projectId);
+      
       const { data, error } = await supabase
         .from('comments')
         .select(`
           id,
           content,
           created_at,
-          project_id,
           user_id,
-          profiles!inner(username, full_name, avatar_url)
+          profiles!comments_user_id_fkey(username, full_name, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading comments:', error);
+        throw error;
+      }
       
-      const formattedComments: Comment[] = (data || []).map(item => {
-        let profileData = null;
-        
-        if (Array.isArray(item.profiles)) {
-          profileData = item.profiles[0];
-        } else if (item.profiles) {
-          profileData = item.profiles;
-        }
-        
-        profileData = profileData || { username: null, full_name: null, avatar_url: null };
-        
-        return {
-          id: item.id,
-          content: item.content,
-          created_at: item.created_at,
-          project_id: item.project_id,
-          user_id: item.user_id,
-          profiles: profileData
-        };
-      });
+      console.log('Comments loaded:', data);
+      
+      const formattedComments: Comment[] = (data || []).map(item => ({
+        id: item.id,
+        content: item.content,
+        created_at: item.created_at,
+        user_id: item.user_id,
+        profiles: item.profiles
+      }));
       
       setComments(formattedComments);
       
       if (onCommentsChange) {
         onCommentsChange(data?.length || 0);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading comments:', error);
       toast({
         title: 'Ошибка',
@@ -92,26 +85,28 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
   };
 
   useEffect(() => {
-    loadComments();
-    
-    const channel = supabase
-      .channel('public:comments')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'comments',
-          filter: `project_id=eq.${projectId}`
-        }, 
-        () => {
-          loadComments();
-        }
-      )
-      .subscribe();
+    if (projectId) {
+      loadComments();
       
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      const channel = supabase
+        .channel('comments-changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'comments',
+            filter: `project_id=eq.${projectId}`
+          }, 
+          () => {
+            loadComments();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [projectId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -138,22 +133,13 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
     setIsSubmitting(true);
     
     try {
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('comments')
         .insert({
           content: newComment,
           project_id: projectId,
           user_id: user.id
-        })
-        .select(`
-          id,
-          content,
-          created_at,
-          project_id,
-          user_id,
-          profiles!inner(username, full_name, avatar_url)
-        `)
-        .single();
+        });
         
       if (error) throw error;
       
@@ -165,7 +151,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       });
       
       loadComments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding comment:', error);
       toast({
         title: 'Ошибка',
@@ -199,7 +185,7 @@ const CommentSection = ({ projectId, onCommentsChange }: CommentSectionProps) =>
       if (onCommentsChange) {
         onCommentsChange(comments.length - 1);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting comment:', error);
       toast({
         title: 'Ошибка',
