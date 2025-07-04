@@ -109,6 +109,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_comments_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       communities: {
@@ -768,6 +775,13 @@ export type Database = {
             columns: ["snippet_id"]
             isOneToOne: false
             referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_snippet_comments_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
