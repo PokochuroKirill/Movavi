@@ -1,12 +1,13 @@
-# DevHub
+# Movavi
 
 ## Описание
 
-Платформа для разработчиков
+Аналог LMS системы Movavi
 
-## Демонстрация
+# Демонстрация
 
-- [Демо](https://devhub-ten.vercel.app) 
+- [Демо](Demo is not avalivable right now)
+  
 ## Языки и технологии
 
 - **TypeScript** — основной язык приложения
@@ -14,4 +15,3 @@
 - **CSS** — Tailwind CSS и обычные стили
 - **HTML** — шаблоны страниц
 - **PLpgSQL** — для работы с базой данных (supabase)
-  
